@@ -9,7 +9,8 @@
   },
   "workspaces": [
     "shared",
-    "database"
+    "database",
+    "backend"
   ],
   "scripts": {
     "build:packages": "npm run build -w @ds/shared -w @ds/database",

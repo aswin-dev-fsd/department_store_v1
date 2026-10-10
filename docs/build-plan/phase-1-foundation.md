@@ -11,6 +11,7 @@
 | Package names | `@ds/shared`, `@ds/database`, `@ds/backend`, `@ds/frontend` |
 | Module system | ESM (`"type": "module"`) everywhere |
 | Internal packages | `shared` and `database` compile with `tsc` to `dist/`; `backend` and `frontend` import the built output through the package `exports`, so no TypeScript project references are needed. Each package has `tsconfig.json` (type-check, includes tests, `noEmit`) and `tsconfig.build.json` (emit to `dist`, excludes tests) — copy the `shared` pattern. Root script `build:packages` builds them, and runs before `dev`, `test` and `check-types`. |
+| New workspace install | After adding a workspace to the root `workspaces` list, run plain `npm install` once **before** `npm install <pkgs> -w @ds/<name>`. Otherwise npm 11 only links the new workspace and silently drops the packages (seen in Tasks 1.4 and 1.5). Always confirm the package's `dependencies` afterwards. |
 | Root gate scripts | `check-types` and `test` exist at the root from Task 1.2 and run every workspace (`--workspaces --if-present`), so the protocol gate works from the start. Each new package adds itself to `build:packages` as needed. |
 | Environment | One `.env` at the repo root, read by backend and database scripts |
 | Versions | Latest stable of each approved package, saved exactly (`.npmrc` → `save-exact=true`) |
@@ -143,7 +144,8 @@
 
 **Files:**
 - `backend/package.json`, `backend/tsconfig.json`, `backend/vitest.config.ts`
-- `backend/src/config/env.ts` + `env.test.ts`
+- `backend/src/config/env.schema.ts` (pure `parseEnv(source)`) + `env.schema.test.ts`, and `backend/src/config/env.ts` (loads the root `.env`, exports `env`). Split so the tests never depend on the real environment.
+- `shared/src/api.ts` — envelope types (`ApiSuccess`, `ApiFailure`, `ApiResponse`), used by `response.ts` here and the API client in Task 1.8
 - `backend/src/lib/logger.ts`
 - `backend/src/lib/errors.ts` + `errors.test.ts`
 - `backend/src/lib/response.ts` + `response.test.ts`
