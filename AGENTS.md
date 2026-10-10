@@ -33,9 +33,9 @@ backend/
   src/modules/<feature>/<feature>.{routes,controller,service,model,schema,test}.ts
              model = database queries only, named as actions (insertX, findX); rules live in the service
   src/lib/   response, errors, audit, temporary passwords, branch-scoped query helper
-  src/scripts/ operator CLIs (setup-client, later reset-password and the dev seed): <name>.ts holds
-             the logic (exported, tested); <name>.cli.ts is the thin executable. A generated
-             credential is printed once to stdout and never logged or stored
+  src/scripts/ operator CLIs (setup-client, reset-password, later the dev seed): <name>.ts holds
+             the logic (exported, tested); <name>.cli.ts is the thin executable; cli.ts holds what
+             they share. A generated credential is printed once to stdout and never logged or stored
 frontend/    React + Vite app
 docs/        decisions, plans, future plans
 ```

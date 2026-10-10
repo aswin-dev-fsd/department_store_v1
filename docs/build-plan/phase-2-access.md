@@ -265,10 +265,16 @@
    - Audit rows are written, and contain no passwords.
 2. **Green** — implement.
 3. **Operator recovery:** if the only Admin loses their password there is no one to reset it, and `setup:client` refuses to run again. Add `npm run reset-password -- --username <name>`, built like `setup-client` (logic + thin CLI): sets a new temporary password (printed once), sets `must_change_password`, ends that user's sessions, writes an audit row. Test it, and document it in `docs/dev-setup.md`.
+4. **Notes from Task 2.9:**
+   - Beyond the plan: you cannot deactivate your own account (so an active Admin always remains) or reset your own password; role and username are fixed in v1; a branch can only be *added* if it is active, but one already mapped may stay after being deactivated.
+   - **Deleting sessions on deactivation is not redundant:** the session check alone would also refuse an inactive user, but without the deletion reactivating a user would bring their old sessions back to life. The sabotage check first showed the original test could not tell the difference; it now asserts the session rows are gone at once, and a separate test covers deactivate → reactivate.
+   - `scripts/cli.ts` now holds what both operator scripts share (`out`, `fail`, `CliUsageError`), and `setup-client` was refactored onto it.
+   - Add `UsersPage` and the mapping checkboxes in Task 2.11 against `UserSummary` and `UserBranch` (inactive branches are listed so they can be removed).
 
 **Done when:**
-- [ ] All tests pass
-- [ ] A lost Admin password can be recovered with `reset-password`
+- [x] All tests pass
+- [x] A lost Admin password can be recovered with `reset-password` (checked on the test database from PowerShell)
+- [x] Each protection proven by removing it once: the permission check, the self-deactivation guard, session deletion on deactivation and on reset, the cashier-only check, the duplicate-safe insert
 
 **Commit:** `feat(admin): add user management, branch mapping and reset-password script`
 

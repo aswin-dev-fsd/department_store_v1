@@ -1,7 +1,7 @@
 // Operator task: initialise a new client's copy with its settings and first Admin (overview §7.1).
 // The logic lives here so tests can call it; setup-client.cli.ts is the thin executable.
 import type { Db } from '@ds/database';
-import { fullNameSchema, usernameSchema } from '@ds/shared';
+import { businessNameSchema, fullNameSchema, usernameSchema } from '@ds/shared';
 import { parseArgs } from 'node:util';
 import { z } from 'zod';
 import { logAudit } from '../lib/audit.js';
@@ -10,13 +10,10 @@ import { generateTemporaryPassword } from '../lib/temporary-password.js';
 import { hashPassword } from '../modules/auth/auth.service.js';
 import * as settingsModel from '../modules/settings/settings.model.js';
 import * as usersModel from '../modules/users/users.model.js';
+import { CliUsageError } from './cli.js';
 
 export const setupClientSchema = z.object({
-  businessName: z
-    .string()
-    .trim()
-    .min(1, 'Enter the business name')
-    .max(120, 'Use at most 120 characters'),
+  businessName: businessNameSchema,
   adminUsername: usernameSchema,
   adminFullName: fullNameSchema,
 });
@@ -106,14 +103,11 @@ export const SETUP_USAGE = `Usage: npm run setup:client -- --business-name "<nam
 
 Runs against DATABASE_URL (the root .env, or an environment variable set in your terminal).`;
 
-/** Bad command-line arguments; \`problems\` lists everything wrong, one line each. */
-export class SetupArgsError extends Error {
-  readonly problems: string[];
-
+/** Bad command-line arguments for setup:client; `problems` lists everything wrong. */
+export class SetupArgsError extends CliUsageError {
   constructor(problems: string[]) {
-    super(problems.join('\n'));
+    super(problems);
     this.name = 'SetupArgsError';
-    this.problems = problems;
   }
 }
 

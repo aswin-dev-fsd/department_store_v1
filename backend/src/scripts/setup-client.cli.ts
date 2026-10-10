@@ -4,10 +4,8 @@ import { describeConnection } from '@ds/database';
 import { env } from '../config/env.js';
 import { db, pool } from '../db.js';
 import { AppError } from '../lib/errors.js';
-import { parseSetupArgs, SETUP_USAGE, setupClient, SetupArgsError } from './setup-client.js';
-
-const out = (line = '') => process.stdout.write(`${line}\n`);
-const fail = (line = '') => process.stderr.write(`${line}\n`);
+import { CliUsageError, fail, out } from './cli.js';
+import { parseSetupArgs, SETUP_USAGE, setupClient } from './setup-client.js';
 
 /** Run the setup and return the process exit code: 0 done, 1 failed or already set up, 2 bad arguments. */
 async function main(): Promise<number> {
@@ -15,7 +13,7 @@ async function main(): Promise<number> {
   try {
     parsed = parseSetupArgs(process.argv.slice(2));
   } catch (error) {
-    if (error instanceof SetupArgsError) {
+    if (error instanceof CliUsageError) {
       for (const problem of error.problems) fail(`ERROR: ${problem}`);
       fail();
       fail(SETUP_USAGE);

@@ -180,7 +180,7 @@ department_store_v1/
 | `src/routes.ts` | Mounts every module's router under `/api/v1` |
 | `src/lib/` | Shared helpers: `response` (envelope), `errors` (typed errors), `logger` (pino, secrets redacted), `audit` (`logAudit` + redaction), `changes` (`changedFields`: what really changed, for before/after audit rows), `db-errors` (`isUniqueViolation`, looks through Drizzle's wrapper), `temporary-password`, `branch-scope` |
 | `src/modules/<feature>/` | One folder per feature: `routes` → `controller` (req/res only) → `service` (logic) → `model` (database queries only) + tests |
-| `src/scripts/` | Operator command-line tasks. `<name>.ts` holds the logic (exported and tested), `<name>.cli.ts` is the thin executable, run with `npm run <name>`. Today: `setup-client` (see below) |
+| `src/scripts/` | Operator command-line tasks. `<name>.ts` holds the logic (exported and tested), `<name>.cli.ts` is the thin executable, run with `npm run <name>`; `cli.ts` holds what they share (`out`, `fail`, `CliUsageError`). Today: `setup-client` and `reset-password` (see below) |
 
 **`setup:client`** creates a new client's `client_settings` row and its first Admin, in one transaction. The Admin gets a 16-character temporary password (letters and digits without look-alikes, from `crypto.randomInt`) which the script prints once to the terminal; the database holds only its bcrypt hash and `must_change_password` is set. Two audit rows are written (`client_settings.create`, `user.create`, no actor). It refuses, changing nothing, if any user or settings exist, even when two runs start together (an atomic insert decides the winner). It writes to `DATABASE_URL`, so for staging a variable set in the operator's terminal overrides `.env`; commands are in `docs/dev-setup.md`.
 
@@ -238,6 +238,11 @@ Every response uses the envelope: `{ success, data | error, meta: { timestamp, v
 | `PATCH /api/v1/admin/branches/:id` | yes | Admin → Branches | `Branch`. Any fields, or `isActive` to deactivate / reactivate |
 | `GET /api/v1/admin/settings` | yes | Admin → Settings | `ClientSettings` (business name, address, phone); 404 `NOT_SET_UP` before `setup:client` has run |
 | `PUT /api/v1/admin/settings` | yes | Admin → Settings | `ClientSettings`. Replaces the record: an omitted address or phone is cleared |
+| `GET /api/v1/admin/users` | yes | Admin → Users | `Page<UserSummary>` ordered by username (ignoring case), each with its branches; `?limit=20&offset=0&role=&isActive=` |
+| `POST /api/v1/admin/users` | yes | Admin → Users | `{ user, temporaryPassword }` (201), the password shown this once. A taken username (any case) answers 400 `DUPLICATE_USERNAME` |
+| `PATCH /api/v1/admin/users/:id` | yes | Admin → Users | `UserSummary`. A new `fullName`, or `isActive` to deactivate / reactivate |
+| `POST /api/v1/admin/users/:id/reset-password` | yes | Admin → Users | `{ temporaryPassword }`, shown once; ends the user's sessions; they must change it at next login |
+| `PUT /api/v1/admin/users/:id/branches` | yes | Admin → Users | `UserSummary`. Replaces the cashier's whole list of branches |
 
 **Login flow details:** an unknown username is still checked against a dummy bcrypt hash, so response time doesn't reveal which usernames exist. Every failure answers `INVALID_CREDENTIALS` and is audited with the attempted username, never the password. Until a temporary password is changed, every route except me / change-password / logout answers 403 `PASSWORD_CHANGE_REQUIRED`. Every login event writes an audit row in the same transaction (D-30).
 
@@ -247,6 +252,14 @@ Every response uses the envelope: `{ success, data | error, meta: { timestamp, v
 - **Duplicates** never surface as a 500: creates use `INSERT … ON CONFLICT DO NOTHING`, and edits translate the database's unique violation into `DUPLICATE_CODE`. Two simultaneous creates of one code give exactly one 201 and one 400.
 - **Deactivating a branch** takes effect on the very next request of any cashier working in it (Task 2.4's session check), so it needs no sign-out.
 - The settings API leaves the GSTIN out until GST is decided (PD-01). The branch-code lock once a branch has bills arrives in Task 5.6 (`TODO(5.6)` in `branches.service.ts`).
+
+**User management rules** (`users.service.ts`):
+- The server makes the temporary password (16 characters) and returns it once, on create and on reset. It is stored only as a bcrypt hash and appears in no audit row or list. The user must change it at first login.
+- **Role and username are fixed** once an account exists in v1: to change either, create a new account.
+- **You cannot deactivate your own account**, which also guarantees at least one active Admin always remains; nor reset your own password here (use "Change password").
+- **Deactivating or resetting ends all the user's sessions in the same transaction.** Deleting them at once matters beyond the next request: otherwise reactivating a user would bring their old sessions back to life (the session check alone would accept them again). Both cases are tested.
+- **Branch mapping** (`PUT /:id/branches`) replaces the whole list, for cashiers only. A branch can be *added* only if it exists and is active; one already mapped may stay after being deactivated, so a list can be saved again unchanged. A cashier working in a removed branch loses it on their next request. Audit rows record ids and codes before and after.
+- **`reset-password` command** (`npm run reset-password -- --username <name>`) shares its core (`resetUserPassword`) with the API route. It is for when nobody can use the Admin screens, e.g. the only Admin lost the password before first login; it prints the new temporary password once, writes an audit row with no actor, and works for a deactivated account too (with a note).
 
 ### 5.5 Configuration
 
@@ -419,7 +432,6 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | Graceful shutdown not yet observed (Windows can't send SIGTERM) | unverified behaviour | Check Render logs for `Shutting down` on the next deploy |
 | **Staging records Cloudflare's address, not the visitor's.** Observed in Task 2.5: all six failed-login audit rows, direct to Render and via Vercel, held Cloudflare addresses (checked against Cloudflare's published ranges), so `TRUST_PROXY=2` is too small | audit IPs are wrong, and a per-IP login limit (Task 7.1) would lump many visitors together by Cloudflare edge | Cause found from Render's logs (§3.4): the right value is **4**. Waiting for it to be changed in Render's environment, then the re-check in `dev-setup.md` §11. Re-verify for every environment (AWS too) |
 | A hop count can be spoofed when the origin is reachable directly | anyone calling `…onrender.com` instead of the Vercel address can add `X-Forwarded-For` entries and pick the IP the server records | Accepted on dev-only staging. Production must reach the app only through its front proxy (network rules or a shared secret header), and Task 7.1 also limits failures per username |
-| A lost Admin password has no recovery command yet: `setup:client` refuses to run twice | a single Admin who loses the temporary password before first login is locked out (on throwaway databases: rebuild) | `reset-password` script, Task 2.9 |
 | Login takes about 2 s on Render Free (median 2.08 s through Vercel, 1.6–2.4 s; ~0.4 s on the dev PC) | slow-feeling login on the free staging CPU (0.1 CPU); bcrypt cost 12 is deliberate | Decide at Checkpoint 2: keep 12 (production hardware will be faster), or make the cost a setting |
 | Failed logins store the attempted username in `audit_logs` | someone who types their password into the username box would have it stored | Decide in Task 7.2: keep as is (useful for spotting attacks), or store only a hash for usernames that don't exist |
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |

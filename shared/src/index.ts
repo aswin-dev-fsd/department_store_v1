@@ -37,7 +37,23 @@ export {
   type ClientSettings,
   type UpdateSettingsInput,
 } from './schemas/settings.js';
-export { fullNameSchema, USERNAME_PATTERN, usernameSchema } from './schemas/users.js';
+export {
+  createUserSchema,
+  fullNameSchema,
+  listUsersQuerySchema,
+  setUserBranchesSchema,
+  updateUserSchema,
+  USERNAME_PATTERN,
+  usernameSchema,
+  type CreatedUser,
+  type CreateUserInput,
+  type ListUsersQuery,
+  type PasswordReset,
+  type SetUserBranchesInput,
+  type UpdateUserInput,
+  type UserBranch,
+  type UserSummary,
+} from './schemas/users.js';
 export { formatPaise, rupeesToPaise } from './money.js';
 export {
   can,

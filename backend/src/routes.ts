@@ -4,6 +4,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { branchesRoutes } from './modules/branches/branches.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
+import { usersRoutes } from './modules/users/users.routes.js';
 
 /** Every API route, mounted by createApp under /api/v1. */
 export function apiRoutes(deps: AppDeps): Router {
@@ -12,5 +13,6 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/auth', authRoutes(deps));
   router.use('/admin/branches', branchesRoutes(deps));
   router.use('/admin/settings', settingsRoutes(deps));
+  router.use('/admin/users', usersRoutes(deps));
   return router;
 }

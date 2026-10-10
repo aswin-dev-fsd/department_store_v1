@@ -552,10 +552,10 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | POST | `/auth/select-branch` | logged in (cashier) | Set the active branch |
 | GET, POST | `/admin/branches` | `admin:branches` | List (`?limit&offset&isActive`) / create branches. Code: 1–3 letters, stored upper-case |
 | PATCH | `/admin/branches/:id` | `admin:branches` | Edit a branch, or deactivate / reactivate it with `isActive` |
-| GET, POST | `/admin/users` | `admin:users` | List / create users |
-| PATCH | `/admin/users/:id` | `admin:users` | Edit or deactivate a user |
-| POST | `/admin/users/:id/reset-password` | `admin:users` | Set a temporary password |
-| PUT | `/admin/users/:id/branches` | `admin:users` | Set a cashier's branches |
+| GET, POST | `/admin/users` | `admin:users` | List (`?limit&offset&role&isActive`, each user with their branches) / create. Create answers a one-time temporary password |
+| PATCH | `/admin/users/:id` | `admin:users` | Edit the full name, or deactivate / reactivate with `isActive` (deactivating ends their sessions). Role and username are fixed in v1 |
+| POST | `/admin/users/:id/reset-password` | `admin:users` | New one-time temporary password (not for your own account); ends the user's sessions |
+| PUT | `/admin/users/:id/branches` | `admin:users` | Replace a cashier's whole list of branches |
 | GET, PUT | `/admin/settings` | `admin:settings` | Client settings: business name, address, phone (GSTIN waits for PD-01). PUT replaces the record |
 | POST | `/admin/branches/:id/import` | `admin:import` | CSV import of items and opening stock |
 | GET | `/admin/reports/:report` | `report:all` | Any report, any branch (`?branchId=`) |
@@ -597,6 +597,11 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `PASSWORD_CHANGE_REQUIRED` | 403 | A temporary password must be changed first; only me / change-password / logout work |
 | `WRONG_CURRENT_PASSWORD` | 400 | Change-password with a wrong current password (400, not 401, so the app doesn't treat the user as logged out) |
 | `PASSWORD_UNCHANGED` | 400 | The new password equals the current one |
+| `DUPLICATE_USERNAME` | 400 | A username that is taken, in any letter case |
+| `CANNOT_DEACTIVATE_SELF` | 400 | An Admin tried to deactivate their own account (so an active Admin always remains) |
+| `CANNOT_RESET_OWN_PASSWORD` | 400 | An Admin tried to reset their own password; use "Change password" |
+| `NOT_A_CASHIER` | 400 | Assigning branches to an Admin; only cashiers have branches |
+| `BRANCH_NOT_AVAILABLE` | 400 | Adding a branch that doesn't exist or isn't active; `details.branchIds` lists them |
 | `NOT_FOUND` | 404 | Record doesn't exist in the active branch |
 | `INSUFFICIENT_STOCK` | 400 | A sale, purchase cancel or adjustment would make stock negative; `details` lists the items |
 | `PAYMENT_MISMATCH` | 400 | Payments don't equal the bill total |
