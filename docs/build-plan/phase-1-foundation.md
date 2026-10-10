@@ -10,7 +10,8 @@
 |---|---|
 | Package names | `@ds/shared`, `@ds/database`, `@ds/backend`, `@ds/frontend` |
 | Module system | ESM (`"type": "module"`) everywhere |
-| Internal packages | `shared` and `database` compile with `tsc` to `dist/`; `backend` and `frontend` import the built output. Root script `build:packages` builds them, and runs before `dev`, `test` and `check-types`. |
+| Internal packages | `shared` and `database` compile with `tsc` to `dist/`; `backend` and `frontend` import the built output through the package `exports`, so no TypeScript project references are needed. Each package has `tsconfig.json` (type-check, includes tests, `noEmit`) and `tsconfig.build.json` (emit to `dist`, excludes tests) — copy the `shared` pattern. Root script `build:packages` builds them, and runs before `dev`, `test` and `check-types`. |
+| Root gate scripts | `check-types` and `test` exist at the root from Task 1.2 and run every workspace (`--workspaces --if-present`), so the protocol gate works from the start. Each new package adds itself to `build:packages` as needed. |
 | Environment | One `.env` at the repo root, read by backend and database scripts |
 | Versions | Latest stable of each approved package, saved exactly (`.npmrc` → `save-exact=true`) |
 | TypeScript | **6.0.x**, installed once at the root and shared by all workspaces. Not 7.x until `typescript-eslint` supports it (its peer range on 2026-10-10: `<6.1.0`) |
@@ -53,7 +54,8 @@
 
 **Files:**
 - `shared/package.json` — `exports` → `dist`; scripts `build`, `check-types`, `test`
-- `shared/tsconfig.json` — extends the base; `composite`, `rootDir: src`, `outDir: dist`
+- `shared/tsconfig.json` — extends the base, `noEmit`, includes `src` (tests too). Used by `check-types` and the editor.
+- `shared/tsconfig.build.json` — extends `tsconfig.json`; `rootDir: src`, `outDir: dist`; excludes `*.test.ts`. Used by `build`.
 - `shared/vitest.config.ts`
 - `shared/src/index.ts`, `shared/src/money.ts`, `shared/src/money.test.ts`
 - Root `package.json` — add `shared` to `workspaces`; add the `build:packages` script

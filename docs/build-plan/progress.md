@@ -17,7 +17,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | Task | Title | Status | Date | Notes |
 |---|---|---|---|---|
 | 1.1 | Root workspace | DONE | 2026-10-10 | tsx 4.23.15, vitest 5.0.3, **typescript pinned 6.0.3**: npm installed 7.0.2, but typescript-eslint 8.71 (Task 1.3) supports only <6.1. npm 11 skipped esbuild's install script (allow-scripts); left unapproved because tsx and vitest work without it. Base tsconfig checked by compiling a probe file. |
-| 1.2 | Shared package and money helpers | TODO | | |
+| 1.2 | Shared package and money helpers | DONE | 2026-10-10 | 23 tests (red → green). `rupeesToPaise` uses a strict regex and integer math; `formatPaise` builds the string from integers, using Intl only for en-IN grouping (negatives like round-off show as `-₹0.40`). Changed from the plan: no `composite` (consumers use the built `dist`); split `tsconfig.json`/`tsconfig.build.json`; root `check-types`/`test` scripts added now so the gate works. Phase 1 conventions updated to match. Verified `import('@ds/shared')` by package name. |
 | 1.3 | Lint and format | TODO | | |
 | 1.4 | Database package | TODO | | |
 | 1.5 | Backend libraries: env, logger, errors, response | TODO | | |
