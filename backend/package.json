@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
+    "setup:client": "tsx src/scripts/setup-client.cli.ts",
     "build": "tsc -p tsconfig.build.json",
     "check-types": "tsc -p tsconfig.json",
     "test": "vitest run"

@@ -82,6 +82,30 @@ The web app runs on http://localhost:5173. The status page should show **API: ok
 - The backend restarts by itself when you edit `backend/src`. Changes to `shared/` or `database/` need a restart of both servers, because those packages are compiled first.
 - In Claude Code's desktop app, `.claude/launch.json` starts both servers in the Browser pane.
 
+### Create the first Admin (once per database)
+
+There is no sign-up screen: the first Admin is created by a script. Run it once on each database you want to log in to. It needs the migrations applied first (`npm run db:migrate`).
+
+```bash
+npm run setup:client -- --business-name "Demo Stores" --admin-username admin --admin-name "Store Admin"
+```
+
+- It writes to `DATABASE_URL` and prints the database it used (host and name) first, so you can see where it ran.
+- It prints a **temporary password once**. Write it down: it is stored only as a hash and appears in no log. The Admin must change it at first login.
+- Names in Tamil are fine for `--business-name` and `--admin-name`. The username is 3–32 characters: lowercase letters, digits, `.`, `_`, `-`.
+- Running it again on the same database refuses ("already set up") and changes nothing.
+- `npm run setup:client -- --help` shows the options.
+
+**For staging**, point the script at the staging database for that one command (PowerShell). Take the connection string from Render → `dept-store-api-staging` → Environment. Never put it in `.env` or paste it into a chat.
+
+```powershell
+$env:DATABASE_URL = "<staging connection string>"
+npm run setup:client -- --business-name "Staging Stores" --admin-username admin --admin-name "Staging Admin"
+Remove-Item Env:DATABASE_URL
+```
+
+A variable set in the terminal beats the `.env` file, which is why this reaches staging instead of dev.
+
 ## 7. Commands
 
 All run from the repo root.
@@ -90,6 +114,7 @@ All run from the repo root.
 |---|---|
 | `npm run dev:backend` | Build the shared packages, then run the API with auto-restart |
 | `npm run dev:frontend` | Build the shared packages, then run the Vite dev server |
+| `npm run setup:client -- --business-name … --admin-username … --admin-name …` | Create the client settings and the first Admin on a new database (see section 6) |
 | `npm run verify` | **The gate:** lint, format check, type check, all tests. Must pass before every commit |
 | `npm test` | All tests in every package |
 | `npm run check-types` | TypeScript check of every package |
@@ -132,6 +157,9 @@ All run from the repo root.
 | `TEST_DATABASE_URL is not set` | Missing from `.env` | Add it (section 4) |
 | `Invalid environment variables:` on start | A missing or invalid `.env` value | The message names each variable; fix it in `.env` |
 | Status page shows **Database: down** right after a break | Neon took longer than the 5-second health limit to wake; the backend log says `Database ping timed out` | Wait a few seconds; the page re-checks every 30 seconds |
+| `ERROR: This database is already set up` | `setup:client` has run on this database before | Log in with the existing Admin. On a throwaway dev or staging database only, rebuild it (section 9) and run it again |
+| Lost the temporary password before the first login | It is shown only once and stored only as a hash | On a throwaway database, rebuild it (section 9) and rerun `setup:client`. A `reset-password` command for real clients is planned (Task 2.9) |
+| `ERROR: --admin-username is required` (or similar) | A missing or invalid option | The message names the option; `npm run setup:client -- --help` shows the rules |
 | `EADDRINUSE` on port 4000 or 5173 | A previous dev server is still running | Stop it, or close the terminal running it |
 | GitHub asks which account to use on every push | More than one GitHub account is saved on this PC | Put the account in the remote: `git remote set-url origin https://aswin-dev-fsd@github.com/aswin-dev-fsd/department_store_v1.git` |
 | `npm audit` reports 4 moderate issues | A known esbuild issue inside the dev tool `drizzle-kit`; not used at runtime | Accepted (Task 7.2). Never run `npm audit fix --force`: it downgrades drizzle-kit |

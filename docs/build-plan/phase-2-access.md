@@ -179,20 +179,29 @@
 
 **Read first:** overview §7.1 step 2, §3 "Account lifecycle".
 
-**Files:** `backend/src/scripts/setup-client.ts`, `backend/src/scripts/setup-client.test.ts`; root script `setup:client`
+**Files:**
+- `backend/src/scripts/setup-client.ts` (logic, exported and tested) and `setup-client.cli.ts` (the thin executable) + tests
+- `backend/src/lib/temporary-password.ts` + test — reused by Task 2.9
+- `shared/src/schemas/users.ts` + test — `usernameSchema`, `fullNameSchema`, extended in Task 2.9
+- `backend/src/modules/users/users.model.ts`, `backend/src/modules/settings/settings.model.ts` — the queries, extended in Tasks 2.8 and 2.9
+- Scripts: root and backend `setup:client`
 
 **Steps:**
 1. **Red** — tests on the exported function `setupClient({ businessName, adminUsername, adminFullName })`:
    - It creates the `client_settings` row and an Admin with `must_change_password = true`, and returns a temporary password.
-   - A second run refuses with a clear message and changes nothing.
+   - A second run refuses with a clear message and changes nothing — also when two runs start at the same moment.
 2. **Green** — implement:
-   - The temporary password is 12+ random characters.
+   - The temporary password is 16 random characters without look-alikes.
    - The CLI wrapper takes `--business-name`, `--admin-username`, `--admin-name` and prints the temporary password **once** — never logged anywhere else.
-   - Write an audit row.
+   - Write audit rows (`client_settings.create`, `user.create`; no actor, no password).
+3. **Notes from Task 2.7:**
+   - The audit redaction hid `mustChangePassword` (its name contains "password"), so password-change rows had lost their before/after values. Fixed: true/false values are never redacted. The Task 2.5 password-change test now asserts the values.
+   - Verification ran on the **test** database, with the password masked, so no credential entered the chat. The user runs the script on the dev database (and on staging) in their own terminal — commands in `docs/dev-setup.md`.
 
 **Done when:**
-- [ ] The tests pass
-- [ ] `npm run setup:client -- --business-name "Demo Stores" --admin-username admin --admin-name "Admin"` works on the dev database
+- [x] The tests pass
+- [x] `npm run setup:client -- --business-name "Demo Stores" --admin-username admin --admin-name "Admin"` works (checked on the test database from Git Bash and PowerShell)
+- [ ] The user has run it on their dev database *(not blocking)*
 
 **Commit:** `feat(setup): add setup-client script for the first admin`
 
@@ -233,8 +242,10 @@
 **Read first:** overview §3 (mapping, account lifecycle), §8.
 
 **Files:**
-- `shared/src/schemas/users.ts`
-- `backend/src/modules/users/users.{routes,controller,service,test}.ts`
+- `shared/src/schemas/users.ts` — already holds `usernameSchema` and `fullNameSchema` (Task 2.7); add the create/edit schemas
+- `backend/src/modules/users/users.{routes,controller,service,test}.ts`, and extend `users.model.ts` (already has `countUsers`, `insertUser`)
+- Reuse `generateTemporaryPassword` from `backend/src/lib/temporary-password.ts`
+- `backend/src/scripts/reset-password.ts` + `.cli.ts` + test, root script `reset-password`
 
 **Steps:**
 1. **Red** — tests:
@@ -245,11 +256,13 @@
    - `PUT /admin/users/:id/branches`: only for cashiers; only active branches; replaces the whole mapping.
    - Audit rows are written, and contain no passwords.
 2. **Green** — implement.
+3. **Operator recovery:** if the only Admin loses their password there is no one to reset it, and `setup:client` refuses to run again. Add `npm run reset-password -- --username <name>`, built like `setup-client` (logic + thin CLI): sets a new temporary password (printed once), sets `must_change_password`, ends that user's sessions, writes an audit row. Test it, and document it in `docs/dev-setup.md`.
 
 **Done when:**
 - [ ] All tests pass
+- [ ] A lost Admin password can be recovered with `reset-password`
 
-**Commit:** `feat(admin): add user management and branch mapping`
+**Commit:** `feat(admin): add user management, branch mapping and reset-password script`
 
 ---
 
@@ -279,6 +292,7 @@
 **Done when:**
 - [ ] check-types and build pass
 - [ ] Manual check: admin login; cashier login with one branch; with two branches (picker); forced password change; logout
+- [ ] **On staging**, the user logs in at https://dept-store-staging.vercel.app with an Admin created by running `setup:client` against the staging database (commands in `docs/dev-setup.md`), then reloads the page and is still logged in. That proves the httpOnly cookie survives Vercel's `/api` rewrite, which Task 2.5 couldn't check without a user. The user types the password; it never goes into the chat.
 
 **Commit:** `feat(frontend): add login, branch picker and route guards`
 
@@ -313,5 +327,5 @@ Agent: follow the checkpoint steps in `README.md`.
 - [ ] Create two branches and two cashiers; map one cashier to both branches
 - [ ] Log in as each cashier: the single-branch cashier goes straight in; the other sees the picker
 - [ ] Deactivate a cashier while they're logged in: their next action logs them out
-- [ ] Confirm the (proposed) items listed in the summary: 12-hour sessions, forced password change after a reset, minimum password length 8, bcrypt cost 12 (login ≈ 2 s on Render Free)
+- [ ] Confirm the (proposed) items listed in the summary: 12-hour sessions, forced password change after a reset, minimum password length 8, bcrypt cost 12 (login ≈ 2 s on Render Free), username rule (3–32 characters: lowercase letters, digits, `.` `_` `-`)
 - [ ] Check the `ip` recorded for failed logins on staging is your own public IP (query in `progress.md`, Task 2.5); if not, `TRUST_PROXY` must change

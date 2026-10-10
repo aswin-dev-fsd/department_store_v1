@@ -28,11 +28,14 @@ Project rules for this repo. They sit on top of `D:\DreamLand\AGENTS.md`; where 
 
 ```
 shared/      zod schemas + TS types: the API contract used by backend and frontend
-database/    Drizzle schema, migrations, seeds, setup:client script
+database/    Drizzle schema, migrations, the database client
 backend/
   src/modules/<feature>/<feature>.{routes,controller,service,model,schema,test}.ts
              model = database queries only, named as actions (insertX, findX); rules live in the service
-  src/lib/   response, errors, branch-scoped query helper
+  src/lib/   response, errors, audit, temporary passwords, branch-scoped query helper
+  src/scripts/ operator CLIs (setup-client, later reset-password and the dev seed): <name>.ts holds
+             the logic (exported, tested); <name>.cli.ts is the thin executable. A generated
+             credential is printed once to stdout and never logged or stored
 frontend/    React + Vite app
 docs/        decisions, plans, future plans
 ```

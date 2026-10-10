@@ -154,7 +154,10 @@ department_store_v1/
 | `src/deps.ts` | `AppDeps` — what routes need from outside (today: `db`). Passed in, so tests supply a real test DB or a fake |
 | `src/db.ts` | The process-wide pool: `createDb(env.DATABASE_URL)` (max 10 connections) |
 | `src/routes.ts` | Mounts every module's router under `/api/v1` |
-| `src/modules/<feature>/` | One folder per feature: `routes` → `controller` (req/res only) → `service` (logic) + tests |
+| `src/modules/<feature>/` | One folder per feature: `routes` → `controller` (req/res only) → `service` (logic) → `model` (database queries only) + tests |
+| `src/scripts/` | Operator command-line tasks. `<name>.ts` holds the logic (exported and tested), `<name>.cli.ts` is the thin executable, run with `npm run <name>`. Today: `setup-client` (see below) |
+
+**`setup:client`** creates a new client's `client_settings` row and its first Admin, in one transaction. The Admin gets a 16-character temporary password (letters and digits without look-alikes, from `crypto.randomInt`) which the script prints once to the terminal; the database holds only its bcrypt hash and `must_change_password` is set. Two audit rows are written (`client_settings.create`, `user.create`, no actor). It refuses, changing nothing, if any user or settings exist, even when two runs start together (an atomic insert decides the winner). It writes to `DATABASE_URL`, so for staging a variable set in the operator's terminal overrides `.env`; commands are in `docs/dev-setup.md`.
 
 ### 5.2 Middleware order (every request)
 
@@ -288,7 +291,7 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Logs | secrets redacted; no request bodies | compact request lines (Task 7.2) |
 | Proxies | `trust proxy` configured | real-IP check via audit IPs (Task 2.5) |
 | Auth | Login, logout, me, select-branch, change-password (§5.4); bcrypt cost 12, 72-byte limit, timing-safe for unknown usernames; 32-byte tokens stored as SHA-256; httpOnly SameSite=lax cookie; forced password change enforced by the server. Verified: a real login leaves neither password nor token in the logs (cookies show as `[redacted]`) | login rate limit (Task 7.1) |
-| Audit | `logAudit` in the same transaction as each change; login, failed login, logout, branch switch, password change (and failed change) all audited | every later write (D-30) |
+| Audit | `logAudit` in the same transaction as each change; login, failed login, logout, branch switch, password change (and failed change), and the setup of the client and first Admin are all audited. Redaction hides fields named like password / token / secret / hash, but leaves true/false values visible, so a flag such as `mustChangePassword` still shows what changed (an earlier version hid it; found and fixed in Task 2.7) | every later write (D-30) |
 | Branch isolation | `activeBranchId(req)` on every branch-owned query; access ends immediately on unmapping or branch deactivation | — |
 | Cross-site request forgery | Three layers: the session cookie is `SameSite=lax`; the API reads only `application/json` bodies, which a foreign site can't send without a CORS preflight; and the preflight is refused for any origin but ours. Tested (`auth.routes.test.ts`: text/plain and form bodies → 422, no cookie; foreign-origin preflight gets no allow-origin) and re-checked on staging through Vercel | one more pass in Task 7.2 |
 | Abuse | — | login rate limit (Task 7.1) |
@@ -378,6 +381,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | Render's port-detection probe (`HEAD /`) logs a 404 warning on each deploy | cosmetic | Ignore, or answer `/` quietly (Task 7.2) |
 | Graceful shutdown not yet observed (Windows can't send SIGTERM) | unverified behaviour | Check Render logs for `Shutting down` on the next deploy |
 | `req.ip` behind Vercel + Render not yet observed | rate limiting (Task 7.1) and audit IPs depend on it. Render sits behind Cloudflare, so there may be three proxy hops, not two; with `TRUST_PROXY=2` every user would then appear as Vercel's address and share one rate limit | Read the `ip` of the staging failed-login audit rows (query in `progress.md`, Task 2.5): it must be the caller's own public IP. If not, set `TRUST_PROXY=3` |
+| A lost Admin password has no recovery command yet: `setup:client` refuses to run twice | a single Admin who loses the temporary password before first login is locked out (on throwaway databases: rebuild) | `reset-password` script, Task 2.9 |
 | Login takes about 2 s on Render Free (median 2.08 s through Vercel, 1.6–2.4 s; ~0.4 s on the dev PC) | slow-feeling login on the free staging CPU (0.1 CPU); bcrypt cost 12 is deliberate | Decide at Checkpoint 2: keep 12 (production hardware will be faster), or make the cost a setting |
 | Failed logins store the attempted username in `audit_logs` | someone who types their password into the username box would have it stored | Decide in Task 7.2: keep as is (useful for spotting attacks), or store only a hash for usernames that don't exist |
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |

@@ -12,6 +12,7 @@ export {
   type MeResponse,
   type SelectBranchInput,
 } from './schemas/auth.js';
+export { fullNameSchema, USERNAME_PATTERN, usernameSchema } from './schemas/users.js';
 export { formatPaise, rupeesToPaise } from './money.js';
 export {
   can,
