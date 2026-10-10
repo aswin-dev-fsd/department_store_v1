@@ -1,0 +1,7 @@
+# Hand-written docs: Prettier would re-pad every markdown table on each edit,
+# turning one-cell changes into whole-table diffs
+*.md
+
+# Generated files (Prettier also skips everything in .gitignore)
+package-lock.json
+database/migrations/
