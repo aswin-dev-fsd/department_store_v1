@@ -5,6 +5,8 @@
   "description": "Express API: billing, purchases, stock",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
     "build": "tsc -p tsconfig.build.json",
     "check-types": "tsc -p tsconfig.json",
     "test": "vitest run"
@@ -14,6 +16,7 @@
     "@ds/shared": "*",
     "cors": "2.8.6",
     "dotenv": "18.0.7",
+    "drizzle-orm": "0.45.4",
     "express": "5.3.0",
     "helmet": "8.3.0",
     "pino": "10.4.0",

@@ -1,4 +1,4 @@
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from './schema/index.js';
 
@@ -30,11 +30,20 @@ export interface CreateDbOptions {
   max?: number;
 }
 
+/** A Drizzle database bound to this project's schema. */
+export type Db = NodePgDatabase<typeof schema>;
+
+/** What createDb returns. Named so other packages can refer to it in their own types. */
+export interface DbHandle {
+  db: Db;
+  pool: pg.Pool;
+}
+
 /**
  * Create a pooled PostgreSQL connection wrapped in Drizzle. The caller passes the URL
  * (this package never reads env vars for the app) and must call `pool.end()` when done.
  */
-export function createDb(url: string, options: CreateDbOptions = {}) {
+export function createDb(url: string, options: CreateDbOptions = {}): DbHandle {
   const pool = new pg.Pool({
     ...connectionConfig(url),
     max: options.max ?? 10,
@@ -44,8 +53,6 @@ export function createDb(url: string, options: CreateDbOptions = {}) {
   const db = drizzle({ client: pool, schema });
   return { db, pool };
 }
-
-export type Db = ReturnType<typeof createDb>['db'];
 
 /** Describe a connection for output: host and database name only — never the password. */
 export function describeConnection(url: string): string {

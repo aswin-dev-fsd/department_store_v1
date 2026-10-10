@@ -353,6 +353,7 @@
    - The Vercel URL shows "API: ok".
    - `https://<vercel-url>/api/v1/health` returns the envelope.
    - Pushing a trivial change to `main` redeploys both automatically.
+   - During that redeploy, Render's log shows `Shutting down` from the old instance (graceful SIGTERM handling; Task 1.6 couldn't test this on Windows).
 8. Record both URLs and the settings above in `docs/dev-setup.md` → Staging. No secrets.
 
 **Known limits of free staging:**

@@ -4,6 +4,7 @@ export {
   describeConnection,
   type CreateDbOptions,
   type Db,
+  type DbHandle,
 } from './client.js';
 export { runMigrations } from './migrator.js';
 export * as schema from './schema/index.js';

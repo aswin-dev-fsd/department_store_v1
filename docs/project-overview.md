@@ -579,6 +579,8 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | Code | HTTP | When |
 |---|---|---|
 | `VALIDATION_ERROR` | 422 | Request fails its zod schema |
+| `INVALID_JSON` | 400 | Request body isn't valid JSON |
+| `PAYLOAD_TOO_LARGE` | 413 | JSON body over 1 MB |
 | `UNAUTHORIZED` | 401 | No session, or the session has expired |
 | `FORBIDDEN` | 403 | Missing permission, or the branch isn't assigned |
 | `NOT_FOUND` | 404 | Record doesn't exist in the active branch |
