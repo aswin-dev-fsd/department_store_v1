@@ -25,8 +25,8 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | 1.7 | Test database harness | DONE | 2026-10-10 | All backend tests run against the Neon test DB: 46 backend, 81 total, ~24 s (files run one at a time; Singapore round trips). Guard verified live: with TEST_DATABASE_URL set to the dev URL, or blank, the run aborts in global setup before any connection (exit 1). The guard compares host/port/db name and remembers the original dev URL across files (`DS_ORIGINAL_DATABASE_URL`). Neon wake: 3 tries × 5 s. Both DBs checked afterwards: no user tables (dev untouched, test clean). ESLint 10 `preserve-caught-error` → rethrow with `{ cause }`. Testing rule added to AGENTS.md. |
 | 1.8 | Frontend shell | DONE | 2026-10-10 | react 19.3.0, react-router-dom 7.18.4, @tanstack/react-query 5.104.1, vite 8.3.4, @vitejs/plugin-react 6.1.2, tailwindcss + @tailwindcss/vite 4.3.3. 9 tests (red → green), 90 total. `t()` keys are typed from `en.ts` (a misspelled key fails check-types, proven with `@ts-expect-error`); `{placeholders}` filled. `api` client: `/api/v1`, cookies on, unwraps the envelope, `ApiError` for error envelopes / NETWORK_ERROR / BAD_RESPONSE (e.g. Vercel's proxy-timeout page). Checked in the browser: "API: ok / Database: ok" through Vite's `/api` proxy, no console errors; backend stopped → "API: unreachable". Each status line now has its own colour. Build: 348 KB JS (109 KB gzip). `.claude/launch.json` added for the preview servers. |
 | 1.9 | Root scripts and dev setup guide | DONE | 2026-10-10 | Root `dev:backend`, `dev:frontend`, `build`, `verify` (the gate in one command); `docs/dev-setup.md` written. **Fresh-clone test:** deleted every node_modules and dist, then `npm ci` + `npm run verify` passed (exit 0) and `npm run build` produced all 4 outputs. **Two bugs found and fixed:** (1) starting both dev servers rebuilt the shared packages twice, which restarted the backend and raced on files → incremental package builds, proven both ways (a no-op rebuild leaves files untouched; a real change is rebuilt); re-checked live: one start, no restart. (2) A Neon wake-up longer than 5 s showed "Database: down" with no log → the timeout is now logged and adjustable; 2 new red → green tests. 92 tests. Log verbosity noted for Task 7.2. |
-| 1.10 | Staging deploy (Render + Vercel) | IN PROGRESS | 2026-10-10 | User chose Vercel + Render for dev/staging (D-31); production leans AWS (PD-03). Agent part done: `TRUST_PROXY` env + `app.set('trust proxy')`, new `GET /api/v1/health/live` (no DB call; for Render's health check and keep-awake pings, so Neon can sleep), 4 red → green tests, 96 total. Waiting on the user: Neon `dept-store-staging`, Render service, then `vercel.json` + Vercel project. |
-| 🛑 | Checkpoint 1 | TODO | | |
+| 1.10 | Staging deploy (Render + Vercel) | DONE | 2026-10-10 | Vercel + Render for dev/staging (D-31); production leans AWS (PD-03). Live: https://dept-store-staging.vercel.app → `/api/*` rewrite → https://dept-store-api-staging.onrender.com → Neon `dept-store-staging`. Verified: the user's browser shows "API: ok / Database: ok"; `/health` database ok via Vercel; deep links 200 (SPA fallback); unknown API route 404 JSON; HSTS + nosniff; CORS allows the Vercel origin and refuses others; auto-deploy on push for both (Vercel ~30 s, Render uptime reset). Added `/api/v1/health/live` (no DB), `TRUST_PROXY`, `frontend/vercel.json`, `npm ci --include=dev` (Render sets NODE_ENV=production at build). Not yet observed: graceful-shutdown log line, real `req.ip`. Keep-awake cron left to the user. `docs/architecture.md` written. |
+| 🛑 | Checkpoint 1 | WAITING FOR USER REVIEW | 2026-10-10 | See summary below |
 
 ## Phase 2 — Access
 
@@ -120,3 +120,29 @@ The agent updates this file after every task (protocol step 7). Status values: `
 ## Checkpoint summaries
 
 The agent adds one entry per checkpoint: what was built, number of tests, (proposed) items to confirm, known issues.
+
+### Checkpoint 1 — Foundation (2026-10-10)
+
+**Gate from a clean install:** every `dist/` deleted → `npm ci` → `npm run verify` (lint, format, types, tests) → `npm run build`: all passed.
+
+**Built:**
+- npm-workspaces monorepo: `shared`, `database`, `backend`, `frontend`, with root `verify` / `dev:*` / `build` / `db:*` scripts
+- Database package: Drizzle + pg, TLS pinned to verify-full with channel binding (TLS 1.3 verified live), migration runner, `db:check`
+- Backend: validated env, logger with redaction, typed errors, response envelope, Express app (helmet, CORS allow-list, 1 MB JSON, error handler), `/health` and `/health/live`, graceful shutdown
+- Test harness on a separate Neon test database, with a guard that refuses the dev database
+- Frontend: Vite + React + Tailwind shell, typed `t()` labels, typed API client, status page
+- Staging online: Vercel + Render + Neon (`docs/architecture.md`)
+- Docs: dev setup guide, architecture, decisions D-27 to D-31
+
+**Tests:** 96 (shared 23, database 12, backend 52, frontend 9).
+
+**(Proposed) items for the user to confirm:**
+
+| Item | Current value |
+|---|---|
+| Login session length | 12 hours (`SESSION_TTL_HOURS`) |
+| Health check database timeout | 5 seconds |
+| Largest JSON request | 1 MB |
+| Keep-awake ping (optional) | every 10 min, 06:00–24:00 IST, `/health/live`, cron-job.org |
+
+**Known issues:** no CI yet (deploys don't re-run the gate); verbose request logs and Render's `HEAD /` 404 warning (Task 7.2); graceful shutdown and real `req.ip` not yet observed on Render; npm audit 4 moderate (dev-only, accepted); Vercel Hobby is non-commercial (dev-only, accepted). Details: `docs/architecture.md` §14.

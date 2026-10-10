@@ -67,6 +67,8 @@ This overview gathers everything in one place. Each topic still has **one author
 | Features planned after v1 (FP-xx) | [future-plans.md](future-plans.md) |
 | Build phases, data model, API, packages | [implementation_plan.md](implementation_plan.md) |
 | Step-by-step build tasks and progress | [build-plan/README.md](build-plan/README.md), [build-plan/progress.md](build-plan/progress.md) |
+| Architecture **as built**: environments, deployment, request flow, packages, versions | [architecture.md](architecture.md) |
+| Setting up a machine, commands, troubleshooting | [dev-setup.md](dev-setup.md) |
 | Coding rules for developers and AI agents | `AGENTS.md` (project root), on top of `D:\DreamLand\AGENTS.md` |
 | This overview | `docs/project-overview.md` |
 
@@ -119,6 +121,8 @@ Code checks **permissions**, not role names. Adding a role means adding a row to
 ---
 
 ## 4. Architecture
+
+> This section is the original design. What is actually built and deployed — environments, the Vercel + Render staging topology, middleware order, versions — is in **[architecture.md](architecture.md)**, which wins where the two differ.
 
 ### 4.1 System diagram
 

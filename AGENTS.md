@@ -21,7 +21,8 @@ Project rules for this repo. They sit on top of `D:\DreamLand\AGENTS.md`; where 
 - **`docs/pending-decisions.md`** — before touching GST, batch/expiry, receipt printing, hosting, or any business rule. Build Decided rows as written; leave Pending items unbuilt.
 - **`docs/future-plans.md`** — before adding a feature. Anything listed there is outside v1.
 - **`docs/implementation_plan.md`** — the current phase, its scope, and the data model.
-- **`docs/project-overview.md`** — orientation: architecture, workflows, API map, glossary.
+- **`docs/project-overview.md`** — orientation: workflows, API map, glossary.
+- **`docs/architecture.md`** — before touching hosting, deploy settings, packages, middleware order or env vars: the system as built. Update it in the same change.
 
 ## Layout
 

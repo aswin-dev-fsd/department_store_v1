@@ -136,6 +136,21 @@ All run from the repo root.
 | GitHub asks which account to use on every push | More than one GitHub account is saved on this PC | Put the account in the remote: `git remote set-url origin https://aswin-dev-fsd@github.com/aswin-dev-fsd/department_store_v1.git` |
 | `npm audit` reports 4 moderate issues | A known esbuild issue inside the dev tool `drizzle-kit`; not used at runtime | Accepted (Task 7.2). Never run `npm audit fix --force`: it downgrades drizzle-kit |
 
-## 11. Staging
+## 11. Staging (dev-only online copy — D-31)
 
-Filled in by Task 1.10 (Render + Vercel): URLs and settings, no secrets.
+```
+Browser → Vercel (web app + /api/* rewrite) → Render, Singapore (API) → Neon, Singapore (staging DB)
+```
+
+| Piece | Address | Settings |
+|---|---|---|
+| Web app | https://dept-store-staging.vercel.app | Vercel project `dept-store-staging` (Hobby, dev-only). Root Directory `frontend` · Install `cd .. && npm ci --include=dev` · Build `cd .. && npm run build:packages && npm run build -w @ds/frontend` · Output `dist` · Node 24.x |
+| API | https://dept-store-api-staging.onrender.com | Render Web Service `dept-store-api-staging`, Singapore, Free. Build `npm ci --include=dev && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate` · Start `node backend/dist/server.js` · Health check path `/api/v1/health/live` · Auto-deploy on commit |
+| Database | Neon project `dept-store-staging` | AWS Singapore, Postgres 18. Its connection string lives only in Render's environment variables |
+
+**Render environment variables:** `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` (secret), `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2`.
+
+- **Deploys:** every push to `main` redeploys both automatically (Vercel ~30 s, Render ~1–2 min). Migrations run during Render's build.
+- **Changing the API address:** edit the rewrite in `frontend/vercel.json` and Render's `CORS_ORIGIN` together.
+- **Free-tier sleep:** Render sleeps after 15 idle minutes. The first request then takes 30–60 s and can exceed Vercel's 30 s proxy limit (`ROUTER_EXTERNAL_TARGET_ERROR`); reload once.
+- **Optional keep-awake:** cron-job.org → `https://dept-store-api-staging.onrender.com/api/v1/health/live`, schedule `*/10 6-23 * * *`, time zone Asia/Kolkata. It hits the live endpoint, so Neon still sleeps and stays within its free hours.
