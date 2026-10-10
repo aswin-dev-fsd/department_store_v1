@@ -182,3 +182,19 @@ Browser → Vercel (web app + /api/* rewrite) → Render, Singapore (API) → Ne
 - **Changing the API address:** edit the rewrite in `frontend/vercel.json` and Render's `CORS_ORIGIN` together.
 - **Free-tier sleep:** Render sleeps after 15 idle minutes. The first request then takes 30–60 s and can exceed Vercel's 30 s proxy limit (`ROUTER_EXTERNAL_TARGET_ERROR`); reload once.
 - **Optional keep-awake:** cron-job.org → `https://dept-store-api-staging.onrender.com/api/v1/health/live`, schedule `*/10 6-23 * * *`, time zone Asia/Kolkata. It hits the live endpoint, so Neon still sleeps and stays within its free hours.
+
+### Check that the server sees real visitor IPs
+
+`TRUST_PROXY` is the number of proxies between the visitor and the app. If it is too low, the audit log records a proxy's address instead of the visitor's, and a per-IP login limit (Task 7.1) would treat many visitors as one. Check it after any change to the hosting setup and for every new environment:
+
+1. On the site, try to log in with a wrong password (any username).
+2. In that environment's Neon SQL Editor, run:
+
+```sql
+select id, ip, after->>'username' as username
+from audit_logs where action = 'auth.login_failed' order by id desc limit 5;
+```
+
+3. The `ip` must be **your own public IP** (search "what is my IP"). A Cloudflare, Vercel or private address means the number is too low.
+
+On 2026-10-10 this check **failed** on staging: every row held a Cloudflare address, so `TRUST_PROXY=2` was too low. The current value and how it was chosen are recorded in `architecture.md` §14.

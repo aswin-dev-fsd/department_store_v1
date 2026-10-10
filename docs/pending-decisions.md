@@ -51,6 +51,7 @@ Whichever is chosen, Task 7.4 still keeps our own daily `pg_dump` backups outsid
 - **Production plans:** Render **Starter or above** (the free plan sleeps after 15 idle minutes); Vercel **Pro** (Hobby forbids commercial use, including paid client work); Neon paid with scale-to-zero off.
 - **No PM2 or Nginx:** Render runs the process and terminates TLS. This replaces DreamLand §3's PM2 for this project. Tasks 7.4 (backups need a scheduler, e.g. a Render Cron Job or a GitHub Actions schedule) and 7.5 (deploy kit) must be rewritten for this platform once it's decided.
 - **Proxy timeout:** Vercel's rewrite limit is 30 seconds per request. All API calls are short; check the CSV import (Task 3.7) against it.
+- **Client IP depends on the proxy chain:** `TRUST_PROXY` must equal the number of proxies between the visitor and the app, and be re-verified for every environment (staging's chain Vercel → Cloudflare → Render needs more than 2; AWS will differ). In production the origin must be reachable only through its front proxy, otherwise visitors can spoof their IP. Procedure: `dev-setup.md` §11; history: `architecture.md` §14.
 - **Simpler alternative to weigh:** Express serves the built frontend from the same Render service. That gives one service, one domain and no proxy hop, avoids Vercel's cost and 30-second limit, but loses Vercel's CDN, which matters little for an in-store app.
 
 Fixed requirement: production must run **PostgreSQL 18**. Dev and test run 18.6 on Neon (checked 2026-10-10, Task 1.4).

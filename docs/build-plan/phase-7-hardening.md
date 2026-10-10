@@ -17,6 +17,8 @@
 **Steps:**
 1. Install `express-rate-limit`.
 2. **Red** — tests: after **(proposed)** 10 failed logins in 15 minutes for one IP + username → 429 `TOO_MANY_ATTEMPTS` in the standard envelope. A successful login isn't counted. Other users aren't affected.
+   - Also count failures per username across all IPs with a higher cap (proposed: 30 per hour). A visitor's IP can be spoofed whenever the origin is reachable directly (`architecture.md` §14), so the IP limit alone is not enough.
+   - The IP limit relies on `req.ip`, which relies on a **verified** `TRUST_PROXY` for that environment (procedure: `dev-setup.md` §11). Staging was found at one hop too few in Task 2.5.
 3. **Green** — implement. Configure Express `trust proxy` for running behind Nginx.
 
 **Done when:**
