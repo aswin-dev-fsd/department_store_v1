@@ -14,15 +14,19 @@
     "frontend"
   ],
   "scripts": {
+    "dev:backend": "npm run build:packages && npm run dev -w @ds/backend",
+    "dev:frontend": "npm run build:packages && npm run dev -w @ds/frontend",
+    "build": "npm run build:packages && npm run build -w @ds/backend && npm run build -w @ds/frontend",
     "build:packages": "npm run build -w @ds/shared -w @ds/database",
-    "db:generate": "npm run db:generate -w @ds/database",
-    "db:migrate": "npm run db:migrate -w @ds/database --",
-    "db:check": "npm run db:check -w @ds/database --",
+    "verify": "npm run lint && npm run format:check && npm run check-types && npm test",
     "check-types": "npm run build:packages && npm run check-types --workspaces --if-present",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:generate": "npm run db:generate -w @ds/database",
+    "db:migrate": "npm run db:migrate -w @ds/database --",
+    "db:check": "npm run db:check -w @ds/database --"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

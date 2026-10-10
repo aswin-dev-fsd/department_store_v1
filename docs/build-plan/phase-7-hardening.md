@@ -38,6 +38,7 @@
    - CORS has no wildcard
    - Helmet headers present
    - No request bodies or secrets in the logs — a test captures log output during a login
+   - Request log lines are compact: id, method, URL, status, response time, user and branch — not every response header (noted in Task 1.9; today each line repeats all the helmet headers)
    - Sessions expire; expired sessions are cleaned up — add the cleanup on login, or as a daily task in the server
    - Deactivation ends sessions
    - Every write route has a permission check — a test lists all routes and checks each has `requirePermission`

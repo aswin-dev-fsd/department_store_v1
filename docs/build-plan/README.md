@@ -41,7 +41,7 @@ Follow these steps for every task, in order.
 3. **State the plan.** Before editing, write in chat: the task ID, the files you will create or change, and how you will verify. A few lines.
 4. **Red.** Where the task lists tests, write them first and run them. They must fail for the expected reason.
 5. **Green.** Implement until those tests pass. Change only the files the task names, plus their tests. If a change elsewhere is needed, report it rather than making it.
-6. **Run the gate.** `npm run check-types`, `npm run lint` (from Task 1.3 on), `npm test` — all green. Then confirm each "Done when" item by actually running or checking it.
+6. **Run the gate.** `npm run verify` (lint, format check, type check, all tests; available from Task 1.9) — all green. Then confirm each "Done when" item by actually running or checking it.
 7. **Record.** In `progress.md`, set the task to DONE with today's date and a one-line note (anything surprising, any follow-up). If a doc is now out of date, update it in the same change.
 8. **Commit.** One commit per task, using the message in the task (DreamLand §10 format).
 9. **Report and stop.** In chat: what was done, test results, and anything the user should know.
@@ -57,7 +57,7 @@ Follow these steps for every task, in order.
 
 A checkpoint ends every phase; Phase 5 has an extra one mid-way. At a checkpoint the agent:
 
-1. Runs the full gate from a clean install: `npm ci`, then `npm run build:packages`, `npm run check-types`, `npm run lint`, `npm test`.
+1. Runs the full gate from a clean install: delete every `dist/`, then `npm ci` and `npm run verify`.
 2. Writes a phase summary in `progress.md`: what was built, the number of tests, **(proposed)** items that need the user's confirmation, and known issues.
 3. Stops. The next phase starts only when the user says go.
 

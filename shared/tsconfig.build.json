@@ -3,7 +3,11 @@
   "compilerOptions": {
     "noEmit": false,
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    // Skip writing unchanged output: a no-op rebuild must not touch dist/, or the
+    // backend's watcher restarts and parallel dev starts race on the same files
+    "incremental": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "exclude": ["src/**/*.test.ts"]
 }

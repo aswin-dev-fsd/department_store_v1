@@ -3,22 +3,34 @@ import type { HealthStatus } from '@ds/shared';
 import { sql } from 'drizzle-orm';
 import { logger } from '../../lib/logger.js';
 
-// Answer health checks promptly even when the database hangs
+// Answer health checks promptly even when the database hangs (or a Neon free-plan
+// database is still waking up)
 const PING_TIMEOUT_MS = 5_000;
 
+export interface CheckHealthOptions {
+  /** How long to wait for the database before reporting it down. */
+  timeoutMs?: number;
+}
+
 /** Report that the API is up, and whether the database answers in time. */
-export async function checkHealth(db: Db): Promise<HealthStatus> {
+export async function checkHealth(
+  db: Db,
+  { timeoutMs = PING_TIMEOUT_MS }: CheckHealthOptions = {},
+): Promise<HealthStatus> {
   return {
     status: 'ok',
     uptimeSeconds: Math.round(process.uptime()),
-    database: (await pingDatabase(db)) ? 'ok' : 'down',
+    database: (await pingDatabase(db, timeoutMs)) ? 'ok' : 'down',
   };
 }
 
-async function pingDatabase(db: Db): Promise<boolean> {
+async function pingDatabase(db: Db, timeoutMs: number): Promise<boolean> {
   let timer: NodeJS.Timeout | undefined;
   const timedOut = new Promise<false>((resolve) => {
-    timer = setTimeout(() => resolve(false), PING_TIMEOUT_MS);
+    timer = setTimeout(() => {
+      logger.warn({ timeoutMs }, 'Database ping timed out');
+      resolve(false);
+    }, timeoutMs);
   });
   const ping = db.execute(sql`select 1`).then(
     () => true,
