@@ -28,7 +28,14 @@ describe('createLogger', () => {
       password: 'top-secret',
       user: { password: 'nested-secret', name: 'Ravi' },
       token: 'session-token',
-      req: { headers: { cookie: 'ds_session=abc', authorization: 'Bearer xyz' } },
+      req: {
+        headers: {
+          cookie: 'ds_session=abc',
+          authorization: 'Bearer xyz',
+          // Vercel adds this to requests it proxies (seen in Render's logs, Task 2.5)
+          'x-vercel-proxy-signature': 'Bearer vercel-signature-value',
+        },
+      },
     });
     const text = JSON.stringify(lines[0]);
     for (const secret of [
@@ -37,6 +44,7 @@ describe('createLogger', () => {
       'session-token',
       'ds_session=abc',
       'Bearer xyz',
+      'vercel-signature-value',
     ]) {
       expect(text).not.toContain(secret);
     }

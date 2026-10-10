@@ -10,6 +10,8 @@ const REDACT_PATHS = [
   '*.token',
   'req.headers.cookie',
   'req.headers.authorization',
+  // Added by Vercel to requests it proxies to us; a bearer-style value, so keep it out of logs
+  'req.headers["x-vercel-proxy-signature"]',
   'res.headers["set-cookie"]',
 ];
 
