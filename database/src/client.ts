@@ -33,6 +33,12 @@ export interface CreateDbOptions {
 /** A Drizzle database bound to this project's schema. */
 export type Db = NodePgDatabase<typeof schema>;
 
+/** The handle passed to a `db.transaction(async (tx) => …)` callback. */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
+
+/** The database or an open transaction: services accept either, so callers decide the scope. */
+export type DbOrTx = Db | Tx;
+
 /** What createDb returns. Named so other packages can refer to it in their own types. */
 export interface DbHandle {
   db: Db;
