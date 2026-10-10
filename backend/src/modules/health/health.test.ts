@@ -1,11 +1,11 @@
 import { createDb } from '@ds/database';
 import request from 'supertest';
 import { afterAll, describe, expect, it } from 'vitest';
+import { createTestDb } from '../../../test/helpers/db.js';
 import { createApp } from '../../app.js';
 import { env } from '../../config/env.js';
 
-// Task 1.7 points this at TEST_DATABASE_URL through the test harness
-const live = createDb(env.DATABASE_URL, { max: 2 });
+const live = createTestDb();
 // Nothing listens on port 1, so every query fails fast
 const unreachable = createDb('postgresql://nobody:nothing@127.0.0.1:1/none', { max: 1 });
 

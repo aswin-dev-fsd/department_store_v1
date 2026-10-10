@@ -77,4 +77,5 @@ These protect money and stock. Every change keeps them true.
 
 - Plan first per DreamLand §1; plans live in `docs/`.
 - When the user settles a decision in chat, update `docs/pending-decisions.md` (and `docs/future-plans.md` if scope moves) in the same change, then the matching section of `docs/project-overview.md`.
+- Database tests get their connection from `createTestDb()` and clean up with `resetDb()` (`backend/test/helpers/db.ts`). Both refuse to run outside the harness, which points `DATABASE_URL` at `TEST_DATABASE_URL`.
 - Done means `npm run check-types` and `npm test` pass across all workspaces, every new route has a Supertest test, and code that moves stock or allocates bill numbers has a concurrency test.

@@ -222,7 +222,8 @@
 **Files:**
 - `backend/test/global-setup.ts` — runs migrations on `TEST_DATABASE_URL` once, using `runMigrations` from `@ds/database`. It returns `false` and does nothing until Task 2.1 generates the first migration.
 - `backend/test/setup-env.ts` — sets `process.env.DATABASE_URL = TEST_DATABASE_URL` before any app import
-- `backend/test/helpers/db.ts` — `resetDb()` truncates every app table (`RESTART IDENTITY CASCADE`), skipping Drizzle's migrations table
+- `backend/test/helpers/db.ts` — `createTestDb()` (pool of 20) and `resetDb(db)`, which truncates every `public` table (`RESTART IDENTITY CASCADE`). Drizzle's journal lives in the `drizzle` schema and is kept.
+- Added during the build: `backend/test/helpers/test-env.ts` (`resolveTestDatabaseUrl` guard, which compares host + port + database name, not raw URLs), `test-env.test.ts`, and `harness.test.ts`
 - `backend/vitest.config.ts`
 
 **Steps:**
