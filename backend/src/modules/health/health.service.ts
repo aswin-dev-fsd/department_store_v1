@@ -1,5 +1,5 @@
 import type { Db } from '@ds/database';
-import type { HealthStatus } from '@ds/shared';
+import type { HealthStatus, LivenessStatus } from '@ds/shared';
 import { sql } from 'drizzle-orm';
 import { logger } from '../../lib/logger.js';
 
@@ -10,6 +10,11 @@ const PING_TIMEOUT_MS = 5_000;
 export interface CheckHealthOptions {
   /** How long to wait for the database before reporting it down. */
   timeoutMs?: number;
+}
+
+/** Report only that the API process is up — no database call, so Neon can sleep. */
+export function checkLiveness(): LivenessStatus {
+  return { status: 'ok', uptimeSeconds: Math.round(process.uptime()) };
 }
 
 /** Report that the API is up, and whether the database answers in time. */

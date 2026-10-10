@@ -43,7 +43,9 @@ Status: Pending. Decide before go-live; the code doesn't depend on it. The user 
 
 Whichever is chosen, Task 7.4 still keeps our own daily `pg_dump` backups outside the provider.
 
-**Leaning (2026-10-10): frontend on Vercel, backend on Render.** Staging is set up in Task 1.10. What this choice implies:
+**Update (2026-10-10):** Vercel + Render is decided for **dev/staging only** (D-31). **Production is leaning towards AWS**, a different strategy to be planned before go-live. AWS has a **Mumbai** region (`ap-south-1`), so production app and database can both sit in India, which re-opens the Singapore-only constraint below. The notes that follow describe the staging setup.
+
+**Staging (Task 1.10): frontend on Vercel, backend on Render.** What this choice implies:
 - **One origin:** Vercel rewrites `/api/*` to Render, so session cookies stay first-party. A direct browser → Render call would be a blocked third-party cookie.
 - **Region:** Render's nearest region is **Singapore** (no India). The database must then also be in Singapore: Neon (current) or Supabase's Singapore region, *not* Supabase Mumbai. Each browser request crosses the India–Singapore link once; the database queries stay inside Singapore.
 - **Production plans:** Render **Starter or above** (the free plan sleeps after 15 idle minutes); Vercel **Pro** (Hobby forbids commercial use, including paid client work); Neon paid with scale-to-zero off.
@@ -96,4 +98,5 @@ To settle:
 | D-27 | Node.js version | Node.js 24 LTS (was PD-05). DreamLand §3 updated from Node 20, which reached end-of-life in April 2026. | 2026-10-10 |
 | D-28 | Dev and test databases | Neon: two free projects in Singapore (`aws-ap-southeast-1`), `dept-store-dev` and `dept-store-test`, using **direct** (not pooled) connection strings. Changed from Supabase on the same day because Supabase's free plan allows only 2 active projects; Neon's allows many. The production database stays under PD-03. | 2026-10-10 |
 | D-30 | Audit log scope | **Every change plus logins.** Every create, edit, delete and status change, plus login success and failure, logout and password changes, writes an `audit_logs` row: who, when, branch, action, entity, before/after (secrets redacted). Written in the same transaction as the change. Viewing data is not logged. | 2026-10-10 |
+| D-31 | Staging platform | **Dev/staging only:** frontend on Vercel, backend on Render (Singapore), database on a separate Neon project `dept-store-staging`, with Vercel rewriting `/api/*` to Render. Production uses a different strategy (AWS leaning; see PD-03). Render's health check and any keep-awake ping use `/api/v1/health/live`, which doesn't touch the database, so Neon can sleep and stays within its free compute hours. | 2026-10-10 |
 | D-29 | Extra packages | Approved: `@tailwindcss/vite`; `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `prettier`. `@types/*` packages for an approved package count as approved. | 2026-10-10 |

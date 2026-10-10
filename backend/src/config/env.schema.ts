@@ -27,6 +27,9 @@ const EnvSchema = z.object({
     .default(12),
   COOKIE_SECURE: booleanString.default(false),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  // Reverse proxies in front of the app (staging: Vercel + Render = 2). Makes req.ip the
+  // real client address — needed for rate limiting and audit IPs.
+  TRUST_PROXY: z.coerce.number().int().min(0).max(10).default(0),
 });
 
 export type Env = Omit<z.output<typeof EnvSchema>, 'CORS_ORIGIN'> & { CORS_ORIGIN: string[] };

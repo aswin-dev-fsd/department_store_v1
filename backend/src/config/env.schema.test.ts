@@ -15,7 +15,14 @@ describe('parseEnv — defaults', () => {
       SESSION_TTL_HOURS: 12,
       COOKIE_SECURE: false,
       LOG_LEVEL: 'info',
+      TRUST_PROXY: 0,
     });
+  });
+
+  it('parses TRUST_PROXY as a hop count and rejects nonsense', () => {
+    expect(parseEnv({ DATABASE_URL: DB, TRUST_PROXY: '2' }).TRUST_PROXY).toBe(2);
+    expect(() => parseEnv({ DATABASE_URL: DB, TRUST_PROXY: 'yes' })).toThrow(/TRUST_PROXY/);
+    expect(() => parseEnv({ DATABASE_URL: DB, TRUST_PROXY: '-1' })).toThrow(/TRUST_PROXY/);
   });
 
   it('parses numbers, booleans and comma-separated origins', () => {

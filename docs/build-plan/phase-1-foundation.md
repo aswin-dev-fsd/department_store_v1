@@ -333,7 +333,7 @@
    - Name `dept-store-api-staging`; Region **Singapore**; Runtime Node; Instance **Free** for staging.
    - Build command: `npm ci && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate`. Migrations run at build time because pre-deploy commands may not be on the free plan; production uses a pre-deploy command.
    - Start command: `node backend/dist/server.js`
-   - Health check path: `/api/v1/health`
+   - Health check path: `/api/v1/health/live`. It never touches the database; checking `/api/v1/health` here would keep Neon awake around the clock and exhaust its free compute hours (D-31).
    - Env vars: `NODE_ENV=production`, `DATABASE_URL=<staging string>`, `CORS_ORIGIN=<Vercel URL, set in step 6>`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2`. Render supplies `PORT`.
    - Deploy, then open `https://<service>.onrender.com/api/v1/health` → `ok`.
 4. **Agent:** `frontend/vercel.json`:
@@ -356,7 +356,11 @@
    - `https://<vercel-url>/api/v1/health` returns the envelope.
    - Pushing a trivial change to `main` redeploys both automatically.
    - During that redeploy, Render's log shows `Shutting down` from the old instance (graceful SIGTERM handling; Task 1.6 couldn't test this on Windows).
-8. Record both URLs and the settings above in `docs/dev-setup.md` → Staging. No secrets.
+8. **Keep-awake job (optional, user's choice):** on cron-job.org (free), request `https://<service>.onrender.com/api/v1/health/live` with schedule `*/10 6-23 * * *` in the **Asia/Kolkata** time zone. That's every 10 minutes from 06:00 to 23:50 IST, paused overnight. Confirm the "next runs" preview shows IST times.
+   - Why 10 minutes and the live endpoint: Render sleeps after 15 idle minutes and takes 30–60 s to wake, longer than Vercel's 30 s limit. Neon wakes in 1–3 s, so it is left to sleep.
+   - Budget: Render ~540 h/month of the 750 free hours. Keeping Neon awake as well (pinging every 4–5 min through the database) would need ~540 h against Neon's ~400 h free allowance at 0.25 CU, and Neon would shut the database off around day 22.
+   - Render staff discourage keep-awake pings on the free tier; acceptable for a dev-only staging copy.
+9. Record both URLs and the settings above in `docs/dev-setup.md` → Staging. No secrets.
 
 **Known limits of free staging:**
 - Render sleeps after 15 idle minutes. The first request can take 15–30+ seconds and may hit Vercel's 30-second proxy limit (`ROUTER_EXTERNAL_TARGET_ERROR`); reload once.
