@@ -86,7 +86,7 @@ All three Neon projects: AWS **Singapore** (`aws-ap-southeast-1`), **PostgreSQL 
 | Vercel rewrite instead of calling Render directly | A browser call to `onrender.com` from `vercel.app` would make the session cookie *third-party*, which browsers block. Through the rewrite it is first-party (SameSite `lax`) and no CORS preflight is needed |
 | Render and Neon in the **same region** (Singapore) | Each bill makes several database round trips; keeping them inside one region makes them ~1 ms instead of ~60 ms each. Only the browser ↔ Singapore hop crosses the sea, once per request |
 | Separate staging database | Local experiments and test runs never break the online copy; Render's migrations never touch the database you're developing on |
-| `TRUST_PROXY=2` | Two proxies (Vercel, Render) sit in front of Express; `req.ip` must come from `X-Forwarded-For` for rate limiting and audit IPs |
+| `TRUST_PROXY=4` | Four proxy hops sit between a Vercel visitor and Express (Render's local proxy, Render's internal proxy, Cloudflare, Vercel); `req.ip` must come from `X-Forwarded-For` for rate limiting and audit IPs. It was first set to 2, which recorded Cloudflare's address; see §3.4 |
 
 ### 3.3 Service settings
 
@@ -104,11 +104,35 @@ All three Neon projects: AWS **Singapore** (`aws-ap-southeast-1`), **PostgreSQL 
 | | Start Command | `node backend/dist/server.js` |
 | | Health check path | `/api/v1/health/live` (no database call — see §12) |
 | | Auto-deploy | On commit to `main` |
-| | Env vars | `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` *(secret)*, `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2` |
+| | Env vars | `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` *(secret)*, `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=4` *(change from 2 to 4 pending in Render, §3.4)* |
 | **Neon** project `dept-store-staging` | Region / version | AWS Singapore / Postgres 18 |
 | | Connection | direct (pooling off); string stored only in Render |
 
 `--include=dev` matters: Render applies `NODE_ENV=production` during the build too, and plain `npm ci` would then skip TypeScript and the other build tools.
+
+### 3.4 How the server finds the visitor's IP
+
+Express counts addresses from the app outward and `TRUST_PROXY` says how many to trust; `req.ip` is the first one it doesn't. Render's logs of two probe requests (2026-10-10) show what each proxy adds to `X-Forwarded-For`:
+
+| Position from the app | Via Vercel | Direct to Render |
+|---|---|---|
+| socket | `::1` (a proxy on Render's own machine) | `::1` |
+| 1 | `10.31.197.151` (Render internal) | `10.31.197.151` |
+| 2 | `172.70.143.249` (Cloudflare) | `172.68.147.162` (Cloudflare) |
+| 3 | `13.233.78.144` (Vercel, AWS Mumbai) | **the visitor** |
+| 4 | **the visitor** | |
+
+Running those exact headers through Express's own `proxy-addr`:
+
+| `TRUST_PROXY` | Via Vercel records | Direct to Render records |
+|---|---|---|
+| 2 (the first setting) | Cloudflare ✗ | Cloudflare ✗ |
+| 3 | Vercel's address ✗ | the visitor ✓ |
+| **4** | **the visitor ✓** | the visitor ✓ |
+
+The first setting, 2, matches what the staging audit rows showed (all Cloudflare). Staging therefore needs **4**, because real traffic comes through Vercel. The value must be measured again for every environment; the check is in `dev-setup.md` §11.
+
+Caveats: a hop count trusts whatever sits that far left, so anyone calling the Render address *directly* can add `X-Forwarded-For` entries and choose the IP recorded (accepted on dev-only staging; §14). Vercel is documented to overwrite a visitor's `X-Forwarded-For`, which would make the Vercel path safe; the re-check includes a made-up header to confirm it. Vercel also adds an `x-vercel-proxy-signature` header whose purpose I found no documentation for: it is treated as a secret and redacted from logs.
 
 ---
 
@@ -154,6 +178,7 @@ department_store_v1/
 | `src/deps.ts` | `AppDeps` — what routes need from outside (today: `db`). Passed in, so tests supply a real test DB or a fake |
 | `src/db.ts` | The process-wide pool: `createDb(env.DATABASE_URL)` (max 10 connections) |
 | `src/routes.ts` | Mounts every module's router under `/api/v1` |
+| `src/lib/` | Shared helpers: `response` (envelope), `errors` (typed errors), `logger` (pino, secrets redacted), `audit` (`logAudit` + redaction), `changes` (`changedFields`: what really changed, for before/after audit rows), `db-errors` (`isUniqueViolation`, looks through Drizzle's wrapper), `temporary-password`, `branch-scope` |
 | `src/modules/<feature>/` | One folder per feature: `routes` → `controller` (req/res only) → `service` (logic) → `model` (database queries only) + tests |
 | `src/scripts/` | Operator command-line tasks. `<name>.ts` holds the logic (exported and tested), `<name>.cli.ts` is the thin executable, run with `npm run <name>`. Today: `setup-client` (see below) |
 
@@ -208,8 +233,20 @@ Every response uses the envelope: `{ success, data | error, meta: { timestamp, v
 | `POST /api/v1/auth/select-branch` | yes | branch picker | `MeResponse` |
 | `POST /api/v1/auth/change-password` | yes | forced or voluntary change | `MeResponse`; ends the user's other sessions |
 | `POST /api/v1/auth/logout` | yes | logout | clears the cookie, deletes the session |
+| `GET /api/v1/admin/branches` | yes | Admin → Branches | `Page<Branch>` ordered by code, active and inactive alike; `?limit=20&offset=0&isActive=true\|false` |
+| `POST /api/v1/admin/branches` | yes | Admin → Branches | `Branch` (201). Code 1–3 letters, typed in any case, stored upper-case; a code already in use answers 400 `DUPLICATE_CODE` |
+| `PATCH /api/v1/admin/branches/:id` | yes | Admin → Branches | `Branch`. Any fields, or `isActive` to deactivate / reactivate |
+| `GET /api/v1/admin/settings` | yes | Admin → Settings | `ClientSettings` (business name, address, phone); 404 `NOT_SET_UP` before `setup:client` has run |
+| `PUT /api/v1/admin/settings` | yes | Admin → Settings | `ClientSettings`. Replaces the record: an omitted address or phone is cleared |
 
 **Login flow details:** an unknown username is still checked against a dummy bcrypt hash, so response time doesn't reveal which usernames exist. Every failure answers `INVALID_CREDENTIALS` and is audited with the attempted username, never the password. Until a temporary password is changed, every route except me / change-password / logout answers 403 `PASSWORD_CHANGE_REQUIRED`. Every login event writes an audit row in the same transaction (D-30).
+
+**Admin routes** (`/admin/*`) need the matching `admin:*` permission; a cashier gets 403. Their conventions apply to every later list and update route:
+- **Lists** take `?limit=20&offset=0` (limit 1–100; digits only, so `1e3` or `0x10` are refused) and answer a `Page`: `{ items, total, limit, offset }`.
+- **Updates** lock the row, change only the fields that really differ, and write one audit row with just those before/after values. A request that changes nothing writes nothing. Status changes get their own action (`branch.deactivate`, `branch.activate`); other edits are `branch.update`, `client_settings.update`.
+- **Duplicates** never surface as a 500: creates use `INSERT … ON CONFLICT DO NOTHING`, and edits translate the database's unique violation into `DUPLICATE_CODE`. Two simultaneous creates of one code give exactly one 201 and one 400.
+- **Deactivating a branch** takes effect on the very next request of any cashier working in it (Task 2.4's session check), so it needs no sign-out.
+- The settings API leaves the GSTIN out until GST is decided (PD-01). The branch-code lock once a branch has bills arrives in Task 5.6 (`TODO(5.6)` in `branches.service.ts`).
 
 ### 5.5 Configuration
 
@@ -225,7 +262,7 @@ All settings come from `backend/src/config/env.ts` (the only file that reads `pr
 | `SESSION_TTL_HOURS` | `12` | — |
 | `COOKIE_SECURE` | `false` | **must be `true`** |
 | `LOG_LEVEL` | `info` | — |
-| `TRUST_PROXY` | `0` | `2` on staging |
+| `TRUST_PROXY` | `0` | `4` on staging (§3.4); measure it for every new environment |
 
 An invalid setting stops the server at startup with a list of variable names — never their values.
 
@@ -380,7 +417,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | Request log lines repeat every response header | noisy Render logs | Compact serializers (Task 7.2) |
 | Render's port-detection probe (`HEAD /`) logs a 404 warning on each deploy | cosmetic | Ignore, or answer `/` quietly (Task 7.2) |
 | Graceful shutdown not yet observed (Windows can't send SIGTERM) | unverified behaviour | Check Render logs for `Shutting down` on the next deploy |
-| **Staging records Cloudflare's address, not the visitor's.** Observed in Task 2.5: all six failed-login audit rows, direct to Render and via Vercel, held Cloudflare addresses (checked against Cloudflare's published ranges), so `TRUST_PROXY=2` is too small | audit IPs are wrong, and a per-IP login limit (Task 7.1) would lump many visitors together by Cloudflare edge | Read the headers of a probe request in Render's logs, set `TRUST_PROXY` to the hop count that reaches the visitor, then re-check with the procedure in `dev-setup.md` §11. Re-verify for every environment (AWS too) |
+| **Staging records Cloudflare's address, not the visitor's.** Observed in Task 2.5: all six failed-login audit rows, direct to Render and via Vercel, held Cloudflare addresses (checked against Cloudflare's published ranges), so `TRUST_PROXY=2` is too small | audit IPs are wrong, and a per-IP login limit (Task 7.1) would lump many visitors together by Cloudflare edge | Cause found from Render's logs (§3.4): the right value is **4**. Waiting for it to be changed in Render's environment, then the re-check in `dev-setup.md` §11. Re-verify for every environment (AWS too) |
 | A hop count can be spoofed when the origin is reachable directly | anyone calling `…onrender.com` instead of the Vercel address can add `X-Forwarded-For` entries and pick the IP the server records | Accepted on dev-only staging. Production must reach the app only through its front proxy (network rules or a shared secret header), and Task 7.1 also limits failures per username |
 | A lost Admin password has no recovery command yet: `setup:client` refuses to run twice | a single Admin who loses the temporary password before first login is locked out (on throwaway databases: rebuild) | `reset-password` script, Task 2.9 |
 | Login takes about 2 s on Render Free (median 2.08 s through Vercel, 1.6–2.4 s; ~0.4 s on the dev PC) | slow-feeling login on the free staging CPU (0.1 CPU); bcrypt cost 12 is deliberate | Decide at Checkpoint 2: keep 12 (production hardware will be faster), or make the cost a setting |

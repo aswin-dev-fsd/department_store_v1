@@ -550,13 +550,13 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | GET | `/auth/me` | logged in | Current user, role, branches, active branch |
 | POST | `/auth/change-password` | logged in | Change own password |
 | POST | `/auth/select-branch` | logged in (cashier) | Set the active branch |
-| GET, POST | `/admin/branches` | `admin:branches` | List / create branches |
-| PATCH | `/admin/branches/:id` | `admin:branches` | Edit or deactivate a branch |
+| GET, POST | `/admin/branches` | `admin:branches` | List (`?limit&offset&isActive`) / create branches. Code: 1–3 letters, stored upper-case |
+| PATCH | `/admin/branches/:id` | `admin:branches` | Edit a branch, or deactivate / reactivate it with `isActive` |
 | GET, POST | `/admin/users` | `admin:users` | List / create users |
 | PATCH | `/admin/users/:id` | `admin:users` | Edit or deactivate a user |
 | POST | `/admin/users/:id/reset-password` | `admin:users` | Set a temporary password |
 | PUT | `/admin/users/:id/branches` | `admin:users` | Set a cashier's branches |
-| GET, PUT | `/admin/settings` | `admin:settings` | Client settings |
+| GET, PUT | `/admin/settings` | `admin:settings` | Client settings: business name, address, phone (GSTIN waits for PD-01). PUT replaces the record |
 | POST | `/admin/branches/:id/import` | `admin:import` | CSV import of items and opening stock |
 | GET | `/admin/reports/:report` | `report:all` | Any report, any branch (`?branchId=`) |
 | GET | `/items` | `stock:read` | Search (`?search=&categoryId=`) |
@@ -602,6 +602,8 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `PAYMENT_MISMATCH` | 400 | Payments don't equal the bill total |
 | `DOCUMENT_LOCKED` | 400 | Editing a posted purchase, or cancelling an already-cancelled document |
 | `DUPLICATE_INVOICE` | 400 | The vendor invoice was already entered |
+| `DUPLICATE_CODE` | 400 | A branch code that another branch already uses |
+| `NOT_SET_UP` | 404 | The client settings don't exist yet: `setup:client` has never run on this database |
 | `INTERNAL_ERROR` | 500 | Unexpected; the full stack is logged server-side |
 
 ---

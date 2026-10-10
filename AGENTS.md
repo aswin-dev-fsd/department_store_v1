@@ -85,4 +85,6 @@ These protect money and stock. Every change keeps them true.
 - Plan first per DreamLand §1; plans live in `docs/`.
 - When the user settles a decision in chat, update `docs/pending-decisions.md` (and `docs/future-plans.md` if scope moves) in the same change, then the matching section of `docs/project-overview.md`.
 - Database tests get their connection from `createTestDb()` and clean up with `resetDb()` (`backend/test/helpers/db.ts`). Both refuse to run outside the harness, which points `DATABASE_URL` at `TEST_DATABASE_URL`.
-- Done means `npm run check-types` and `npm test` pass across all workspaces, every new route has a Supertest test, and code that moves stock or allocates bill numbers has a concurrency test.
+- Test data comes from `backend/test/helpers/fixtures.ts` (`createUser`, `createBranch`, `mapUser`, `createClientSettings`, `cookieFor`), not hand-written INSERTs. Every write test asserts its audit row with `expectAudit`.
+- List routes validate with `paginationSchema` and answer a `Page<T>`. Update services lock the row, write and audit only the fields that really changed (`changedFields`), and skip a no-op. A duplicate is a typed error (`INSERT … ON CONFLICT DO NOTHING`, or `isUniqueViolation`), never a 500.
+- Done means `npm run verify` passes across all workspaces, every new route has a Supertest test, and code that moves stock or allocates bill numbers has a concurrency test. A test of a protection (permission, uniqueness, audit) is proven by removing the protection once and watching it fail.

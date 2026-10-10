@@ -176,7 +176,7 @@ Browser → Vercel (web app + /api/* rewrite) → Render, Singapore (API) → Ne
 | API | https://dept-store-api-staging.onrender.com | Render Web Service `dept-store-api-staging`, Singapore, Free. Build `npm ci --include=dev && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate` · Start `node backend/dist/server.js` · Health check path `/api/v1/health/live` · Auto-deploy on commit |
 | Database | Neon project `dept-store-staging` | AWS Singapore, Postgres 18. Its connection string lives only in Render's environment variables |
 
-**Render environment variables:** `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` (secret), `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2`.
+**Render environment variables:** `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` (secret), `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=4` (it was 2, which is one hop too few; change it in Render → Environment and let it redeploy — reasoning in `architecture.md` §3.4).
 
 - **Deploys:** every push to `main` redeploys both automatically (Vercel ~30 s, Render ~1–2 min). Migrations run during Render's build.
 - **Changing the API address:** edit the rewrite in `frontend/vercel.json` and Render's `CORS_ORIGIN` together.
@@ -187,7 +187,12 @@ Browser → Vercel (web app + /api/* rewrite) → Render, Singapore (API) → Ne
 
 `TRUST_PROXY` is the number of proxies between the visitor and the app. If it is too low, the audit log records a proxy's address instead of the visitor's, and a per-IP login limit (Task 7.1) would treat many visitors as one. Check it after any change to the hosting setup and for every new environment:
 
-1. On the site, try to log in with a wrong password (any username).
+1. Trigger one failed login. Once the login screen exists (Task 2.10), type a wrong password on the site. Until then, send the request from PowerShell (it should print `expected: Unauthorized`):
+
+```powershell
+try { Invoke-RestMethod -Method Post -Uri https://dept-store-staging.vercel.app/api/v1/auth/login -ContentType 'application/json' -Body '{"username":"ip-check","password":"wrong"}' } catch { "expected: " + $_.Exception.Response.StatusCode }
+```
+
 2. In that environment's Neon SQL Editor, run:
 
 ```sql
@@ -195,6 +200,6 @@ select id, ip, after->>'username' as username
 from audit_logs where action = 'auth.login_failed' order by id desc limit 5;
 ```
 
-3. The `ip` must be **your own public IP** (search "what is my IP"). A Cloudflare, Vercel or private address means the number is too low.
+3. The `ip` must be **your own public IP** (search "what is my IP"). A Cloudflare, Vercel (AWS) or private address means the number is too low. If your connection has both IPv4 and IPv6, the site may have seen either one; both are yours.
 
-On 2026-10-10 this check **failed** on staging: every row held a Cloudflare address, so `TRUST_PROXY=2` was too low. The current value and how it was chosen are recorded in `architecture.md` §14.
+On 2026-10-10 this check **failed** on staging: every row held a Cloudflare address, so `TRUST_PROXY=2` was too low. Render's logs showed the whole proxy chain and the fix is 4; the reasoning is in `architecture.md` §3.4. To read a request's full chain yourself: Render → the service → Logs → search for a marker you put in the URL (for example add `?probe=mycheck` to a request that gets rejected); each rejected request is logged with its headers.

@@ -214,9 +214,11 @@
 **Read first:** overview §5.2 (`branches`, `client_settings` rules), §8 (admin endpoints).
 
 **Files:**
-- `shared/src/schemas/branches.ts`, `shared/src/schemas/settings.ts`
-- `backend/src/modules/branches/branches.{routes,controller,service,test}.ts`
-- `backend/src/modules/settings/settings.{routes,controller,service,test}.ts`
+- `shared/src/schemas/branches.ts`, `shared/src/schemas/settings.ts`, plus the shared building blocks `common.ts` (`idParamSchema`, `optionalText`, `wholeNumberText`) and `pagination.ts` (`paginationSchema`, `Page<T>`) that every later list route reuses
+- `backend/src/modules/branches/branches.{routes,controller,service,model,test}.ts`
+- `backend/src/modules/settings/settings.{routes,controller,service,test}.ts` and the existing `settings.model.ts`
+- `backend/src/lib/changes.ts` (`changedFields`) and `db-errors.ts` (`isUniqueViolation`), with tests
+- `backend/test/helpers/fixtures.ts` — test data builders for this and every later module
 
 **Steps:**
 1. **Red** — tests:
@@ -227,9 +229,15 @@
    - Every change writes an audit row.
 2. **Green** — implement.
 3. Leave a `TODO(5.6)` comment where the branch-code edit happens: "code becomes fixed once the branch has bills". Task 5.6 adds that rule.
+4. **Notes from Task 2.8:**
+   - The settings API leaves the GSTIN out until GST is decided (PD-01); `PUT` replaces the record, so an omitted address or phone is cleared.
+   - A branch code is typed in any case and stored upper-case. Deactivating a branch takes it away from cashiers working in it on their next request (tested end to end).
+   - Update services write and audit only fields that really change, and a no-op writes nothing.
+   - Branch and settings routes use the fixtures file; `GSTIN` is never in a response.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
+- [x] Each protection proven by removing it once: the permission check, the duplicate-safe insert, the audit call
 
 **Commit:** `feat(admin): add branch and settings management`
 
