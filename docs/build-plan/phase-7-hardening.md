@@ -42,7 +42,7 @@
    - Deactivation ends sessions
    - Every write route has a permission check — a test lists all routes and checks each has `requirePermission`
    - Every branch-owned query is branch-scoped — a cross-branch test exists for every resource
-   - The audit log covers every action listed in overview §4.7
+   - The audit log covers every write (D-30): a test lists all non-GET routes and checks each has a test using `expectAudit`, and login events are audited
    - `npm audit` shows no high or critical issues. Known and accepted since Task 1.4: 4 *moderate* entries for `esbuild ≤0.24.2` (GHSA-67mh-4wv8-2f99, a dev-server flaw), reached only through `drizzle-kit`, a dev-only tool that never starts that server. Recheck whether a newer drizzle-kit fixes it. Never use `npm audit fix --force`: it downgrades drizzle-kit to 0.18.
 2. Fix each gap in its own commit.
 

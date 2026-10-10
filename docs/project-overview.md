@@ -264,7 +264,7 @@ Any error → errorHandler → { success: false, error: { code, message, details
 | Transport | HTTPS only; helmet headers; CORS allow-list (never `*`) |
 | Login abuse | Strict rate limit on login (Phase 7) |
 | Logs | No request bodies; secrets redacted |
-| Audit log | Records price changes, bill cancellations, purchase posts and cancels, stock adjustments, user changes, password resets, and imports — who, what, when, before/after |
+| Audit log (D-30) | Every change (create, edit, delete, status change) plus login success and failure, logout and password changes: who, when, branch, what, before/after. Written in the same transaction as the change; viewing data is not logged |
 
 ### 4.8 Configuration (`.env.example`) — (proposed, Phase 1)
 
@@ -348,7 +348,7 @@ Every table has `id` and `created_at`; editable tables also have `updated_at`. F
 | Table | Columns | Rules |
 |---|---|---|
 | `stock_movements` | branch_id, item_id, type, quantity, balance_after, ref_type (`bill`/`purchase`/`adjustment`/`import`), ref_id?, reason?, note?, batch_no?, expiry_date?, created_by, created_at | `quantity` is signed: + in, − out. Types: `opening`, `purchase`, `purchase_cancel`, `sale`, `sale_cancel`, `adjustment` (returns are added later with FP-02). |
-| `audit_logs` | actor_id, action, entity, entity_id, before?, after?, ip?, created_at | `before`/`after` are redacted JSON snapshots. |
+| `audit_logs` | actor_id?, branch_id?, action, entity, entity_id?, before?, after?, ip?, created_at | One row per change and per login event (D-30). `actor_id` is empty for failed logins. `before`/`after` are redacted JSON snapshots. Indexed by entity and by time. |
 
 ### 5.3 The stock ledger, explained (D-02)
 
@@ -629,6 +629,7 @@ Full wording and dates: [pending-decisions.md](pending-decisions.md).
 | D-27 | Node.js | Node 24 LTS |
 | D-28 | Dev and test databases | Neon, two free projects in Singapore |
 | D-29 | Extra packages | Tailwind Vite plugin, ESLint + Prettier; `@types/*` auto-approved |
+| D-30 | Audit log | Every change plus logins, before/after, same transaction |
 
 ### Pending
 

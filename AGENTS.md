@@ -63,6 +63,8 @@ These protect money and stock. Every change keeps them true.
 - Format and reset rule: D-15 in `docs/pending-decisions.md`.
 - Allocate inside the bill transaction from `bill_sequences` (`INSERT … ON CONFLICT DO UPDATE … RETURNING`), so numbers stay gapless under concurrent counters. Cancelled bills keep their number.
 
+**Audit (D-30)** — every write service (create, edit, delete, status change) calls `logAudit(tx, …)` inside the same transaction, with before/after values. So do login success and failure, logout and password changes. Reads are not audited.
+
 **Time** — store `timestamptz` in UTC; compute the business date and financial year in `Asia/Kolkata`.
 
 **Permissions** — routes check a permission such as `requirePermission('bill:create')`. The role → permission map lives in one file, so adding a role is a map entry plus a seed row.

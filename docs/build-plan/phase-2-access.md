@@ -137,6 +137,7 @@
    - **`select-branch`:** an unmapped branch → 403.
    - **`change-password`:** a wrong current password → 401. Success clears `must_change_password` and ends the user's **other** sessions.
    - **`logout`:** deletes the session and clears the cookie.
+   - **Audit (D-30):** `auth.login`, `auth.login_failed` (with the attempted username, never the password, and no actor), `auth.logout`, `auth.password_change` each write a row. Use `expectAudit` from Task 2.6. *If 2.5 runs before 2.6, add these assertions in 2.6.*
 2. **Green** — implement. Set `last_login_at` on login.
 
 **Done when:**
@@ -148,15 +149,15 @@
 
 ## Task 2.6 — Audit log service
 
-**Goal:** sensitive actions can be recorded with secrets removed.
+**Goal:** every change and login event can be recorded with secrets removed (D-30).
 
-**Read first:** overview §4.7 (Audit log row).
+**Read first:** D-30; overview §4.7 (Audit log row); `AGENTS.md` → Audit.
 
-**Files:** `backend/src/lib/audit.ts`, `backend/src/lib/audit.test.ts`
+**Files:** `backend/src/lib/audit.ts`, `backend/src/lib/audit.test.ts`, `backend/test/helpers/audit.ts` (an `expectAudit(db, { action, entity, entityId })` assertion that later tasks use to prove each write is audited)
 
 **Steps:**
 1. **Red** — tests:
-   - `logAudit(tx, { actorId, action, entity, entityId, before, after, ip })` writes a row.
+   - `logAudit(tx, { actorId, branchId, action, entity, entityId, before, after, ip })` writes a row. Actions are verb-style strings such as `item.update`, `bill.cancel`, `auth.login_failed`.
    - Keys matching `/password|token|secret|hash/i` are replaced with `"[redacted]"` at any depth.
    - It runs inside the caller's transaction, so a rollback leaves no audit row.
 2. **Green** — implement.
