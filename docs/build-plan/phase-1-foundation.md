@@ -331,10 +331,12 @@
 3. **Render — Web Service** (user, guided):
    - New → Web Service → connect `aswin-dev-fsd/department_store_v1`, branch `main`, root directory blank (repo root, needed for npm workspaces).
    - Name `dept-store-api-staging`; Region **Singapore**; Runtime Node; Instance **Free** for staging.
-   - Build command: `npm ci && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate`. Migrations run at build time because pre-deploy commands may not be on the free plan; production uses a pre-deploy command.
+   - Build command: `npm ci --include=dev && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate`.
+     - `--include=dev` is required: Render applies `NODE_ENV=production` at build time too, and plain `npm ci` would then skip TypeScript and the other build tools.
+     - Migrations run at build time because pre-deploy commands may not be on the free plan; production uses a pre-deploy command.
    - Start command: `node backend/dist/server.js`
    - Health check path: `/api/v1/health/live`. It never touches the database; checking `/api/v1/health` here would keep Neon awake around the clock and exhaust its free compute hours (D-31).
-   - Env vars: `NODE_ENV=production`, `DATABASE_URL=<staging string>`, `CORS_ORIGIN=<Vercel URL, set in step 6>`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2`. Render supplies `PORT`.
+   - Env vars: `NODE_ENV=production`, `NODE_VERSION=24` (pins Node, since `engines` only says `>=24`), `DATABASE_URL=<staging string>`, `CORS_ORIGIN=<Vercel URL, set in step 6>`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2`. Render supplies `PORT`.
    - Deploy, then open `https://<service>.onrender.com/api/v1/health` → `ok`.
 4. **Agent:** `frontend/vercel.json`:
    ```json
