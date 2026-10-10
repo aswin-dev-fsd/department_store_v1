@@ -13,6 +13,7 @@
 | Internal packages | `shared` and `database` compile with `tsc` to `dist/`; `backend` and `frontend` import the built output. Root script `build:packages` builds them, and runs before `dev`, `test` and `check-types`. |
 | Environment | One `.env` at the repo root, read by backend and database scripts |
 | Versions | Latest stable of each approved package, saved exactly (`.npmrc` → `save-exact=true`) |
+| TypeScript | **6.0.x**, installed once at the root and shared by all workspaces. Not 7.x until `typescript-eslint` supports it (its peer range on 2026-10-10: `<6.1.0`) |
 
 ---
 

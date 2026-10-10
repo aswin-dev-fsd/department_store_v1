@@ -9,14 +9,14 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | Task | Title | Status | Date | Notes |
 |---|---|---|---|---|
 | 0.1 | Confirm Phase 1 decisions (user input) | DONE | 2026-10-10 | D-27 Node 24, D-28 Supabase dev/test, D-29 packages. DreamLand §3 updated to Node 24. |
-| 0.2 | Prepare the databases | DONE | 2026-10-10 | Neon (D-28): dev `shy-cake-86251573`, test `super-mouse-23963658`, both Singapore, direct connections, default branch `production`. `.env` checked (2 different hosts, no pooler, sslmode + channel_binding params). Connection test deferred to Task 1.4. Neon's "agent prompt" (neon CLI, neon.ts, `neon deploy`) not used. |
+| 0.2 | Prepare the databases | DONE | 2026-10-10 | Neon (D-28): projects `shy-cake-86251573` and `super-mouse-23963658` (check in the Neon console which one is dev), both Singapore, direct connections, default branch `production`. `.env` checked (2 different hosts, no pooler, sslmode + channel_binding params). Connection test deferred to Task 1.4. Neon's "agent prompt" (neon CLI, neon.ts, `neon deploy`) not used. |
 | 0.3 | Initialise git | DONE | 2026-10-10 | Branch `main`. Added `.gitattributes` (LF everywhere): this PC has `core.autocrlf=true`, and `ops/*.sh` must have LF line endings to run on Linux. `.env` confirmed untracked. |
 
 ## Phase 1 — Foundation
 
 | Task | Title | Status | Date | Notes |
 |---|---|---|---|---|
-| 1.1 | Root workspace | TODO | | |
+| 1.1 | Root workspace | DONE | 2026-10-10 | tsx 4.23.15, vitest 5.0.3, **typescript pinned 6.0.3**: npm installed 7.0.2, but typescript-eslint 8.71 (Task 1.3) supports only <6.1. npm 11 skipped esbuild's install script (allow-scripts); left unapproved because tsx and vitest work without it. Base tsconfig checked by compiling a probe file. |
 | 1.2 | Shared package and money helpers | TODO | | |
 | 1.3 | Lint and format | TODO | | |
 | 1.4 | Database package | TODO | | |

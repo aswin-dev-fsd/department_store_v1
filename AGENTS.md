@@ -7,7 +7,7 @@ Project rules for this repo. They sit on top of `D:\DreamLand\AGENTS.md`; where 
 | DreamLand rule | In this project |
 |---|---|
 | §0 Backend only | Full-stack: build the backend and the React frontend. |
-| §3 Locked stack | TypeScript everywhere · Express · PostgreSQL via Drizzle ORM · zod · Vitest + Supertest · React + Vite + Tailwind · npm workspaces monorepo. |
+| §3 Locked stack | TypeScript everywhere (6.0.x, pinned at the root — 7.x breaks `typescript-eslint`) · Express · PostgreSQL via Drizzle ORM · zod · Vitest + Supertest · React + Vite + Tailwind · npm workspaces monorepo. |
 | §4 Folder structure | Feature modules (see Layout). Controller/service/model roles from §4 still apply inside each module. |
 | §5 JSDoc `@param`/`@returns` | One-line TSDoc summary on every exported function; TypeScript carries the types. |
 | §5 Jest | Vitest; Supertest for routes. |
