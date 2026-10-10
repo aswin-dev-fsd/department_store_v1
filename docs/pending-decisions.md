@@ -43,6 +43,14 @@ Status: Pending. Decide before go-live; the code doesn't depend on it. The user 
 
 Whichever is chosen, Task 7.4 still keeps our own daily `pg_dump` backups outside the provider.
 
+**Leaning (2026-10-10): frontend on Vercel, backend on Render.** Staging is set up in Task 1.10. What this choice implies:
+- **One origin:** Vercel rewrites `/api/*` to Render, so session cookies stay first-party. A direct browser → Render call would be a blocked third-party cookie.
+- **Region:** Render's nearest region is **Singapore** (no India). The database must then also be in Singapore: Neon (current) or Supabase's Singapore region, *not* Supabase Mumbai. Each browser request crosses the India–Singapore link once; the database queries stay inside Singapore.
+- **Production plans:** Render **Starter or above** (the free plan sleeps after 15 idle minutes); Vercel **Pro** (Hobby forbids commercial use, including paid client work); Neon paid with scale-to-zero off.
+- **No PM2 or Nginx:** Render runs the process and terminates TLS. This replaces DreamLand §3's PM2 for this project. Tasks 7.4 (backups need a scheduler, e.g. a Render Cron Job or a GitHub Actions schedule) and 7.5 (deploy kit) must be rewritten for this platform once it's decided.
+- **Proxy timeout:** Vercel's rewrite limit is 30 seconds per request. All API calls are short; check the CSV import (Task 3.7) against it.
+- **Simpler alternative to weigh:** Express serves the built frontend from the same Render service. That gives one service, one domain and no proxy hop, avoids Vercel's cost and 30-second limit, but loses Vercel's CDN, which matters little for an in-store app.
+
 Fixed requirement: production must run **PostgreSQL 18**. Dev and test run 18.6 on Neon (checked 2026-10-10, Task 1.4).
 
 To settle: database provider and region, app server provider (same region), backup frequency and retention, domain and SSL.

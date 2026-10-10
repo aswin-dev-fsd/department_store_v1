@@ -690,6 +690,7 @@ Frontend component tests would need extra packages (e.g. Testing Library), which
 ## 13. Operations and go-live
 
 ### 13.1 Hosting and database (PD-03, pending)
+- **Leaning:** frontend on Vercel, backend on Render (Singapore), database on Neon (Singapore), with Vercel rewriting `/api/*` to Render so the browser sees one origin. A staging copy is deployed in build Task 1.10. Plan implications are in PD-03.
 - **Database:** a managed PostgreSQL is favoured. Supabase has a Mumbai region; Neon's nearest is Singapore. Full comparison in PD-03.
 - **Same region:** the app server (Nginx + PM2) must run in the same region as the database, because every bill makes several database round trips.
 - The code doesn't depend on the choice. It uses plain PostgreSQL through Drizzle.

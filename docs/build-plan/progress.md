@@ -25,6 +25,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | 1.7 | Test database harness | TODO | | |
 | 1.8 | Frontend shell | TODO | | |
 | 1.9 | Root scripts and dev setup guide | TODO | | |
+| 1.10 | Staging deploy (Render + Vercel) | TODO | | Added 2026-10-10 at the user's request; needs the PD-03 platform confirmation |
 | 🛑 | Checkpoint 1 | TODO | | |
 
 ## Phase 2 — Access

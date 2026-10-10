@@ -158,6 +158,7 @@
    - `response`: `success(data)` → `{ success: true, data, meta: { timestamp, version } }`; `failure(code, message, details?)` → `{ success: false, error: {…}, meta }`. `timestamp` is ISO-8601; `version` comes from `backend/package.json`.
 3. **Green** — implement:
    - `env.ts` parses `process.env` once with zod and exports a typed `env`. Variables are listed in overview §4.8. `COOKIE_SECURE` is a boolean, `SESSION_TTL_HOURS` a number with default `12`.
+   - `TEST_DATABASE_URL` is optional: only tests need it, and Render won't have it.
    - `logger.ts` exports one pino instance whose level comes from `env`.
 4. `.env.example` lists every variable with placeholder values.
 
@@ -303,6 +304,66 @@
 - [ ] `npm ci && npm run build:packages && npm run check-types && npm run lint && npm test` passes from the clean state
 
 **Commit:** `chore(repo): add root scripts and dev setup guide`
+
+---
+
+## Task 1.10 — Staging deploy (Render + Vercel)
+
+**Goal:** the Phase 1 skeleton runs on the internet: the Vercel URL shows "API: ok", fetched through Render from a Neon staging database. Deployment problems then surface now, not at go-live.
+
+**Read first:** PD-03 (platform notes); `docs/dev-setup.md`.
+
+**Before starting:** the user confirms Vercel + Render for staging (PD-03), and has both accounts signed in with GitHub. The user does every dashboard step; the agent guides and changes only repo files.
+
+**How the pieces connect:** browser → Vercel (static frontend, plus a `/api/*` rewrite) → Render (Express, Singapore) → Neon (Singapore).
+- Through the rewrite, the browser sees **one origin**, so the session cookie is first-party: SameSite `lax` works and no CORS preflight is needed.
+- Calling Render directly from the browser would make it a third-party cookie, which browsers block.
+
+**Files:** `frontend/vercel.json`; a "Staging" section in `docs/dev-setup.md`; `backend/src/app.ts` (`trust proxy` setting); `backend/src/config/env.schema.ts` (`TRUST_PROXY`).
+
+**Steps:**
+1. **Neon:** the user creates a project `dept-store-staging` (AWS Singapore, Postgres 18). It's separate from dev, so local experiments never break staging. Copy the direct connection string; it goes only into Render.
+2. **Backend proxy setting:** add env `TRUST_PROXY` (number of proxy hops, default `0`) and `app.set('trust proxy', env.TRUST_PROXY)`, so `req.ip` and secure cookies work behind Vercel + Render. Staging value: `2`. Test that `req.ip` reads the client address from `X-Forwarded-For` when set.
+3. **Render — Web Service** (user, guided):
+   - New → Web Service → connect `aswin-dev-fsd/department_store_v1`, branch `main`, root directory blank (repo root, needed for npm workspaces).
+   - Name `dept-store-api-staging`; Region **Singapore**; Runtime Node; Instance **Free** for staging.
+   - Build command: `npm ci && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate`. Migrations run at build time because pre-deploy commands may not be on the free plan; production uses a pre-deploy command.
+   - Start command: `node backend/dist/server.js`
+   - Health check path: `/api/v1/health`
+   - Env vars: `NODE_ENV=production`, `DATABASE_URL=<staging string>`, `CORS_ORIGIN=<Vercel URL, set in step 6>`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=2`. Render supplies `PORT`.
+   - Deploy, then open `https://<service>.onrender.com/api/v1/health` → `ok`.
+4. **Agent:** `frontend/vercel.json`:
+   ```json
+   {
+     "rewrites": [
+       { "source": "/api/:path*", "destination": "https://<service>.onrender.com/api/:path*" },
+       { "source": "/(.*)", "destination": "/index.html" }
+     ]
+   }
+   ```
+   The `/api` rule comes first; the second is the single-page-app fallback. The Render URL is per deployment: each client copy sets its own. Commit and push.
+5. **Vercel — Project** (user, guided):
+   - Import the repo; Root Directory `frontend`; Framework Vite.
+   - Build Command: `cd .. && npm run build:packages && npm run build -w @ds/frontend`; Output Directory `dist`.
+   - Deploy.
+6. Put the final Vercel URL into Render's `CORS_ORIGIN` and redeploy.
+7. **Verify:**
+   - The Vercel URL shows "API: ok".
+   - `https://<vercel-url>/api/v1/health` returns the envelope.
+   - Pushing a trivial change to `main` redeploys both automatically.
+8. Record both URLs and the settings above in `docs/dev-setup.md` → Staging. No secrets.
+
+**Known limits of free staging:**
+- Render sleeps after 15 idle minutes. The first request can take 15–30+ seconds and may hit Vercel's 30-second proxy limit (`ROUTER_EXTERNAL_TARGET_ERROR`); reload once.
+- Production needs Render Starter or above (always on) and, for a paid client project, Vercel Pro (Hobby is non-commercial only).
+
+**Done when:**
+- [ ] The Vercel URL shows "API: ok"
+- [ ] Render health returns `ok`
+- [ ] Auto-deploy on push works for both
+- [ ] The staging section is written in `dev-setup.md`
+
+**Commit:** `chore(deploy): add vercel rewrites, trust proxy and staging notes`
 
 ---
 
