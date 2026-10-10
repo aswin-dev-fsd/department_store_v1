@@ -1,0 +1,144 @@
+# Phase 4 — Purchases
+
+**Goal:** stock arrives through purchase entry: draft → post → (cancel). This is the only normal way stock goes up after go-live (D-13, D-19).
+
+**Read first for the whole phase:** overview §6.7, §7.5; D-12, D-19, D-26; Task 3.2 (`postMovements`).
+
+---
+
+## Task 4.1 — Purchase tables
+
+**Goal:** `purchases` and `purchase_lines` exist.
+
+**Read first:** `docs/implementation_plan.md` → Data model; overview §5.2 "Documents".
+
+**Files:** `database/src/schema/purchases.ts`, `schema/index.ts`, a generated migration
+
+**Steps:**
+1. Enum `purchase_status`: `draft`, `posted`, `cancelled`.
+2. `purchase_lines.quantity` has `CHECK (quantity > 0)`; `cost_price_paise >= 0`.
+3. Partial unique index on `purchases (branch_id, vendor_id, lower(vendor_invoice_no)) WHERE status <> 'cancelled'`. Write it by hand in the migration if Drizzle can't express it, and note that in the migration file.
+4. Nullable `batch_no` and `expiry_date` on `purchase_lines` (PD-02).
+5. Generate, **read the SQL**, apply.
+
+**Done when:**
+- [ ] The migration applies to an empty database
+- [ ] A test proves the partial unique index: a duplicate is blocked, but allowed after the first is cancelled
+
+**Commit:** `feat(database): add purchase tables`
+
+---
+
+## Task 4.2 — Purchase drafts API
+
+**Goal:** cashiers create, edit, list and view draft purchases. Drafts never touch stock.
+
+**Files:** `shared/src/schemas/purchases.ts`, `backend/src/modules/purchases/purchases.{routes,controller,service}.ts`, `purchases.drafts.test.ts`
+
+**Steps:**
+1. **Red** — tests:
+   - **Create:** `POST /purchases` with vendor, invoice number, invoice date, and lines (zero or more) → `draft`. The server computes `total_paise` as Σ quantity × cost price.
+   - **Edit:** `PUT /purchases/:id` replaces the header and all lines while still a draft. On a posted or cancelled purchase → 400 `DOCUMENT_LOCKED`.
+   - **Duplicate invoice:** the same vendor and invoice number (case-insensitive) in the branch → 400 `DUPLICATE_INVOICE`.
+   - **Validation:** the vendor and items must be active and in the active branch.
+   - **List:** filter by status, vendor and date range; paginated. **Get:** includes lines with item names.
+   - **No stock effect:** stock and the ledger are unchanged by any draft operation.
+2. **Green** — implement.
+
+**Done when:**
+- [ ] All tests pass
+
+**Commit:** `feat(purchases): add draft purchases api`
+
+---
+
+## Task 4.3 — Post a purchase
+
+**Goal:** posting adds stock, applies new prices, and locks the purchase, all in one transaction.
+
+**Files:** `purchases.service.ts`, `purchases.routes.ts`, `purchases.post.test.ts`
+
+**Steps:**
+1. **Red** — tests:
+   - **Post:** `POST /purchases/:id/post` → status `posted`, `posted_by`/`posted_at` set; one `purchase` movement per line (`refType: purchase`); stock increased.
+   - **New prices:** a line with `new_selling_price_paise` / `new_mrp_paise` updates the item, with an audit row per change. The selling-price ≤ MRP rule applies.
+   - **Empty draft:** posting with no lines → 400 `EMPTY_PURCHASE`.
+   - **Wrong state:** posting again, or posting a cancelled purchase → 400 `DOCUMENT_LOCKED`.
+   - **Concurrency:** two parallel post requests → exactly one succeeds; stock is added once.
+   - `assertLedgerMatchesStock` passes for every item.
+2. **Green** — one transaction:
+   1. Lock the purchase row (`FOR UPDATE`) and check it is a `draft`.
+   2. `postMovements` with + quantities.
+   3. Apply price updates and write audit rows.
+   4. Set the status.
+
+**Done when:**
+- [ ] All tests pass
+- [ ] The concurrency test passes 10 runs in a row
+
+**Commit:** `feat(purchases): post purchases into stock`
+
+---
+
+## Task 4.4 — Cancel a purchase
+
+**Goal:** a posted purchase can be cancelled with a reason, unless its stock has already been sold.
+
+**Files:** `purchases.service.ts`, `purchases.routes.ts`, `purchases.cancel.test.ts`
+
+**Steps:**
+1. **Red** — tests:
+   - **Cancel:** `POST /purchases/:id/cancel { reason }` → status `cancelled`, cancel fields set; one `purchase_cancel` movement per line; stock back to its previous level.
+   - **Reason:** required, at least 3 characters → 422 otherwise.
+   - **Stock already sold:** simulate a sale by calling `postMovements` with type `sale` in the test. Cancel → 400 `INSUFFICIENT_STOCK` listing the items, and **nothing changes**.
+   - **Drafts:** cancelling a draft → 400 `DOCUMENT_LOCKED`. Drafts are just edited.
+   - **Prices:** item prices are **not** reverted. Document this in the code.
+   - **Re-entry:** after a cancel, the same vendor invoice can be entered again as a new draft.
+   - An audit row is written.
+2. **Green** — one transaction: lock, check `posted`, `postMovements` with − quantities (this throws when stock is insufficient), set the status.
+
+**Done when:**
+- [ ] All tests pass
+
+**Commit:** `feat(purchases): cancel posted purchases`
+
+---
+
+## Task 4.5 — Frontend: purchases
+
+**Goal:** fast purchase entry in the browser, built for a cashier who gets interrupted by customers.
+
+**Read first:** overview §7.5, §6.7.
+
+**Files:** `frontend/src/pages/purchases/*`, shared item-picker component `frontend/src/components/ItemPicker.tsx` (reused by billing), `en.ts`
+
+**Steps:**
+1. **List:** filter by status, vendor and date; status badges; open a draft to continue it.
+2. **Editor:**
+   - Header: vendor select with search, invoice number, date.
+   - Line entry with `ItemPicker`: barcode or code + Enter, or name search with arrow keys.
+   - Per line: quantity, cost (in rupees), optional new MRP and selling price.
+   - Running total.
+   - **Save draft** at any time.
+3. **Post:** a confirmation dialog showing the line count and total. **Cancel:** a dialog with a required reason.
+4. Keyboard **(proposed)**: Enter moves to the next field; a new line starts after the last field.
+5. Show `DUPLICATE_INVOICE`, `INSUFFICIENT_STOCK` and `DOCUMENT_LOCKED` as clear messages.
+
+**Done when:**
+- [ ] check-types and build pass
+- [ ] Manual check on seeded data: the Checkpoint 4 review below
+
+**Commit:** `feat(frontend): add purchase entry screens`
+
+---
+
+## 🛑 Checkpoint 4
+
+Agent: follow the checkpoint steps in `README.md`.
+
+**Checkpoint review (user):**
+- [ ] Enter a 20-line purchase, save it as a draft halfway, leave the page, come back, finish it, and post it
+- [ ] Check stock went up and the item's history shows the purchase
+- [ ] Post a purchase with a new selling price, and check the item's price changed
+- [ ] Cancel a posted purchase, then try cancelling one whose stock was partly used (simulated via the seed or a test): it's blocked with a clear message
+- [ ] Try entering the same vendor invoice twice

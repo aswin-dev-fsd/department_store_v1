@@ -1,0 +1,8 @@
+# Keep LF line endings in the repo on every OS (shell scripts must run on the Linux server)
+* text=auto eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
