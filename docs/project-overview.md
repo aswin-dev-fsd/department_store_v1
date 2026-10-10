@@ -587,8 +587,16 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `VALIDATION_ERROR` | 422 | Request fails its zod schema |
 | `INVALID_JSON` | 400 | Request body isn't valid JSON |
 | `PAYLOAD_TOO_LARGE` | 413 | JSON body over 1 MB |
-| `UNAUTHORIZED` | 401 | No session, or the session has expired |
-| `FORBIDDEN` | 403 | Missing permission, or the branch isn't assigned |
+| `UNAUTHORIZED` | 401 | No session, or an unknown session |
+| `SESSION_EXPIRED` | 401 | The session's 12 hours are over |
+| `ACCOUNT_DISABLED` | 401 | The user was deactivated (all their sessions end) |
+| `INVALID_CREDENTIALS` | 401 | Login failed — the same answer for a wrong password, an unknown user or a deactivated user |
+| `FORBIDDEN` | 403 | Missing permission |
+| `NO_ACTIVE_BRANCH` | 403 | A branch-scoped route without a usable active branch |
+| `BRANCH_NOT_ASSIGNED` | 403 | Selecting a branch the cashier isn't mapped to |
+| `PASSWORD_CHANGE_REQUIRED` | 403 | A temporary password must be changed first; only me / change-password / logout work |
+| `WRONG_CURRENT_PASSWORD` | 400 | Change-password with a wrong current password (400, not 401, so the app doesn't treat the user as logged out) |
+| `PASSWORD_UNCHANGED` | 400 | The new password equals the current one |
 | `NOT_FOUND` | 404 | Record doesn't exist in the active branch |
 | `INSUFFICIENT_STOCK` | 400 | A sale, purchase cancel or adjustment would make stock negative; `details` lists the items |
 | `PAYMENT_MISMATCH` | 400 | Payments don't equal the bill total |

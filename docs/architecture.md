@@ -200,6 +200,13 @@ Every response uses the envelope: `{ success, data | error, meta: { timestamp, v
 |---|---|---|---|
 | `GET /api/v1/health` | yes (`select 1`, 5 s timeout) | status page, humans | `{ status, uptimeSeconds, database: 'ok'│'down' }` — always 200; a timeout is logged |
 | `GET /api/v1/health/live` | **no** | Render health check, keep-awake pings | `{ status, uptimeSeconds }` |
+| `POST /api/v1/auth/login` | yes | login screen | `MeResponse` + sets the `ds_session` cookie (httpOnly, SameSite=lax, Path=/, Secure in production, expires with the session) |
+| `GET /api/v1/auth/me` | yes | app start, route guards | `MeResponse`: user, permissions, branches, active branch, `needsBranchSelection` |
+| `POST /api/v1/auth/select-branch` | yes | branch picker | `MeResponse` |
+| `POST /api/v1/auth/change-password` | yes | forced or voluntary change | `MeResponse`; ends the user's other sessions |
+| `POST /api/v1/auth/logout` | yes | logout | clears the cookie, deletes the session |
+
+**Login flow details:** an unknown username is still checked against a dummy bcrypt hash, so response time doesn't reveal which usernames exist. Every failure answers `INVALID_CREDENTIALS` and is audited with the attempted username, never the password. Until a temporary password is changed, every route except me / change-password / logout answers 403 `PASSWORD_CHANGE_REQUIRED`. Every login event writes an audit row in the same transaction (D-30).
 
 ### 5.5 Configuration
 
@@ -280,10 +287,10 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Errors | unexpected errors return a generic 500; stack and messages stay in server logs | — |
 | Logs | secrets redacted; no request bodies | compact request lines (Task 7.2) |
 | Proxies | `trust proxy` configured | real-IP check via audit IPs (Task 2.5) |
-| Auth | Session service (bcrypt cost 12, 72-byte password limit, 32-byte tokens stored as SHA-256) and route guards (§5.2) | login/logout routes and the httpOnly cookie (Task 2.5) |
+| Auth | Login, logout, me, select-branch, change-password (§5.4); bcrypt cost 12, 72-byte limit, timing-safe for unknown usernames; 32-byte tokens stored as SHA-256; httpOnly SameSite=lax cookie; forced password change enforced by the server. Verified: a real login leaves neither password nor token in the logs (cookies show as `[redacted]`) | login rate limit (Task 7.1) |
+| Audit | `logAudit` in the same transaction as each change; login, failed login, logout, branch switch, password change (and failed change) all audited | every later write (D-30) |
 | Branch isolation | `activeBranchId(req)` on every branch-owned query; access ends immediately on unmapping or branch deactivation | — |
 | Cross-site request forgery | Designed in: the session cookie will be `SameSite=lax`; the API only parses `application/json` bodies, which a foreign site can't send without a CORS preflight, and CORS allows only our origin | verified end to end in Task 2.5 and Task 7.2 |
-| Audit | — | every change + login events, same transaction (D-30, Phase 2) |
 | Abuse | — | login rate limit (Task 7.1) |
 
 ---
