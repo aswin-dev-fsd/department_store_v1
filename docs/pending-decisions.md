@@ -43,6 +43,8 @@ Status: Pending. Decide before go-live; the code doesn't depend on it. The user 
 
 Whichever is chosen, Task 7.4 still keeps our own daily `pg_dump` backups outside the provider.
 
+Fixed requirement: production must run **PostgreSQL 18**. Dev and test run 18.6 on Neon (checked 2026-10-10, Task 1.4).
+
 To settle: database provider and region, app server provider (same region), backup frequency and retention, domain and SSL.
 
 ### PD-04 — Receipt printer

@@ -8,10 +8,14 @@
     "node": ">=24"
   },
   "workspaces": [
-    "shared"
+    "shared",
+    "database"
   ],
   "scripts": {
-    "build:packages": "npm run build -w @ds/shared",
+    "build:packages": "npm run build -w @ds/shared -w @ds/database",
+    "db:generate": "npm run db:generate -w @ds/database",
+    "db:migrate": "npm run db:migrate -w @ds/database --",
+    "db:check": "npm run db:check -w @ds/database --",
     "check-types": "npm run build:packages && npm run check-types --workspaces --if-present",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
     "lint": "eslint . --max-warnings 0",

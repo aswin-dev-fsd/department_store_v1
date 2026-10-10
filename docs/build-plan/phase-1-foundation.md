@@ -114,6 +114,7 @@
 - `database/src/client.ts` — `createDb(url)` returns `{ db, pool }`
 - `database/src/schema/index.ts` — empty for now
 - `database/src/migrate.ts`, `database/src/check.ts`, `database/src/index.ts`
+- Added during the build: `database/src/cli.ts` (env loading and CLI output helpers) and `database/src/migrator.ts` (`runMigrations(url)`, which returns `false` while no migrations exist), with tests
 - Root `package.json` — add `database` to `workspaces` and `build:packages`; add root scripts `db:generate`, `db:migrate`, `db:check`
 
 **Steps:**
@@ -216,7 +217,7 @@
 **Goal:** backend tests run against `TEST_DATABASE_URL`, with migrations applied and a clean database for every test file.
 
 **Files:**
-- `backend/test/global-setup.ts` — runs migrations on `TEST_DATABASE_URL` once
+- `backend/test/global-setup.ts` — runs migrations on `TEST_DATABASE_URL` once, using `runMigrations` from `@ds/database`. It returns `false` and does nothing until Task 2.1 generates the first migration.
 - `backend/test/setup-env.ts` — sets `process.env.DATABASE_URL = TEST_DATABASE_URL` before any app import
 - `backend/test/helpers/db.ts` — `resetDb()` truncates every app table (`RESTART IDENTITY CASCADE`), skipping Drizzle's migrations table
 - `backend/vitest.config.ts`
