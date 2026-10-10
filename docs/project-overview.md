@@ -88,6 +88,8 @@ This overview gathers everything in one place. Each topic still has **one author
 
 Code checks **permissions**, not role names. Adding a role means adding a row to the role → permission map plus a seed row; there's no schema change.
 
+In code: `shared/src/permissions.ts`. Its test copies this table cell by cell, so **change this table and the test together** — the test fails until the code agrees.
+
 | Permission | Cashier | Admin | Notes |
 |---|:-:|:-:|---|
 | `bill:create` | ✓ | | |

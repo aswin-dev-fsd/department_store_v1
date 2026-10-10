@@ -33,7 +33,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | Task | Title | Status | Date | Notes |
 |---|---|---|---|---|
 | 2.1 | Access tables | DONE | 2026-10-10 | Migration `0000_access_and_audit` (6 tables + `user_role` enum); SQL read and matched against overview §5.2. 17 red → green tests: 16 raw-SQL constraint tests (`backend/test/schema/access.schema.test.ts`) + 1 migration-count test. Applied to an empty test DB (harness) and the dev DB; staging gets it in Render's build. Gotcha: `ON DELETE RESTRICT` raises 23001 (restrict_violation), not 23503. Also: branch code is `text` + regex check, not varchar(3), so bad codes fail the format rule; `runMigrations` now returns the count of new migrations ("already up to date" instead of a misleading "applied"); root `db:generate` passes `--name`. 113 tests. |
-| 2.2 | Permission map | TODO | | |
+| 2.2 | Permission map | DONE | 2026-10-10 | `shared/src/permissions.ts`: 17 permissions, roles admin/cashier, frozen `ROLE_PERMISSIONS`, `can()` (unknown role → nothing). 22 red → green tests: the overview §3 matrix cell by cell, coverage of every permission, frozen at runtime, unknown permission = compile error. Plus `backend/test/schema/roles.test.ts`: shared ROLES == database `user_role` enum. Sabotage check: granting admin `bill:create` failed 2 tests; restored. 137 tests. |
 | 2.3 | Password and session service | TODO | | |
 | 2.4 | Auth, permission and validation middleware | TODO | | |
 | 2.5 | Auth routes | TODO | | |
