@@ -9,11 +9,14 @@ const varName = process.argv[2] ?? 'DATABASE_URL';
 try {
   const url = urlFromEnv(varName);
   const applied = await runMigrations(url);
-  out(
-    applied
-      ? `✓ Migrations applied to ${varName} (${describeConnection(url)})`
-      : 'No migrations generated yet — nothing to apply.',
-  );
+  const target = `${varName} (${describeConnection(url)})`;
+  if (applied === null) {
+    out('No migrations generated yet — nothing to apply.');
+  } else if (applied === 0) {
+    out(`✓ ${target} is already up to date`);
+  } else {
+    out(`✓ Applied ${applied} new migration${applied === 1 ? '' : 's'} to ${target}`);
+  }
 } catch (error) {
   fail(`✗ Migration failed for ${varName}: ${error instanceof Error ? error.message : error}`);
 }

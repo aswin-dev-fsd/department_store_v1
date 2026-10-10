@@ -24,7 +24,7 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:generate": "npm run db:generate -w @ds/database",
+    "db:generate": "npm run db:generate -w @ds/database --",
     "db:migrate": "npm run db:migrate -w @ds/database --",
     "db:check": "npm run db:check -w @ds/database --"
   },

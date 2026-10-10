@@ -1,3 +1,4 @@
+import { runMigrations } from '@ds/database';
 import { sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it } from 'vitest';
 import { env } from '../src/config/env.js';
@@ -18,6 +19,11 @@ describe('test database harness', () => {
     const originalDev = process.env.DS_ORIGINAL_DATABASE_URL;
     expect(originalDev).toBeDefined();
     expect(databaseIdentity(env.DATABASE_URL)).not.toBe(databaseIdentity(originalDev!));
+  });
+
+  it('reports zero new migrations once the test database is up to date', async () => {
+    // Global setup has already applied everything
+    await expect(runMigrations(env.TEST_DATABASE_URL!)).resolves.toBe(0);
   });
 
   it('resetDb empties every table and restarts ids', async () => {

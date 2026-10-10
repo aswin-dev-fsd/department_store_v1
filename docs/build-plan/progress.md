@@ -2,7 +2,7 @@
 
 The agent updates this file after every task (protocol step 7). Status values: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-**Current phase:** 1 — Foundation (Phase 0 done 2026-10-10)
+**Current phase:** 2 — Access (Phase 0 and Phase 1 done 2026-10-10)
 
 ## Phase 0 — Pre-flight
 
@@ -26,13 +26,13 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | 1.8 | Frontend shell | DONE | 2026-10-10 | react 19.3.0, react-router-dom 7.18.4, @tanstack/react-query 5.104.1, vite 8.3.4, @vitejs/plugin-react 6.1.2, tailwindcss + @tailwindcss/vite 4.3.3. 9 tests (red → green), 90 total. `t()` keys are typed from `en.ts` (a misspelled key fails check-types, proven with `@ts-expect-error`); `{placeholders}` filled. `api` client: `/api/v1`, cookies on, unwraps the envelope, `ApiError` for error envelopes / NETWORK_ERROR / BAD_RESPONSE (e.g. Vercel's proxy-timeout page). Checked in the browser: "API: ok / Database: ok" through Vite's `/api` proxy, no console errors; backend stopped → "API: unreachable". Each status line now has its own colour. Build: 348 KB JS (109 KB gzip). `.claude/launch.json` added for the preview servers. |
 | 1.9 | Root scripts and dev setup guide | DONE | 2026-10-10 | Root `dev:backend`, `dev:frontend`, `build`, `verify` (the gate in one command); `docs/dev-setup.md` written. **Fresh-clone test:** deleted every node_modules and dist, then `npm ci` + `npm run verify` passed (exit 0) and `npm run build` produced all 4 outputs. **Two bugs found and fixed:** (1) starting both dev servers rebuilt the shared packages twice, which restarted the backend and raced on files → incremental package builds, proven both ways (a no-op rebuild leaves files untouched; a real change is rebuilt); re-checked live: one start, no restart. (2) A Neon wake-up longer than 5 s showed "Database: down" with no log → the timeout is now logged and adjustable; 2 new red → green tests. 92 tests. Log verbosity noted for Task 7.2. |
 | 1.10 | Staging deploy (Render + Vercel) | DONE | 2026-10-10 | Vercel + Render for dev/staging (D-31); production leans AWS (PD-03). Live: https://dept-store-staging.vercel.app → `/api/*` rewrite → https://dept-store-api-staging.onrender.com → Neon `dept-store-staging`. Verified: the user's browser shows "API: ok / Database: ok"; `/health` database ok via Vercel; deep links 200 (SPA fallback); unknown API route 404 JSON; HSTS + nosniff; CORS allows the Vercel origin and refuses others; auto-deploy on push for both (Vercel ~30 s, Render uptime reset). Added `/api/v1/health/live` (no DB), `TRUST_PROXY`, `frontend/vercel.json`, `npm ci --include=dev` (Render sets NODE_ENV=production at build). Not yet observed: graceful-shutdown log line, real `req.ip`. Keep-awake cron left to the user. `docs/architecture.md` written. |
-| 🛑 | Checkpoint 1 | WAITING FOR USER REVIEW | 2026-10-10 | See summary below |
+| 🛑 | Checkpoint 1 | DONE | 2026-10-10 | User said "go": proposed defaults accepted (12 h session, 5 s health timeout, 1 MB JSON); CI not requested for now; staging confirmed in the user's browser |
 
 ## Phase 2 — Access
 
 | Task | Title | Status | Date | Notes |
 |---|---|---|---|---|
-| 2.1 | Access tables | TODO | | |
+| 2.1 | Access tables | DONE | 2026-10-10 | Migration `0000_access_and_audit` (6 tables + `user_role` enum); SQL read and matched against overview §5.2. 17 red → green tests: 16 raw-SQL constraint tests (`backend/test/schema/access.schema.test.ts`) + 1 migration-count test. Applied to an empty test DB (harness) and the dev DB; staging gets it in Render's build. Gotcha: `ON DELETE RESTRICT` raises 23001 (restrict_violation), not 23503. Also: branch code is `text` + regex check, not varchar(3), so bad codes fail the format rule; `runMigrations` now returns the count of new migrations ("already up to date" instead of a misleading "applied"); root `db:generate` passes `--name`. 113 tests. |
 | 2.2 | Permission map | TODO | | |
 | 2.3 | Password and session service | TODO | | |
 | 2.4 | Auth, permission and validation middleware | TODO | | |

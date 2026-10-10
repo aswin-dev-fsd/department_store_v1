@@ -1,2 +1,3 @@
-// Drizzle table definitions are exported from here. Tables arrive in Task 2.1.
-export {};
+// Every Drizzle table. `npm run db:generate` reads this file to create migrations.
+export * from './access.js';
+export * from './audit.js';
