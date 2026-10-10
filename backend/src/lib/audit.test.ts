@@ -40,6 +40,32 @@ describe('redact', () => {
     });
   });
 
+  it('keeps true/false flags visible even when their name mentions a password or token', () => {
+    // A boolean can't leak a secret, and hiding it would erase what a password change did
+    expect(
+      redact({
+        mustChangePassword: true,
+        hasPassword: false,
+        tokenExpired: false,
+        password: 'p1',
+        user: { passwordResetRequired: true, passwordHash: 'h' },
+      }),
+    ).toEqual({
+      mustChangePassword: true,
+      hasPassword: false,
+      tokenExpired: false,
+      password: REDACTED,
+      user: { passwordResetRequired: true, passwordHash: REDACTED },
+    });
+  });
+
+  it('still hides a secret stored as a number, or as null', () => {
+    expect(redact({ token: 123456, passwordHash: null })).toEqual({
+      token: REDACTED,
+      passwordHash: REDACTED,
+    });
+  });
+
   it('passes primitives and null through, and turns dates into ISO strings', () => {
     expect(redact(null)).toBeNull();
     expect(redact(42)).toBe(42);

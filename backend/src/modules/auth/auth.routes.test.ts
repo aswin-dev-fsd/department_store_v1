@@ -301,6 +301,9 @@ describe('POST /auth/change-password', () => {
     await loggedIn('ravi', 'Brand-new-1');
 
     const row = await expectAudit(db, { action: 'auth.password_change', actorId: userId });
+    // The row must show what changed — the forced change went from required to done
+    expect(row.before).toEqual({ mustChangePassword: true });
+    expect(row.after).toEqual({ mustChangePassword: false });
     expect(JSON.stringify(row)).not.toMatch(/Brand-new-1|Counter#2026/);
   });
 });

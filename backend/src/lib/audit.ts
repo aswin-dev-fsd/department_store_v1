@@ -9,7 +9,11 @@ export const REDACTED = '[redacted]';
 // Matches password, passwordHash, token, tokenHash, apiSecret, …
 const SECRET_KEY = /password|token|secret|hash/i;
 
-/** Deep copy of `value` with secret-looking fields replaced and dates as ISO strings. */
+/**
+ * Deep copy of `value` with secret-looking fields replaced and dates as ISO strings.
+ * A field whose value is true/false is never replaced: a boolean can't leak a secret, and
+ * hiding flags such as `mustChangePassword` would erase what a password change actually did.
+ */
 export function redact(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(redact);
@@ -21,7 +25,7 @@ export function redact(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value).map(([key, inner]) => [
         key,
-        SECRET_KEY.test(key) ? REDACTED : redact(inner),
+        SECRET_KEY.test(key) && typeof inner !== 'boolean' ? REDACTED : redact(inner),
       ]),
     );
   }
