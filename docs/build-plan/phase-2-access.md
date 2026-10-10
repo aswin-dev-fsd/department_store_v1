@@ -342,4 +342,4 @@ Agent: follow the checkpoint steps in `README.md`.
 - [ ] Log in as each cashier: the single-branch cashier goes straight in; the other sees the picker
 - [ ] Deactivate a cashier while they're logged in: their next action logs them out
 - [ ] Confirm the (proposed) items listed in the summary: 12-hour sessions, forced password change after a reset, minimum password length 8, bcrypt cost 12 (login ≈ 2 s on Render Free), username rule (3–32 characters: lowercase letters, digits, `.` `_` `-`)
-- [ ] The `ip` recorded for failed logins on staging is your own public IP. **First check failed:** all six rows held Cloudflare addresses (`TRUST_PROXY=2` too small). Fix `TRUST_PROXY` and re-run the check from `docs/dev-setup.md` §11
+- [x] The `ip` recorded for failed logins on staging is your own public IP. The first check failed (Cloudflare addresses, `TRUST_PROXY=2`); fixed with 4 and re-checked on 2026-10-10 (`architecture.md` §3.4)

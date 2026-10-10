@@ -191,7 +191,7 @@ Browser → Vercel (web app + /api/* rewrite) → Render, Singapore (API) → Ne
 | API | https://dept-store-api-staging.onrender.com | Render Web Service `dept-store-api-staging`, Singapore, Free. Build `npm ci --include=dev && npm run build:packages && npm run build -w @ds/backend && npm run db:migrate` · Start `node backend/dist/server.js` · Health check path `/api/v1/health/live` · Auto-deploy on commit |
 | Database | Neon project `dept-store-staging` | AWS Singapore, Postgres 18. Its connection string lives only in Render's environment variables |
 
-**Render environment variables:** `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` (secret), `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=4` (it was 2, which is one hop too few; change it in Render → Environment and let it redeploy — reasoning in `architecture.md` §3.4).
+**Render environment variables:** `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` (secret), `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=4` (verified 2026-10-10; it was 2 at first, which is two hops too few — reasoning and results in `architecture.md` §3.4).
 
 - **Deploys:** every push to `main` redeploys both automatically (Vercel ~30 s, Render ~1–2 min). Migrations run during Render's build.
 - **Changing the API address:** edit the rewrite in `frontend/vercel.json` and Render's `CORS_ORIGIN` together.
@@ -217,4 +217,4 @@ from audit_logs where action = 'auth.login_failed' order by id desc limit 5;
 
 3. The `ip` must be **your own public IP** (search "what is my IP"). A Cloudflare, Vercel (AWS) or private address means the number is too low. If your connection has both IPv4 and IPv6, the site may have seen either one; both are yours.
 
-On 2026-10-10 this check **failed** on staging: every row held a Cloudflare address, so `TRUST_PROXY=2` was too low. Render's logs showed the whole proxy chain and the fix is 4; the reasoning is in `architecture.md` §3.4. To read a request's full chain yourself: Render → the service → Logs → search for a marker you put in the URL (for example add `?probe=mycheck` to a request that gets rejected); each rejected request is logged with its headers.
+On 2026-10-10 this check **failed** on staging: every row held a Cloudflare address, so `TRUST_PROXY=2` was too low. Render's logs showed the whole proxy chain and the fix was 4; after changing it, the check passed (the visitor's own address on every normal request; a made-up `X-Forwarded-For` was ignored through Vercel). The reasoning is in `architecture.md` §3.4. To read a request's full chain yourself: Render → the service → Logs → search for a marker you put in the URL (for example add `?probe=mycheck` to a request that gets rejected); each rejected request is logged with its headers.

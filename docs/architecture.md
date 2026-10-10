@@ -104,7 +104,7 @@ All three Neon projects: AWS **Singapore** (`aws-ap-southeast-1`), **PostgreSQL 
 | | Start Command | `node backend/dist/server.js` |
 | | Health check path | `/api/v1/health/live` (no database call — see §12) |
 | | Auto-deploy | On commit to `main` |
-| | Env vars | `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` *(secret)*, `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=4` *(change from 2 to 4 pending in Render, §3.4)* |
+| | Env vars | `NODE_ENV=production`, `NODE_VERSION=24`, `DATABASE_URL` *(secret)*, `CORS_ORIGIN=https://dept-store-staging.vercel.app`, `COOKIE_SECURE=true`, `SESSION_TTL_HOURS=12`, `LOG_LEVEL=info`, `TRUST_PROXY=4` *(verified, §3.4)* |
 | **Neon** project `dept-store-staging` | Region / version | AWS Singapore / Postgres 18 |
 | | Connection | direct (pooling off); string stored only in Render |
 
@@ -132,7 +132,16 @@ Running those exact headers through Express's own `proxy-addr`:
 
 The first setting, 2, matches what the staging audit rows showed (all Cloudflare). Staging therefore needs **4**, because real traffic comes through Vercel. The value must be measured again for every environment; the check is in `dev-setup.md` §11.
 
-Caveats: a hop count trusts whatever sits that far left, so anyone calling the Render address *directly* can add `X-Forwarded-For` entries and choose the IP recorded (accepted on dev-only staging; §14). Vercel is documented to overwrite a visitor's `X-Forwarded-For`, which would make the Vercel path safe; the re-check includes a made-up header to confirm it. Vercel also adds an `x-vercel-proxy-signature` header whose purpose I found no documentation for: it is treated as a secret and redacted from logs.
+**Verified on 2026-10-10** with four failed logins after the change to 4 (the `ip` column of their audit rows):
+
+| Test | Recorded |
+|---|---|
+| via Vercel, normal | the visitor ✓ |
+| via Vercel, with a made-up `X-Forwarded-For: 203.0.113.9` | **the visitor** ✓ (Vercel overwrote the made-up header) |
+| direct to Render, normal | the visitor ✓ |
+| direct to Render, with the made-up header | `203.0.113.9` (spoofed) |
+
+Caveats: a hop count trusts whatever sits that far left, so anyone calling the Render address *directly* can choose the IP recorded, as the last row shows (accepted on dev-only staging; §14). Through Vercel it cannot be spoofed. Vercel also adds an `x-vercel-proxy-signature` header whose purpose I found no documentation for: it is treated as a secret and redacted from logs.
 
 ---
 
@@ -430,8 +439,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | Request log lines repeat every response header | noisy Render logs | Compact serializers (Task 7.2) |
 | Render's port-detection probe (`HEAD /`) logs a 404 warning on each deploy | cosmetic | Ignore, or answer `/` quietly (Task 7.2) |
 | Graceful shutdown not yet observed (Windows can't send SIGTERM) | unverified behaviour | Check Render logs for `Shutting down` on the next deploy |
-| **Staging records Cloudflare's address, not the visitor's.** Observed in Task 2.5: all six failed-login audit rows, direct to Render and via Vercel, held Cloudflare addresses (checked against Cloudflare's published ranges), so `TRUST_PROXY=2` is too small | audit IPs are wrong, and a per-IP login limit (Task 7.1) would lump many visitors together by Cloudflare edge | Cause found from Render's logs (§3.4): the right value is **4**. Waiting for it to be changed in Render's environment, then the re-check in `dev-setup.md` §11. Re-verify for every environment (AWS too) |
-| A hop count can be spoofed when the origin is reachable directly | anyone calling `…onrender.com` instead of the Vercel address can add `X-Forwarded-For` entries and pick the IP the server records | Accepted on dev-only staging. Production must reach the app only through its front proxy (network rules or a shared secret header), and Task 7.1 also limits failures per username |
+| A hop count can be spoofed when the origin is reachable directly (confirmed: a made-up `X-Forwarded-For` sent straight to Render was recorded; through Vercel it is overwritten) | anyone calling `…onrender.com` instead of the Vercel address can pick the IP the server records | Accepted on dev-only staging. Production must reach the app only through its front proxy (network rules or a shared secret header), and Task 7.1 also limits failures per username. `TRUST_PROXY` must be measured again for every environment (AWS too): `dev-setup.md` §11 |
 | Login takes about 2 s on Render Free (median 2.08 s through Vercel, 1.6–2.4 s; ~0.4 s on the dev PC) | slow-feeling login on the free staging CPU (0.1 CPU); bcrypt cost 12 is deliberate | Decide at Checkpoint 2: keep 12 (production hardware will be faster), or make the cost a setting |
 | Failed logins store the attempted username in `audit_logs` | someone who types their password into the username box would have it stored | Decide in Task 7.2: keep as is (useful for spotting attacks), or store only a hash for usernames that don't exist |
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |
