@@ -290,7 +290,7 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Auth | Login, logout, me, select-branch, change-password (§5.4); bcrypt cost 12, 72-byte limit, timing-safe for unknown usernames; 32-byte tokens stored as SHA-256; httpOnly SameSite=lax cookie; forced password change enforced by the server. Verified: a real login leaves neither password nor token in the logs (cookies show as `[redacted]`) | login rate limit (Task 7.1) |
 | Audit | `logAudit` in the same transaction as each change; login, failed login, logout, branch switch, password change (and failed change) all audited | every later write (D-30) |
 | Branch isolation | `activeBranchId(req)` on every branch-owned query; access ends immediately on unmapping or branch deactivation | — |
-| Cross-site request forgery | Designed in: the session cookie will be `SameSite=lax`; the API only parses `application/json` bodies, which a foreign site can't send without a CORS preflight, and CORS allows only our origin | verified end to end in Task 2.5 and Task 7.2 |
+| Cross-site request forgery | Three layers: the session cookie is `SameSite=lax`; the API reads only `application/json` bodies, which a foreign site can't send without a CORS preflight; and the preflight is refused for any origin but ours. Tested (`auth.routes.test.ts`: text/plain and form bodies → 422, no cookie; foreign-origin preflight gets no allow-origin) and re-checked on staging through Vercel | one more pass in Task 7.2 |
 | Abuse | — | login rate limit (Task 7.1) |
 
 ---
@@ -377,7 +377,9 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | Request log lines repeat every response header | noisy Render logs | Compact serializers (Task 7.2) |
 | Render's port-detection probe (`HEAD /`) logs a 404 warning on each deploy | cosmetic | Ignore, or answer `/` quietly (Task 7.2) |
 | Graceful shutdown not yet observed (Windows can't send SIGTERM) | unverified behaviour | Check Render logs for `Shutting down` on the next deploy |
-| `req.ip` behind Vercel + Render not yet observed | rate limiting and audit IPs depend on it | Verify with login audit IPs on staging (Task 2.5) |
+| `req.ip` behind Vercel + Render not yet observed | rate limiting (Task 7.1) and audit IPs depend on it. Render sits behind Cloudflare, so there may be three proxy hops, not two; with `TRUST_PROXY=2` every user would then appear as Vercel's address and share one rate limit | Read the `ip` of the staging failed-login audit rows (query in `progress.md`, Task 2.5): it must be the caller's own public IP. If not, set `TRUST_PROXY=3` |
+| Login takes about 2 s on Render Free (median 2.08 s through Vercel, 1.6–2.4 s; ~0.4 s on the dev PC) | slow-feeling login on the free staging CPU (0.1 CPU); bcrypt cost 12 is deliberate | Decide at Checkpoint 2: keep 12 (production hardware will be faster), or make the cost a setting |
+| Failed logins store the attempted username in `audit_logs` | someone who types their password into the username box would have it stored | Decide in Task 7.2: keep as is (useful for spotting attacks), or store only a hash for usernames that don't exist |
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |
 | Production platform undecided (AWS leaning) | deploy kit and backups (Tasks 7.4–7.5) wait for it | PD-03 |
 

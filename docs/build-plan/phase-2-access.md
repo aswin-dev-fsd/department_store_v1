@@ -142,6 +142,7 @@
 3. **Notes from Task 2.3:**
    - Password fields in the zod schemas: at most 72 **bytes** (`PASSWORD_MAX_BYTES`; bcrypt ignores anything longer), measured in bytes, not characters.
    - After deploying, time a login on staging. bcrypt cost 12 took ~0.7 s on the dev PC, and Render Free has 0.1 CPU. If it's over ~2 s there, record it and let the user decide (keep 12, or make the cost configurable); production hardware decides the final value.
+   - **Measured in Task 2.5:** median 2.08 s through Vercel (1.6–2.4 s; 1.78 s direct to Render) vs ~0.4 s locally. Slightly over the line, so it is a decision at Checkpoint 2.
 
 **Done when:**
 - [ ] All tests pass
@@ -312,4 +313,5 @@ Agent: follow the checkpoint steps in `README.md`.
 - [ ] Create two branches and two cashiers; map one cashier to both branches
 - [ ] Log in as each cashier: the single-branch cashier goes straight in; the other sees the picker
 - [ ] Deactivate a cashier while they're logged in: their next action logs them out
-- [ ] Confirm the (proposed) items listed in the summary: 12-hour sessions, forced password change after a reset
+- [ ] Confirm the (proposed) items listed in the summary: 12-hour sessions, forced password change after a reset, minimum password length 8, bcrypt cost 12 (login ≈ 2 s on Render Free)
+- [ ] Check the `ip` recorded for failed logins on staging is your own public IP (query in `progress.md`, Task 2.5); if not, `TRUST_PROXY` must change

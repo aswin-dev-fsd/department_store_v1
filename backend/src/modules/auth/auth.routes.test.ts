@@ -1,8 +1,10 @@
+import bcrypt from 'bcrypt';
 import request from 'supertest';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { expectAudit } from '../../../test/helpers/audit.js';
 import { createTestDb, resetDb } from '../../../test/helpers/db.js';
 import { createApp } from '../../app.js';
+import { env } from '../../config/env.js';
 import { sessionCookieOptions } from '../../middleware/auth.js';
 import { hashPassword } from './auth.service.js';
 
@@ -136,12 +138,12 @@ describe('POST /auth/login', () => {
   });
 
   it.each([
-    ['a wrong password', 'ravi', 'not-the-password'],
-    ['an unknown user', 'nobody', PASSWORD],
-    ['a deactivated user', 'gone', PASSWORD],
+    ['a wrong password', 'ravi', 'not-the-password', 'wrong_password'],
+    ['an unknown user', 'nobody', PASSWORD, 'unknown_user'],
+    ['a deactivated user', 'gone', PASSWORD, 'inactive'],
   ])(
-    'answers %s with the same 401 and audits it without the password',
-    async (_case, username, password) => {
+    'answers %s with the same 401 and audits it (with the reason) without the password',
+    async (_case, username, password, reason) => {
       await insertUser('ravi');
       await insertUser('gone', { isActive: false });
 
@@ -154,7 +156,7 @@ describe('POST /auth/login', () => {
       expect(sessionCookie(res)).toBeUndefined();
 
       const row = await expectAudit(db, { action: 'auth.login_failed', actorId: null });
-      expect(row.after).toMatchObject({ username });
+      expect(row.after).toEqual({ username, reason });
       expect(JSON.stringify(row)).not.toContain(password);
     },
   );
@@ -178,6 +180,22 @@ describe('GET /auth/me', () => {
     expect(me.body.data.user.username).toBe('ravi');
 
     expect((await request(app).get('/api/v1/auth/me')).status).toBe(401);
+  });
+
+  it('asks the cashier to pick a branch again once the Admin unmaps them from the active one', async () => {
+    const userId = await insertUser('ravi');
+    await mapUser(userId, await insertBranch('TPR'));
+    const { agent } = await loggedIn('ravi');
+    expect((await agent.get('/api/v1/auth/me')).body.data.needsBranchSelection).toBe(false);
+
+    await pool.query('delete from user_branches where user_id = $1', [userId]);
+    const me = await agent.get('/api/v1/auth/me');
+    expect(me.status).toBe(200);
+    expect(me.body.data).toMatchObject({
+      activeBranchId: null,
+      needsBranchSelection: true,
+      branches: [],
+    });
   });
 });
 
@@ -206,6 +224,37 @@ describe('POST /auth/select-branch', () => {
     const res = await agent.post('/api/v1/auth/select-branch').send({ branchId: other });
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('BRANCH_NOT_ASSIGNED');
+  });
+
+  it('refuses a mapped branch that has been deactivated', async () => {
+    const userId = await insertUser('ravi');
+    await mapUser(userId, await insertBranch('TPR'));
+    const closed = await insertBranch('OLD');
+    await mapUser(userId, closed);
+    const { agent } = await loggedIn('ravi');
+    await pool.query('update branches set is_active = false where id = $1', [closed]);
+
+    const res = await agent.post('/api/v1/auth/select-branch').send({ branchId: closed });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('BRANCH_NOT_ASSIGNED');
+  });
+
+  it('is for cashiers only: an admin gets 403', async () => {
+    await insertUser('boss', { role: 'admin' });
+    const branchId = await insertBranch('TPR');
+    const { agent } = await loggedIn('boss');
+
+    const res = await agent.post('/api/v1/auth/select-branch').send({ branchId });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
+
+  it('rejects a branch id that is not a whole number with 422', async () => {
+    await insertUser('ravi');
+    const { agent } = await loggedIn('ravi');
+    const res = await agent.post('/api/v1/auth/select-branch').send({ branchId: '1; drop table' });
+    expect(res.status).toBe(422);
+    expect(res.body.error.details[0].path).toBe('body.branchId');
   });
 });
 
@@ -283,6 +332,58 @@ describe('POST /auth/logout', () => {
     // The old token is dead even if someone kept a copy of it
     expect((await request(app).get('/api/v1/auth/me').set('Cookie', oldCookie)).status).toBe(401);
     await expectAudit(db, { action: 'auth.logout', actorId: userId });
+  });
+});
+
+describe('login timing protection', () => {
+  it('checks an unknown username against a real cost-12 bcrypt hash, so response time reveals nothing', async () => {
+    const compare = vi.spyOn(bcrypt, 'compare');
+    try {
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ username: 'nobody', password: 'whatever' });
+      expect(res.status).toBe(401);
+      expect(compare).toHaveBeenCalledTimes(1);
+      const hash = String(compare.mock.calls[0]?.[1]);
+      expect(hash).toMatch(/^\$2b\$12\$[./A-Za-z0-9]{53}$/);
+      expect(bcrypt.getRounds(hash)).toBe(12);
+    } finally {
+      compare.mockRestore();
+    }
+  });
+});
+
+describe('cross-site request protection', () => {
+  it.each([
+    ['text/plain', JSON.stringify({ username: 'ravi', password: PASSWORD })],
+    ['application/x-www-form-urlencoded', `username=ravi&password=${encodeURIComponent(PASSWORD)}`],
+  ])(
+    'does not accept a %s body as a login: only JSON is read, and a foreign site cannot send JSON without a CORS preflight',
+    async (contentType, body) => {
+      await insertUser('ravi');
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .set('Content-Type', contentType)
+        .send(body);
+      expect(res.status).toBe(422);
+      expect(sessionCookie(res)).toBeUndefined();
+    },
+  );
+
+  it('approves the CORS preflight for our own origin and refuses a foreign one', async () => {
+    const preflight = (origin: string) =>
+      request(app)
+        .options('/api/v1/auth/login')
+        .set('Origin', origin)
+        .set('Access-Control-Request-Method', 'POST')
+        .set('Access-Control-Request-Headers', 'content-type');
+
+    const ours = await preflight(env.CORS_ORIGIN[0]!);
+    expect(ours.headers['access-control-allow-origin']).toBe(env.CORS_ORIGIN[0]);
+    expect(ours.headers['access-control-allow-credentials']).toBe('true');
+
+    const foreign = await preflight('https://evil.example.com');
+    expect(foreign.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
 
