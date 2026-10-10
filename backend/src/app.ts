@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
@@ -38,6 +39,8 @@ export function createApp(
   );
   app.use(helmet());
   app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
+  // Session cookie (ds_session) for requireAuth
+  app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
 
   app.use(API_PREFIX, apiRoutes(deps));

@@ -3,7 +3,7 @@ import { schema, type Db } from '@ds/database';
 import type { Role } from '@ds/shared';
 import { and, eq, lt, ne, sql } from 'drizzle-orm';
 
-const { sessions, users } = schema;
+const { branches, sessions, userBranches, users } = schema;
 
 export interface NewSession {
   tokenHash: string;
@@ -16,6 +16,8 @@ export interface SessionRow {
   sessionId: number;
   expiresAt: Date;
   activeBranchId: number | null;
+  /** The active branch is still mapped to this user and still active. */
+  branchUsable: boolean;
   user: {
     id: number;
     username: string;
@@ -31,7 +33,10 @@ export async function insertSession(db: Db, session: NewSession): Promise<void> 
   await db.insert(sessions).values(session);
 }
 
-/** Find a session and its user by the token's hash. */
+/**
+ * Find a session and its user by the token's hash, and — in the same query — whether its
+ * active branch is still mapped to the user and still active.
+ */
 export async function findSessionByTokenHash(
   db: Db,
   tokenHash: string,
@@ -41,6 +46,7 @@ export async function findSessionByTokenHash(
       sessionId: sessions.id,
       expiresAt: sessions.expiresAt,
       activeBranchId: sessions.activeBranchId,
+      branchUsable: sql<boolean>`(${userBranches.userId} is not null and ${branches.isActive} is true)`,
       user: {
         id: users.id,
         username: users.username,
@@ -52,6 +58,14 @@ export async function findSessionByTokenHash(
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
+    .leftJoin(
+      userBranches,
+      and(
+        eq(userBranches.userId, sessions.userId),
+        eq(userBranches.branchId, sessions.activeBranchId),
+      ),
+    )
+    .leftJoin(branches, eq(branches.id, sessions.activeBranchId))
     .where(eq(sessions.tokenHash, tokenHash))
     .limit(1);
   return row;

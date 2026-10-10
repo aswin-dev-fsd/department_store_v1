@@ -164,10 +164,20 @@ department_store_v1/
 | 1 | `pino-http` | First, so even rejected requests are logged; health paths skipped (polled constantly) |
 | 2 | `helmet()` | Security headers (HSTS, nosniff, CSP, frame options…); hides `X-Powered-By` |
 | 3 | `cors({ origin: CORS_ORIGIN[], credentials: true })` | Explicit allow-list; other origins get no CORS headers |
-| 4 | `express.json({ limit: '1mb' })` | Body parsing with a size cap |
-| 5 | `/api/v1` routes | Feature modules |
-| 6 | `notFound` | Unknown routes → 404 envelope |
-| 7 | `errorHandler` | Every error → failure envelope (below) |
+| 4 | `cookieParser()` | Reads the `ds_session` cookie for `requireAuth` |
+| 5 | `express.json({ limit: '1mb' })` | Body parsing with a size cap; only `application/json` bodies are parsed |
+| 6 | `/api/v1` routes | Feature modules. Per route, as needed: `requireAuth(db)` → `requirePermission('…')` → `requireBranch` → `validate({ params, query, body })` → controller |
+| 7 | `notFound` | Unknown routes → 404 envelope |
+| 8 | `errorHandler` | Every error → failure envelope (below) |
+
+**Route guards** (`backend/src/middleware/`, Task 2.4):
+
+| Guard | Does | Fails with |
+|---|---|---|
+| `requireAuth(db)` | Reads `ds_session`, verifies it (`auth.service.verifySession`), sets `req.ctx = { user, activeBranchId, sessionId, sessionToken }` | 401 `UNAUTHORIZED` / `SESSION_EXPIRED` / `ACCOUNT_DISABLED` |
+| `requirePermission(p)` | `can(user.role, p)` from the shared permission map. Without `requireAuth` in front it answers 401 — never "allowed" | 403 `FORBIDDEN` |
+| `requireBranch` / `activeBranchId(req)` | The session's active branch, used to filter every branch-owned query. It reads as empty the moment the cashier is unmapped from the branch or the branch is deactivated (checked in the same query as the session) | 403 `NO_ACTIVE_BRANCH` |
+| `validate({ params, query, body })` | zod-parses each part and replaces it with the parsed value (coerced numbers, defaults, unknown fields dropped) | 422 `VALIDATION_ERROR`, details `[{ path: 'body.quantity', message }]` |
 
 ### 5.3 Error handling
 
@@ -270,7 +280,9 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Errors | unexpected errors return a generic 500; stack and messages stay in server logs | — |
 | Logs | secrets redacted; no request bodies | compact request lines (Task 7.2) |
 | Proxies | `trust proxy` configured | real-IP check via audit IPs (Task 2.5) |
-| Auth | — | sessions in httpOnly cookies, bcrypt, permissions (Phase 2) |
+| Auth | Session service (bcrypt cost 12, 72-byte password limit, 32-byte tokens stored as SHA-256) and route guards (§5.2) | login/logout routes and the httpOnly cookie (Task 2.5) |
+| Branch isolation | `activeBranchId(req)` on every branch-owned query; access ends immediately on unmapping or branch deactivation | — |
+| Cross-site request forgery | Designed in: the session cookie will be `SameSite=lax`; the API only parses `application/json` bodies, which a foreign site can't send without a CORS preflight, and CORS allows only our origin | verified end to end in Task 2.5 and Task 7.2 |
 | Audit | — | every change + login events, same transaction (D-30, Phase 2) |
 | Abuse | — | login rate limit (Task 7.1) |
 

@@ -68,7 +68,9 @@ export async function createSession(
 
 /**
  * Resolve a cookie token to its user and active branch, or throw AuthError (401).
- * Expired sessions are deleted; a deactivated user loses every session.
+ * Expired sessions are deleted; a deactivated user loses every session. The active branch is
+ * reported as null once the user is unmapped from it or it is deactivated, so access ends at
+ * once rather than at the next login.
  */
 export async function verifySession(db: Db, token: string): Promise<VerifiedSession> {
   const row = await model.findSessionByTokenHash(db, hashToken(token));
@@ -88,7 +90,7 @@ export async function verifySession(db: Db, token: string): Promise<VerifiedSess
   return {
     sessionId: row.sessionId,
     user,
-    activeBranchId: row.activeBranchId,
+    activeBranchId: row.branchUsable ? row.activeBranchId : null,
     expiresAt: row.expiresAt,
   };
 }

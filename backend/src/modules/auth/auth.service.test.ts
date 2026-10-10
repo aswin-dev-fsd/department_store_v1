@@ -88,6 +88,10 @@ describe('verifySession', () => {
   it('returns the user and active branch for a valid token', async () => {
     const userId = await insertUser();
     const branchId = await insertBranch();
+    await pool.query('insert into user_branches (user_id, branch_id) values ($1, $2)', [
+      userId,
+      branchId,
+    ]);
     const { token } = await createSession(db, { userId, activeBranchId: branchId });
 
     const session = await verifySession(db, token);
@@ -102,6 +106,32 @@ describe('verifySession', () => {
       },
     });
     expect(session.user).not.toHaveProperty('passwordHash');
+  });
+
+  it('drops the active branch once the cashier is no longer mapped to it', async () => {
+    const userId = await insertUser();
+    const branchId = await insertBranch();
+    await pool.query('insert into user_branches (user_id, branch_id) values ($1, $2)', [
+      userId,
+      branchId,
+    ]);
+    const { token } = await createSession(db, { userId, activeBranchId: branchId });
+    await expect(verifySession(db, token)).resolves.toMatchObject({ activeBranchId: branchId });
+
+    await pool.query('delete from user_branches where user_id = $1', [userId]);
+    await expect(verifySession(db, token)).resolves.toMatchObject({ activeBranchId: null });
+  });
+
+  it('drops the active branch once the branch is deactivated', async () => {
+    const userId = await insertUser();
+    const branchId = await insertBranch();
+    await pool.query('insert into user_branches (user_id, branch_id) values ($1, $2)', [
+      userId,
+      branchId,
+    ]);
+    const { token } = await createSession(db, { userId, activeBranchId: branchId });
+    await pool.query('update branches set is_active = false where id = $1', [branchId]);
+    await expect(verifySession(db, token)).resolves.toMatchObject({ activeBranchId: null });
   });
 
   it('rejects an unknown token', async () => {
