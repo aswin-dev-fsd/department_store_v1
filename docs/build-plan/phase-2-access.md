@@ -139,6 +139,9 @@
    - **`logout`:** deletes the session and clears the cookie.
    - **Audit (D-30):** `auth.login`, `auth.login_failed` (with the attempted username, never the password, and no actor), `auth.logout`, `auth.password_change` each write a row. Use `expectAudit` from Task 2.6. *If 2.5 runs before 2.6, add these assertions in 2.6.*
 2. **Green** — implement. Set `last_login_at` on login.
+3. **Notes from Task 2.3:**
+   - Password fields in the zod schemas: at most 72 **bytes** (`PASSWORD_MAX_BYTES`; bcrypt ignores anything longer), measured in bytes, not characters.
+   - After deploying, time a login on staging. bcrypt cost 12 took ~0.7 s on the dev PC, and Render Free has 0.1 CPU. If it's over ~2 s there, record it and let the user decide (keep 12, or make the cost configurable); production hardware decides the final value.
 
 **Done when:**
 - [ ] All tests pass

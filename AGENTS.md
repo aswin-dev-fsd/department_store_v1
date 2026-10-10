@@ -30,7 +30,8 @@ Project rules for this repo. They sit on top of `D:\DreamLand\AGENTS.md`; where 
 shared/      zod schemas + TS types: the API contract used by backend and frontend
 database/    Drizzle schema, migrations, seeds, setup:client script
 backend/
-  src/modules/<feature>/<feature>.{routes,controller,service,schema,test}.ts
+  src/modules/<feature>/<feature>.{routes,controller,service,model,schema,test}.ts
+             model = database queries only, named as actions (insertX, findX); rules live in the service
   src/lib/   response, errors, branch-scoped query helper
 frontend/    React + Vite app
 docs/        decisions, plans, future plans
