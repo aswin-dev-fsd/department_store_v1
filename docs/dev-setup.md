@@ -110,6 +110,15 @@ A variable set in the terminal beats the `.env` file, which is why this reaches 
 
 Open http://localhost:5173 and log in with the username and temporary password from `setup:client`. The app first asks for a new password (at least 8 characters), then opens the Admin area. A Cashier goes straight to Billing; a Cashier with several branches picks one first and can switch later from the header. A wrong password shows "Wrong username or password", and a deactivated user sees the same message (the app never says which accounts exist). There is no "forgot password" link: an Admin resets passwords, or use the command below.
 
+### Set up branches and cashiers
+
+Logged in as the Admin, open **Administration**:
+
+1. **Settings**: the business name, address and phone.
+2. **Branches**: add each branch. The code (1–3 letters) appears on every bill number, so settle it before the first bill. Deactivating a branch takes it away from the cashiers working in it on their next request.
+3. **Users**: add each cashier. A card shows their **temporary password once**, with a Copy button; it cannot be looked up later, so copy it before pressing Done (a second password never replaces one that is still on screen). Then use **Branches** on the cashier's card to tick the branches they may work in: one branch and they go straight to billing, several and they pick one at login.
+4. **Reset password** and **Deactivate** ask for confirmation first. Your own row has neither (use "Change password" in the header). Deactivating a user ends their sessions at once.
+
 ### Reset a password from the command line (recovery)
 
 Admins reset other people's passwords on the Users screen. This command is for when nobody can: for example the only Admin lost the temporary password before their first login (`setup:client` refuses to run twice).

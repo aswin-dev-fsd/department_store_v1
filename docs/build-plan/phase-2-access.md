@@ -327,10 +327,17 @@
 4. Show server errors from `ApiError` next to the relevant field, or as a message.
 
 **Done when:**
-- [ ] check-types and build pass
-- [ ] Manual check: everything in the Checkpoint 2 review below works
+- [x] check-types and build pass
+- [x] Manual check: everything in the Checkpoint 2 review below works *(see "As built": items 1–4 of that review were run by the agent on the test database; the user's own review and the (proposed) confirmations are still Checkpoint 2)*
 
 **Commit:** `feat(frontend): add admin screens for branches, users and settings`
+
+**As built (2026-10-14):**
+- **Files:** `pages/admin/{BranchesPage, BranchForm, UsersPage, UserCard, UserCreateForm, UserBranchesPanel, SettingsPage}.tsx`; `pages/AdminHomePage.tsx` is now the hub; `admin/{keys, queries, mutations, paging, branchChoices, forms, sections}.ts`; `lib/clipboard.ts`; `components/{AdminLayout, ConfirmBar, Pager, QueryProblem, StatusBadge, TemporaryPassword}.tsx`; `SelectField`, `TextAreaField` and a `danger` button in `ui.tsx` (the field label/hint/error wiring is now shared); `describeFailure` in `forms/fieldErrors.ts`; routes `/admin`, `/admin/branches`, `/admin/users`, `/admin/settings` built from `admin/sections.ts`.
+- **Interpretations of "related components":** inline forms and confirmations (no pop-up dialogs); lists as cards (they work on a phone); the branch code stays editable, with a hint that it appears on bill numbers; your own user row has no deactivate or reset.
+- **Not included** (the task doesn't name them): list filters, search, last-login and last-saved dates.
+- **Checked in the browser on the test database:** empty and invalid forms; a branch added (lower-case code stored upper-case), a duplicate code shown next to the Code field, edit, deactivate (confirmation, Cancel focused) and reactivate; two cashiers added (username lower-cased, duplicate username shown next to its field); the one-time password card (focus moves to it, Done removes the password from the page, two cards can be open at once); branch checklist (Save disabled until something changes; one cashier to both branches, one to TPR); edit name; reset password; deactivate and reactivate (deactivation ended an open session at once and blocked login; reactivation did not revive it); settings (empty name refused, save, "saved" notice clearing on the next edit, values kept after a reload); the pager across 23 users; a cashier at `/admin/users` gets "No access" and 403 from the API; cashier logins (single-branch → billing, two-branch → picker) after the forced password change; phone width without horizontal scroll; no React warnings in the console.
+- **Not observable here:** the Copy button's *success* path. The preview pane denies clipboard permission (a direct `navigator.clipboard.writeText` fails too), so only the refusal message was seen live; the success path is covered by a unit test with a stubbed clipboard. The user should try Copy in their own browser.
 
 ---
 

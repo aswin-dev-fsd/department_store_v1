@@ -1,4 +1,5 @@
 import { ApiError } from '../api/client';
+import { errorMessage } from '../api/errors';
 
 /** One message per field name. */
 export type FieldErrors = Record<string, string>;
@@ -46,4 +47,31 @@ export function serverFieldErrors(error: unknown): FieldErrors {
     if (part === 'body' && field && !(field in errors)) errors[field] = message;
   }
   return errors;
+}
+
+export interface FailureDescription {
+  /** Messages to show next to form fields. */
+  fields: FieldErrors;
+  /** One message for the whole form, when the failure belongs to no single field. */
+  message: string | null;
+}
+
+/**
+ * Turn a failed call into what a form shows. A code in `codeFields` (e.g. DUPLICATE_CODE →
+ * 'code') lands next to that field; a server validation failure lands next to its fields;
+ * anything else becomes one message. Nothing failed → nothing to show.
+ */
+export function describeFailure(
+  error: unknown,
+  codeFields: Readonly<Record<string, string>> = {},
+): FailureDescription {
+  if (error === null || error === undefined) return { fields: {}, message: null };
+  if (error instanceof ApiError) {
+    if (Object.hasOwn(codeFields, error.code)) {
+      return { fields: { [codeFields[error.code]!]: errorMessage(error) }, message: null };
+    }
+    const fields = serverFieldErrors(error);
+    if (Object.keys(fields).length > 0) return { fields, message: null };
+  }
+  return { fields: {}, message: errorMessage(error) };
 }

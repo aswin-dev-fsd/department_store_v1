@@ -116,7 +116,7 @@ In code: `shared/src/permissions.ts`. Its test copies this table cell by cell, s
 ### Account lifecycle
 
 1. **First Admin:** created by the `setup:client` script when a client's copy is installed.
-2. **Admin creates cashiers** and maps them to branches.
+2. **Admin creates cashiers** (Admin → Users) and maps them to branches. The temporary password appears once on screen, with a Copy button; the Admin gives it to the person.
 3. **Password reset:** done by the Admin. The user must change the temporary password at next login **(proposed, Phase 2)**.
 4. **Leaving staff:** the Admin deactivates the account. Their sessions end immediately, and their past bills keep their name.
 
@@ -248,7 +248,8 @@ Any error → errorHandler → { success: false, error: { code, message, details
 | Stock | Cashier, Admin | Current stock; movement history per item |
 | Stock adjustment | Cashier | +/− quantity with a reason |
 | Reports | Cashier (limited), Admin (all) | See [6.10](#610-reports-d-22) |
-| Admin: Branches, Users and mapping, Settings, CSV import | Admin | Setup |
+| Admin: Branches, Users and mapping, Settings | Admin | Setup (built in Phase 2). A new or reset temporary password appears once, with a Copy button |
+| Admin: CSV import | Admin | Items and opening stock per branch (Phase 3) |
 | Change password | All | Forced at first login and after a reset |
 | No access | All | Shown when the role lacks the page's permission |
 | Status | Anyone, no login | API and database health (`/status`) |

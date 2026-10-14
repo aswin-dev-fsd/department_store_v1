@@ -328,7 +328,7 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Permissions in the UI | Nav links and `RequirePermission` read `me.permissions` from the server (the same map the API enforces), never a role name. This is courtesy: the API checks every call itself |
 | Accessibility | 44 px controls; every input has a label and is linked to its hint and error; errors are `role="alert"`, confirmations `role="status"`; inputs stay focusable (read-only, not disabled) while a request is sent, so keyboard users keep their place, and a second Enter during the request is ignored |
 | Dev server | port 5173; proxies `/api` → `localhost:4000` |
-| Production build | `frontend/dist`: ~454 KB JS (~139 KB gzip) + ~12 KB CSS after Task 2.10 (was 348 KB before the login screens) |
+| Production build | `frontend/dist`: ~482 KB JS (~146 KB gzip) + ~15 KB CSS after Task 2.11 (454 KB after the login screens, 348 KB before them) |
 
 **Where a visitor is sent** (`requiredRoute`, in this order):
 
@@ -349,9 +349,23 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | `/login` | Login | Message for a wrong password; a notice when a session ended on its own; the password box is cleared after a failure |
 | `/change-password` | Change password | Forced (with a notice, no cancel) after a first login or reset; otherwise from the header, confirming in place. A "show passwords" box helps with the long temporary passwords |
 | `/select-branch` | Branch picker | Marks the current branch; reached from the header to switch |
-| `/admin` | Admin home | Placeholder until Task 2.11 |
+| `/admin` | Admin hub | A card for each section the person may open |
+| `/admin/branches` | Branches | List (20 per page), add, edit, deactivate (asks first), reactivate |
+| `/admin/users` | Users | List with each user's branches; add; edit name; branch checklist for cashiers; reset password; deactivate (asks first) and reactivate. A new or reset temporary password appears once in a card with Copy and Done |
+| `/admin/settings` | Settings | Business name, address, phone |
 | `/billing` | Billing | Placeholder until Phase 5 |
 | `/no-access` | No access | Shown when the role lacks the page's permission |
+
+**Admin screens** (Task 2.11)
+
+| Aspect | How it works |
+|---|---|
+| Structure | `AdminLayout` shows links to the sections the person may open (and "No access" if none). The sections are listed once in `admin/sections.ts` (address, permission, label); the hub, the links and the routes are all built from that list, and each section route also checks its own permission. The API checks every call regardless |
+| Data | `admin/queries.ts`: lists keep the previous page on screen while the next loads. `admin/mutations.ts`: each mutation is a plain options object built from the QueryClient, so tests run it without React, and each refreshes what it makes stale (a branch change also refreshes the user lists, which show branches). Keys live in `admin/keys.ts`, all under `['admin', …]`, so logging out clears them |
+| One-time passwords | `TemporaryPassword` shows a created or reset password until the Admin presses Done. Several can be on screen at once, so a second never replaces one that was not copied. The mutations that carry a password use `gcTime: 0`, so the cache drops the reply as soon as no screen is looking at it; the page holds it in state only while it is shown. If the browser refuses the clipboard, the card says so and the password can be selected by hand |
+| Safeguards | Your own row has no Deactivate or Reset (the server refuses them too). Deactivate and Reset password ask inline first, with Cancel focused. The branch code stays editable, with a hint that it appears on bill numbers (Task 5.6 will lock it once bills exist) |
+| Errors | `describeFailure` puts `DUPLICATE_CODE` and `DUPLICATE_USERNAME` next to their fields, server validation next to its fields, and anything else as one message |
+| Limits | Lists page at 20. The branch checklist loads up to 100 active branches. No search or filters yet (`architecture.md` §14) |
 
 **Worth knowing**
 - A deactivated user sees "Wrong username or password" at login: the server gives the same reply for a wrong password, an unknown username and an inactive account, so the app never reveals which accounts exist. The Admin tells them.
@@ -399,8 +413,8 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | shared | Vitest | money helpers, permission map, zod schemas | 130 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
 | backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, operator scripts, schema constraints (against the Neon test database, ~6 min) | 254 |
-| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks | 83 |
-| **Total** | | | **479** |
+| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin data hooks, paging, branch checklist, admin sections, clipboard | 134 |
+| **Total** | | | **530** |
 
 **Backend test harness** (`backend/test/`):
 
@@ -480,6 +494,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |
 | Screens (pages, shell, route guard) have no automated tests; only the logic behind them does (routing, session rules, cache, error text, form checks) | a broken screen, as opposed to broken logic, is caught only by the manual browser check done in each task | Component tests need extra packages (Testing Library and a DOM environment, or Playwright), which need approval. Revisit before the billing screen (Phase 5), where the cost of a UI regression is highest |
 | Field messages from the `@ds/shared` schemas ("Enter the username", …) are English text, not `t()` keys | forms would still show English field errors once the Tamil dictionary exists (FP-07) | When FP-07 starts, make the schemas return message keys and translate them in the frontend |
+| Admin lists have no search or filters, and the cashier branch checklist shows at most 100 active branches | a store with many staff pages through users 20 at a time; more than 100 branches would hide some in the checklist | Add search and a role/status filter when a client needs them (the API already filters users by role and status); the 100-branch limit is far beyond a department store chain |
 | Production platform undecided (AWS leaning) | deploy kit and backups (Tasks 7.4–7.5) wait for it | PD-03 |
 
 ---

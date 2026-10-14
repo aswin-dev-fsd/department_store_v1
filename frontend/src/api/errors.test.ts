@@ -52,4 +52,20 @@ describe('errorMessage', () => {
       expect(errorMessage(new ApiError(code, 'SERVER WORDS', 400)), code).not.toBe('SERVER WORDS');
     }
   });
+
+  it('has text for every code the Admin screens can meet', () => {
+    const codes = [
+      'DUPLICATE_CODE',
+      'DUPLICATE_USERNAME',
+      'CANNOT_DEACTIVATE_SELF',
+      'CANNOT_RESET_OWN_PASSWORD',
+      'NOT_A_CASHIER',
+      'BRANCH_NOT_AVAILABLE',
+      'NOT_SET_UP',
+      'NOT_FOUND',
+    ];
+    for (const code of codes) {
+      expect(errorMessage(new ApiError(code, 'SERVER WORDS', 400)), code).not.toBe('SERVER WORDS');
+    }
+  });
 });

@@ -1,7 +1,8 @@
 import { changePasswordSchema, loginSchema } from '@ds/shared';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../api/client';
-import { serverFieldErrors, validateForm } from './fieldErrors';
+import { t } from '../i18n/t';
+import { describeFailure, serverFieldErrors, validateForm } from './fieldErrors';
 
 describe('validateForm', () => {
   it('returns the parsed data when the form is valid (trimmed by the schema)', () => {
@@ -53,5 +54,53 @@ describe('serverFieldErrors', () => {
       { path: 'query.limit', message: 'bad' },
     ]);
     expect(serverFieldErrors(error)).toEqual({});
+  });
+});
+
+describe('describeFailure', () => {
+  const codeFields = { DUPLICATE_CODE: 'code', DUPLICATE_USERNAME: 'username' };
+
+  it('has nothing to say when nothing failed', () => {
+    expect(describeFailure(null, codeFields)).toEqual({ fields: {}, message: null });
+    expect(describeFailure(undefined)).toEqual({ fields: {}, message: null });
+  });
+
+  it('puts a duplicate error next to the field it is about, with the dictionary text', () => {
+    const error = new ApiError('DUPLICATE_CODE', 'Another branch already uses this code', 400);
+    expect(describeFailure(error, codeFields)).toEqual({
+      fields: { code: t('error.DUPLICATE_CODE') },
+      message: null,
+    });
+  });
+
+  it('puts a server validation failure next to its fields', () => {
+    const error = new ApiError('VALIDATION_ERROR', 'Invalid request data', 422, [
+      { path: 'body.name', message: 'Enter the branch name' },
+    ]);
+    expect(describeFailure(error, codeFields)).toEqual({
+      fields: { name: 'Enter the branch name' },
+      message: null,
+    });
+  });
+
+  it('shows anything else as one message, and leaves the fields alone', () => {
+    const error = new ApiError(
+      'CANNOT_DEACTIVATE_SELF',
+      'You cannot deactivate your own account',
+      400,
+    );
+    expect(describeFailure(error, codeFields)).toEqual({
+      fields: {},
+      message: t('error.CANNOT_DEACTIVATE_SELF'),
+    });
+    expect(describeFailure(new Error('boom'))).toEqual({ fields: {}, message: t('error.generic') });
+  });
+
+  it('shows a mapped code as a message when the form has no such field mapped for it', () => {
+    const error = new ApiError('DUPLICATE_USERNAME', 'That username is already taken', 400);
+    expect(describeFailure(error, {})).toEqual({
+      fields: {},
+      message: t('error.DUPLICATE_USERNAME'),
+    });
   });
 });
