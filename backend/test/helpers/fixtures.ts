@@ -67,6 +67,43 @@ export async function createBranch(pool: Pool, options: BranchFixture = {}): Pro
   return Number(rows[0]!.id);
 }
 
+export interface ItemFixture {
+  code?: string;
+  name?: string;
+  barcode?: string | null;
+  mrpPaise?: number;
+  sellingPricePaise?: number;
+  isActive?: boolean;
+}
+
+/**
+ * Insert an item with its item_stock row at 0, as the Items API does, and return its id.
+ * Give it stock through the ledger (see helpers/ledger.ts), never by editing item_stock.
+ */
+export async function createItem(
+  pool: Pool,
+  branchId: number,
+  options: ItemFixture = {},
+): Promise<number> {
+  const n = next();
+  const { rows } = await pool.query<{ id: string }>(
+    `insert into items (branch_id, code, barcode, name, mrp_paise, selling_price_paise, is_active)
+     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
+    [
+      branchId,
+      options.code ?? `ITEM${n}`,
+      options.barcode ?? null,
+      options.name ?? `Item ${n}`,
+      options.mrpPaise ?? 10000,
+      options.sellingPricePaise ?? 9000,
+      options.isActive ?? true,
+    ],
+  );
+  const id = Number(rows[0]!.id);
+  await pool.query('insert into item_stock (item_id, quantity) values ($1, 0)', [id]);
+  return id;
+}
+
 /** Map a cashier to a branch. */
 export async function mapUser(pool: Pool, userId: number, branchId: number): Promise<void> {
   await pool.query('insert into user_branches (user_id, branch_id) values ($1, $2)', [

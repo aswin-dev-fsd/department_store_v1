@@ -89,10 +89,17 @@ postMovements(tx, {
 3. Note: this function never opens a transaction. Callers pass `tx`, so the stock change commits or rolls back together with the bill, purchase or adjustment that caused it.
 
 **Done when:**
-- [ ] All nine tests pass
-- [ ] Run the two concurrency tests 10 times in a row (`vitest --repeat` or a loop) — no flakes
+- [x] All nine tests pass
+- [x] Run the two concurrency tests 10 times in a row (`vitest --repeat` or a loop) — no flakes
 
 **Commit:** `feat(stock): add ledger service with row locking`
+
+**As built (2026-10-14):**
+- **Files:** the three named, plus `stock.model.ts` (the queries, per the layout rule) and `createItem` in `test/helpers/fixtures.ts`. 19 tests: the nine above and 4 more (guards, empty list, inactive item, the helper itself), several split into more cases.
+- **Behaviour the spec left open:** the result has one entry per input movement, in order. Movements apply in input order, and an item that would dip below zero *at any point* is refused, reporting the lowest point (`available` = stock before the call, `requested` = what was needed; for a sale that is the combined quantity). A zero or non-integer quantity is `INVALID_MOVEMENT`; an empty list does nothing; an inactive item can still move; `tx` is typed `Tx`, so a bare database handle cannot be passed.
+- **The invariant helper** also checks every row's `balance_after` against the running total.
+- **Proven by breaking it once:** no `FOR UPDATE` (both concurrency tests red); writing before the check (the 6 failure-path tests red, success paths green); no running balance (the same-item test red); no branch condition (the other-branch test red). The two concurrency tests ran 10 times in a row, 10 clean; the first one holds its lock with `pg_sleep` so the second call certainly overlaps.
+- **Not separately provable:** the lock *order* (`ORDER BY item_id` in one statement). Two callers run the same plan, so they queue in the same order with or without it; the explicit `ORDER BY` is what makes that a guarantee rather than luck.
 
 ---
 
