@@ -35,11 +35,18 @@ Task 3.2 is the most important service in the system. Take it slowly; its tests 
 6. Generate the migration, **read the SQL**, and apply it.
 
 **Done when:**
-- [ ] The migration applies to an empty database
-- [ ] check-types passes
-- [ ] The constraints exist (a test that inserts a negative `item_stock` gets a constraint error)
+- [x] The migration applies to an empty database
+- [x] check-types passes
+- [x] The constraints exist (a test that inserts a negative `item_stock` gets a constraint error)
 
 **Commit:** `feat(database): add catalog and ledger tables`
+
+**As built (2026-10-14):**
+- **Files:** `database/src/schema/catalog.ts` (`categories`, `items`, `item_stock`, `vendors`), `ledger.ts` (the three enums and `stock_movements`), `index.ts`, migration `0001_catalog_and_ledger.sql` (+ snapshot and journal), and `backend/test/schema/catalog.schema.test.ts` (43 tests, raw SQL).
+- **Choices the task left open:** quantities and `balance_after` are `integer`; prices are `bigint` paise; `gst_rate` is `numeric(5,2)` (PD-01 hasn't decided how GST is stored); every foreign key is `ON DELETE RESTRICT` (nothing is deleted); `ref_type` is required and `ref_id` optional (an import has no id); `item_stock` has no `updated_at` (the ledger is its history).
+- **Applied to:** an empty test database (schema dropped, `db:migrate` applied 2 migrations, a second run changed nothing) and the dev database. Staging gets it at Render's next build; it only adds tables.
+- **Proven by removing it once:** the `item_stock` CHECK (2 tests red), the `stock_movements` CHECK (1), the barcode, item-code and category-name unique indexes (1 each).
+- **Not in the task, so not built (proposed for the user):** composite foreign keys that make a cross-branch item, category or ledger row impossible in SQL (Task 3.2 refuses it in the service); `CHECK (balance_after >= 0)`; non-negative price checks.
 
 ---
 

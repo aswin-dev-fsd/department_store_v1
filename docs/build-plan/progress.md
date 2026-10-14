@@ -49,7 +49,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 
 | Task | Title | Status | Date | Notes |
 |---|---|---|---|---|
-| 3.1 | Catalog and ledger tables | TODO | | |
+| 3.1 | Catalog and ledger tables | DONE | 2026-10-14 | 43 new schema tests written first (red → green): 297 in the backend, **573 in total**; `npm run verify` passes (a first run caught a formatting error in the new test file and a stray artifact from my own sabotage script, both fixed before the commit). Migration `0001_catalog_and_ledger` (5 tables, 3 enums, 2 CHECKs, 5 indexes): the SQL was read line by line, it only adds tables, and it applied to a **completely empty test database** (both migrations from scratch, a second run was a no-op) and to the **dev** database; staging gets it at Render's next build. **Sabotage proofs (5):** removing the `item_stock` CHECK failed 2 tests, the `stock_movements` CHECK 1, and each of the barcode, item-code and category-name unique indexes 1. Choices the task left open (listed in the phase file's "As built"): integer quantities, `gst_rate numeric(5,2)`, all foreign keys `RESTRICT`. **Deviations from the task text: none.** Proposed, not built: composite foreign keys for cross-branch safety in SQL, `CHECK (balance_after >= 0)`, non-negative price checks. |
 | 3.2 | Stock ledger service | TODO | | |
 | 3.3 | Categories API | TODO | | |
 | 3.4 | Items API | TODO | | |

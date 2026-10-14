@@ -8,6 +8,13 @@
       "when": 1791625924237,
       "tag": "0000_access_and_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791992966318,
+      "tag": "0001_catalog_and_ledger",
+      "breakpoints": true
     }
   ]
 }

@@ -303,6 +303,7 @@ pino writes one JSON line per event. Secrets (`password`, `token`, cookies, `Aut
 | Pool sizes | app 10 · tests 20 (concurrency tests) · migrator / `db:check` 1 · 15 s connect timeout (Neon wake-up) |
 | Migrations | Schema in `database/src/schema/` → `npm run db:generate -- --name=<what>` writes SQL to `database/migrations/` (read before commit) → `runMigrations(url)` applies pending ones and returns how many were new (0 = up to date; `null` = none generated). `db:migrate` prints "Applied N new migration(s)" or "already up to date". Staging runs it during Render's build |
 | Tables (Phase 2) | `client_settings` (single row, `id = 1`), `branches` (code `^[A-Z]{1,3}$`, unique), `users` (username unique ignoring case; role `admin`/`cashier`), `user_branches` (composite key; a branch with mapped users can't be deleted), `sessions` (unique `token_hash`; removed with their user), `audit_logs` (`jsonb` before/after; indexed by entity, time, actor). Migration `0000_access_and_audit` |
+| Tables (Phase 3) | `categories` (name unique per branch, ignoring case), `items` (code unique per branch; barcode unique per branch when present; prices as `bigint` paise; `hsn_code` and `gst_rate numeric(5,2)` stay empty until PD-01), `item_stock` (primary key `item_id`; `CHECK (quantity >= 0)`), `vendors`, `stock_movements` (append-only ledger: signed `quantity` with `CHECK (quantity <> 0)`, `balance_after`, enums `movement_type`, `movement_ref_type`, `adjustment_reason`; `batch_no` and `expiry_date` stay empty until PD-02; indexed by `(item_id, created_at)`). Quantities are `integer`. Every foreign key is `RESTRICT`: nothing is ever deleted, only deactivated. Not enforced in SQL (the service layer does it): that an item's category, and a movement's item, belong to the same branch |
 | Column conventions | ids: `bigint` identity read as JS numbers · timestamps: `timestamptz` · `updated_at` refreshed by Drizzle on update · rules that protect data (formats, uniqueness, single row) are database constraints, tested with raw SQL in `backend/test/schema/` |
 | Checks | `npm run db:check [-- TEST_DATABASE_URL]` prints host/db (never credentials), PostgreSQL version, latency and client-side TLS |
 | Migration journal | Drizzle keeps it in the separate `drizzle` schema; app tables live in `public` |
@@ -412,9 +413,9 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 |---|---|---|---|
 | shared | Vitest | money helpers, permission map, zod schemas | 130 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
-| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, operator scripts, schema constraints (against the Neon test database, ~6 min) | 254 |
+| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, operator scripts, schema constraints of the access, catalog and ledger tables (against the Neon test database, ~4–6 min) | 297 |
 | frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin data hooks, paging, branch checklist, admin sections, clipboard | 134 |
-| **Total** | | | **530** |
+| **Total** | | | **573** |
 
 **Backend test harness** (`backend/test/`):
 
