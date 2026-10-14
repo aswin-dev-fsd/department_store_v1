@@ -249,7 +249,9 @@ Any error → errorHandler → { success: false, error: { code, message, details
 | Stock adjustment | Cashier | +/− quantity with a reason |
 | Reports | Cashier (limited), Admin (all) | See [6.10](#610-reports-d-22) |
 | Admin: Branches, Users and mapping, Settings, CSV import | Admin | Setup |
-| Change password | All | |
+| Change password | All | Forced at first login and after a reset |
+| No access | All | Shown when the role lacks the page's permission |
+| Status | Anyone, no login | API and database health (`/status`) |
 
 **Billing screen behaviour (proposed, Phase 5):**
 - The cursor starts in one scan/search box.
@@ -482,8 +484,10 @@ Payment: Cash ₹500 + UPI ₹536 = ₹1,036 ✓
 ### 7.2 Login and branch selection
 1. Enter username and password.
 2. A session cookie is set.
-3. A cashier with one branch goes straight to Billing. A cashier with several branches picks one. The Admin goes to the Admin home.
-4. Every screen afterwards works in the active branch.
+3. A first login, or the first login after a password reset, must choose a new password before anything else is reachable.
+4. A cashier with one branch goes straight to Billing. A cashier with several branches picks one (and can switch later from the header). A cashier with no branch is told to ask the Admin. The Admin goes to the Admin home.
+5. Every screen afterwards works in the active branch.
+6. A link to a page, opened while logged out, returns to that page after login. Logging out, or losing the session, goes to a plain login page, so the next person on a shared counter PC starts from their own home.
 
 ### 7.3 Billing a customer
 1. Scan or search items. The lines appear with the running total.
@@ -707,7 +711,7 @@ Packages approved with the plan: see [implementation_plan.md](implementation_pla
 | Date edges | A bill at 31 Mar 23:59 IST vs one at 1 Apr 00:01 IST land in different financial years; an 11:30 PM IST bill gets the right business date | Vitest |
 | Manual (Phase 5) | Log in as a cashier → scan and type items → split-payment bill → print → cancel → check that stock and the day summary agree | Browser + scanner + printer |
 
-Frontend component tests would need extra packages (e.g. Testing Library), which aren't approved yet. v1 relies on type checks plus the manual checklist.
+Frontend component tests would need extra packages (e.g. Testing Library), which aren't approved yet. Instead, the logic behind the screens (routing rules, session rules, cache clearing, error text, form checks) is unit-tested, and each screen is verified by hand in the browser as part of its task, plus the manual checklist above.
 
 ---
 

@@ -286,27 +286,29 @@
 
 **Read first:** overview §7.2, §4.6.
 
-**Files:**
-- `frontend/src/auth/` — `useMe`, `useLogin`, `useLogout`, `AuthProvider`
-- `frontend/src/pages/LoginPage.tsx`, `ChangePasswordPage.tsx`, `BranchPickerPage.tsx`
-- `frontend/src/components/RequirePermission.tsx`
-- `frontend/src/components/AppShell.tsx` — nav items filtered by permission
-- `frontend/src/i18n/en.ts`
+**Files (as built):**
+- `frontend/src/auth/` — `routing.ts` (`requiredRoute`, `homeFor`, `safeReturnPath`: the one place that decides where a visitor must be), `session.ts` (which failures mean a lost session or a stale `me`; retry policy), `cache.ts` (`startSession` / `endSession` / `clearBranchData`), `queryClient.ts` (the session rules wired into every call), `queries.ts` (`fetchMe`, `useMe`, `useSessionNotice`), `mutations.ts` (login, logout, change password, select branch). There is no `AuthProvider`: the `me` query is the single source, so a context would only copy it
+- `frontend/src/api/errors.ts` — `errorMessage()`; `frontend/src/forms/fieldErrors.ts` — `validateForm`, `serverFieldErrors`
+- `frontend/src/components/` — `AuthGate`, `AppShell` (header: user, branch, switch branch, change password, log out; nav filtered by permission), `RequirePermission`, `LoadingScreen`, `ui.tsx` (TextField, Button, ErrorAlert, Notice, Card)
+- `frontend/src/pages/` — `LoginPage`, `ChangePasswordPage`, `BranchPickerPage`, `AdminHomePage` and `BillingPage` (placeholders), `NoAccessPage`; `StatusPage` moves to the public `/status`
+- `frontend/src/i18n/en.ts` (all new labels and `error.<CODE>` texts), `frontend/src/test/meFixture.ts`
 
 **Steps:**
-1. Routing rules:
-   - Not logged in → Login.
+1. Routing rules (all in `requiredRoute`, unit-tested):
+   - Not logged in → Login (a link to a page is remembered as `?next=`; after a logout it is not).
    - `mustChangePassword` → Change password; nothing else is reachable.
-   - Cashier with `needsBranchSelection` → Branch picker.
+   - Cashier with `needsBranchSelection` → Branch picker (a cashier with no branch is told to ask the Admin).
    - Admin → Admin home. Cashier → Billing placeholder.
-2. `RequirePermission` hides a route when `can(role, perm)` is false, using the shared permission map.
+2. `RequirePermission` shows the no-access page when `me.permissions` lacks the permission (courtesy; the API enforces).
 3. The shell header shows the user, active branch, a branch switch (if several branches) and logout.
 4. Form validation uses the zod schemas from `@ds/shared`. All text goes through `t()`.
 
 **Done when:**
-- [ ] check-types and build pass
-- [ ] Manual check: admin login; cashier login with one branch; with two branches (picker); forced password change; logout
+- [x] check-types, lint, format and the full test gate pass; the production build succeeds
+- [x] Manual check in the browser on the test database (2026-10-14): logged-out deep link → login with `next`; empty form and wrong password messages; admin login → admin home; cashier with one branch → billing; cashier with two branches → picker, then switch from the header; cashier with no branch → told to ask the Admin; forced password change (mismatch, too short, wrong current, then success → billing); voluntary change confirms in place; reload stays logged in and the cookie is invisible to scripts; logout; user deactivated while logged in → login on the tab's next focus; no-access pages both ways; phone width without horizontal scroll; no React warnings in the console
 - [ ] **On staging**, the user logs in at https://dept-store-staging.vercel.app with an Admin created by running `setup:client` against the staging database (commands in `docs/dev-setup.md`), then reloads the page and is still logged in. That proves the httpOnly cookie survives Vercel's `/api` rewrite, which Task 2.5 couldn't check without a user. The user types the password; it never goes into the chat.
+
+**Found while testing, fixed in this task:** (1) a logout left `?next=<last page>` in the login URL, so on a shared counter PC an Admin logging in after a cashier landed on the cashier's page → no `next` once anyone has been logged in during the visit; (2) a "nobody is logged in" answer from `me` didn't clear other cached data → it does now; (3) disabled inputs dropped keyboard focus after a failed login → inputs are read-only while sending, with a guard against a second Enter; (4) the first field of the change-password page now takes focus.
 
 **Commit:** `feat(frontend): add login, branch picker and route guards`
 

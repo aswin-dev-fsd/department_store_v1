@@ -76,7 +76,7 @@ The API runs on http://localhost:4000. Health check: http://localhost:4000/api/v
 npm run dev:frontend
 ```
 
-The web app runs on http://localhost:5173. The status page should show **API: ok** and **Database: ok**.
+The web app runs on http://localhost:5173 and opens the login screen. The status page at http://localhost:5173/status needs no login and should show **API: ok** and **Database: ok**.
 
 - The frontend forwards `/api/*` to the backend, the same way Vercel does when deployed, so login cookies behave identically everywhere.
 - The backend restarts by itself when you edit `backend/src`. Changes to `shared/` or `database/` need a restart of both servers, because those packages are compiled first.
@@ -105,6 +105,10 @@ Remove-Item Env:DATABASE_URL
 ```
 
 A variable set in the terminal beats the `.env` file, which is why this reaches staging instead of dev.
+
+### Log in
+
+Open http://localhost:5173 and log in with the username and temporary password from `setup:client`. The app first asks for a new password (at least 8 characters), then opens the Admin area. A Cashier goes straight to Billing; a Cashier with several branches picks one first and can switch later from the header. A wrong password shows "Wrong username or password", and a deactivated user sees the same message (the app never says which accounts exist). There is no "forgot password" link: an Admin resets passwords, or use the command below.
 
 ### Reset a password from the command line (recovery)
 

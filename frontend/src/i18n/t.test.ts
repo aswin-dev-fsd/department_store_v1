@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { t } from './t';
+import { isMessageKey, t } from './t';
+
+describe('isMessageKey', () => {
+  it('recognises keys that exist in the dictionary and nothing else', () => {
+    expect(isMessageKey('status.title')).toBe(true);
+    expect(isMessageKey('no.such.key')).toBe(false);
+    // Inherited object properties are not keys
+    expect(isMessageKey('toString')).toBe(false);
+    expect(isMessageKey('__proto__')).toBe(false);
+  });
+});
 
 describe('t', () => {
   it('returns the English label for a key', () => {

@@ -317,11 +317,46 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 |---|---|
 | Stack | Vite 8, React 19, Tailwind 4, React Router 7 (`createBrowserRouter`), TanStack Query 5 |
 | API client | `src/api/client.ts`: base `/api/v1`, `credentials: 'include'`, unwraps the envelope. Throws `ApiError { code, message, status, details }` — including `NETWORK_ERROR` (server unreachable, status 0) and `BAD_RESPONSE` (non-JSON reply, e.g. Vercel's proxy-timeout page) |
-| Labels | Every label via `t('key')` from `src/i18n/en.ts`; keys are typed, so a misspelt key fails the type check; Tamil later is a second dictionary (D-25) |
-| Data fetching | TanStack Query, 1 retry (covers a waking free-tier backend) |
+| Error text | `src/api/errors.ts` `errorMessage()`: the dictionary text for the error code (`error.<CODE>` in `en.ts`), else the server's own wording for a 4xx refusal, else a generic line. A 5xx never shows server wording |
+| Labels | Every label via `t('key')` from `src/i18n/en.ts`; keys are typed, so a misspelt key fails the type check (`isMessageKey` checks keys built at runtime, e.g. from an error code); Tamil later is a second dictionary (D-25) |
+| Forms | `src/forms/fieldErrors.ts`: `validateForm(schema, values)` runs the same zod schema from `@ds/shared` that the server applies (first message per field); `serverFieldErrors` maps a 422's `body.field` details onto fields. The frontend does not depend on zod directly |
+| Data fetching | TanStack Query. One retry only when the server was unreachable or failed (a waking free-tier backend, a proxy timeout), never for a 401/403/404/422; mutations are never retried (`auth/session.ts` `shouldRetry`) |
+| Routing | `/status` is public. Everything else sits behind `AuthGate`, which waits for "who am I" and then follows `auth/routing.ts` `requiredRoute`, the only place that decides where a visitor must be (table below) |
+| Who is logged in | One query, `['me']` (`auth/queries.ts`): the `/auth/me` reply, or `null` when nobody is (a 401 `UNAUTHORIZED` is an answer, not an error). The session cookie is httpOnly, so page scripts never see it. Re-checked when the window regains focus (30 s freshness), so a deactivation or branch change shows within seconds of coming back |
+| Session rules, once for every call | `auth/queryClient.ts`: a 401 `UNAUTHORIZED`/`SESSION_EXPIRED`/`ACCOUNT_DISABLED` from any call ends the session and shows the reason on the login page; a 403 `NO_ACTIVE_BRANCH`/`PASSWORD_CHANGE_REQUIRED`/`BRANCH_NOT_ASSIGNED` reloads `me`; a wrong password (401 `INVALID_CREDENTIALS`) and a wrong current password (400) do not log anyone out |
+| Cached data | `auth/cache.ts`: login, logout, a branch switch and any "nobody is logged in" answer remove everything cached for the previous user or branch, so one person's data never shows for the next |
+| Permissions in the UI | Nav links and `RequirePermission` read `me.permissions` from the server (the same map the API enforces), never a role name. This is courtesy: the API checks every call itself |
+| Accessibility | 44 px controls; every input has a label and is linked to its hint and error; errors are `role="alert"`, confirmations `role="status"`; inputs stay focusable (read-only, not disabled) while a request is sent, so keyboard users keep their place, and a second Enter during the request is ignored |
 | Dev server | port 5173; proxies `/api` → `localhost:4000` |
-| Production build | `frontend/dist`: ~348 KB JS (~109 KB gzip) + ~8 KB CSS |
-| Screens today | Status page (API + database health, each line coloured by its own state) |
+| Production build | `frontend/dist`: ~454 KB JS (~139 KB gzip) + ~12 KB CSS after Task 2.10 (was 348 KB before the login screens) |
+
+**Where a visitor is sent** (`requiredRoute`, in this order):
+
+| Situation | Result |
+|---|---|
+| Logged out, opened a link to a page | `/login?next=<that page>`; after login they return to it (same-site paths only; absolute URLs, `//host`, backslashes and control characters are refused) |
+| Logged out right after being logged in during this visit (logout, ended session) | a plain `/login` with no `next`: on a shared counter PC the next person may be a different role and starts from their own home (found in Task 2.10 testing: an Admin was sent to a cashier's last page) |
+| Password change due | `/change-password`, and nothing else is reachable |
+| Cashier without a usable active branch | `/select-branch` (with several branches: choose; with none: told to ask the Admin) or `/change-password` |
+| Logged in, on `/login` or `/` | `next` if safe, else the role home: `/admin` for admin permissions, `/billing` for `bill:create`, else `/no-access` |
+| `/select-branch` with fewer than two branches | the role home (nothing to choose) |
+
+**Screens today:**
+
+| Path | Screen | Notes |
+|---|---|---|
+| `/status` | Status page | API and database health, each line coloured by its own state; no login needed |
+| `/login` | Login | Message for a wrong password; a notice when a session ended on its own; the password box is cleared after a failure |
+| `/change-password` | Change password | Forced (with a notice, no cancel) after a first login or reset; otherwise from the header, confirming in place. A "show passwords" box helps with the long temporary passwords |
+| `/select-branch` | Branch picker | Marks the current branch; reached from the header to switch |
+| `/admin` | Admin home | Placeholder until Task 2.11 |
+| `/billing` | Billing | Placeholder until Phase 5 |
+| `/no-access` | No access | Shown when the role lacks the page's permission |
+
+**Worth knowing**
+- A deactivated user sees "Wrong username or password" at login: the server gives the same reply for a wrong password, an unknown username and an inactive account, so the app never reveals which accounts exist. The Admin tells them.
+- A visitor who isn't logged in makes one `GET /auth/me` that answers 401; the browser console lists it as a red network line. That is expected.
+- After 6 seconds on the loading screen the app adds "Still connecting… the server may be waking up", for a sleeping free-tier backend.
 
 ---
 
@@ -361,11 +396,11 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 
 | Package | Runner | What | Count |
 |---|---|---|---|
-| shared | Vitest | money helpers | 23 |
+| shared | Vitest | money helpers, permission map, zod schemas | 130 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
-| backend | Vitest + Supertest | env, errors, envelope, logger redaction, error handler, health, liveness, harness | 52 |
-| frontend | Vitest (node) | labels, API client | 9 |
-| **Total** | | | **96** |
+| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, operator scripts, schema constraints (against the Neon test database, ~6 min) | 254 |
+| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks | 83 |
+| **Total** | | | **479** |
 
 **Backend test harness** (`backend/test/`):
 
@@ -443,6 +478,8 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | Login takes about 2 s on Render Free (median 2.08 s through Vercel, 1.6–2.4 s; ~0.4 s on the dev PC) | slow-feeling login on the free staging CPU (0.1 CPU); bcrypt cost 12 is deliberate | Decide at Checkpoint 2: keep 12 (production hardware will be faster), or make the cost a setting |
 | Failed logins store the attempted username in `audit_logs` | someone who types their password into the username box would have it stored | Decide in Task 7.2: keep as is (useful for spotting attacks), or store only a hash for usernames that don't exist |
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |
+| Screens (pages, shell, route guard) have no automated tests; only the logic behind them does (routing, session rules, cache, error text, form checks) | a broken screen, as opposed to broken logic, is caught only by the manual browser check done in each task | Component tests need extra packages (Testing Library and a DOM environment, or Playwright), which need approval. Revisit before the billing screen (Phase 5), where the cost of a UI regression is highest |
+| Field messages from the `@ds/shared` schemas ("Enter the username", …) are English text, not `t()` keys | forms would still show English field errors once the Tamil dictionary exists (FP-07) | When FP-07 starts, make the schemas return message keys and translate them in the frontend |
 | Production platform undecided (AWS leaning) | deploy kit and backups (Tasks 7.4–7.5) wait for it | PD-03 |
 
 ---
