@@ -67,6 +67,15 @@ export async function createBranch(pool: Pool, options: BranchFixture = {}): Pro
   return Number(rows[0]!.id);
 }
 
+/** Insert a category for a branch and return its id. */
+export async function createCategory(pool: Pool, branchId: number, name: string): Promise<number> {
+  const { rows } = await pool.query<{ id: string }>(
+    'insert into categories (branch_id, name) values ($1, $2) returning id',
+    [branchId, name],
+  );
+  return Number(rows[0]!.id);
+}
+
 export interface ItemFixture {
   code?: string;
   name?: string;

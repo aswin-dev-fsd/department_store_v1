@@ -118,9 +118,15 @@ postMovements(tx, {
 2. **Green** — implement through the branch-scoped helper.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(catalog): add categories api`
+
+**As built (2026-10-14):**
+- **Files:** the named schema, routes, controller, service and tests (`categories.routes.test.ts`, like the branches module), plus `categories.model.ts` (the queries), a shared schema test, a `createCategory` fixture, and the export and route registration. 27 route tests and 5 schema tests.
+- **Open choices:** reads need `stock:read` (as overview §8 says) and writes `category:write`, so an Admin gets 403 on writes and, having no branch, 403 `NO_ACTIVE_BRANCH` on the list. The list is ordered by name ignoring case, with the standard paging. A rename takes `{ name }`; names are 1–100 characters. Renaming to the same name writes nothing; changing only the capital letters is allowed.
+- **Proven by breaking it once:** the permission check, branch isolation on rename, branch isolation on the list, the duplicate-safe insert (the duplicate test and the two-cashiers-at-once test went red) and the audit call.
+- `DUPLICATE_NAME` added to the overview's error-code table; the screen's error text comes with Task 3.9.
 
 ---
 

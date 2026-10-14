@@ -23,6 +23,16 @@ export {
   type ListBranchesQuery,
   type UpdateBranchInput,
 } from './schemas/branches.js';
+export {
+  categoryNameSchema,
+  createCategorySchema,
+  listCategoriesQuerySchema,
+  updateCategorySchema,
+  type Category,
+  type CreateCategoryInput,
+  type ListCategoriesQuery,
+  type UpdateCategoryInput,
+} from './schemas/categories.js';
 export { idParamSchema, optionalText, wholeNumberText, type IdParams } from './schemas/common.js';
 export {
   DEFAULT_PAGE_SIZE,

@@ -613,6 +613,7 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `DOCUMENT_LOCKED` | 400 | Editing a posted purchase, or cancelling an already-cancelled document |
 | `DUPLICATE_INVOICE` | 400 | The vendor invoice was already entered |
 | `DUPLICATE_CODE` | 400 | A branch code that another branch already uses |
+| `DUPLICATE_NAME` | 400 | A category name the branch already uses (ignoring case) |
 | `NOT_SET_UP` | 404 | The client settings don't exist yet: `setup:client` has never run on this database |
 | `INTERNAL_ERROR` | 500 | Unexpected; the full stack is logged server-side |
 
