@@ -272,7 +272,13 @@ export async function seedDev(db: Db, { nodeEnv }: SeedOptions): Promise<SeedRes
 
   const branches: SeededBranch[] = [];
   for (const [index, input] of BRANCHES.entries()) {
-    const imported = await importItems(db, admin, branchIds.get(input.code)!, catalogCsv(index), null);
+    const imported = await importItems(
+      db,
+      admin,
+      branchIds.get(input.code)!,
+      catalogCsv(index),
+      null,
+    );
     branches.push({ code: input.code, name: input.name, ...imported });
   }
   return { status: 'seeded', accounts, branches };

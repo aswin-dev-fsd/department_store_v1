@@ -88,9 +88,9 @@ describe('importProblems', () => {
   });
 
   it('keeps a problem with the whole row or file, whose column is null', () => {
-    expect(importProblems(refused([{ row: 1, column: null, message: 'The file is empty' }]))).toEqual([
-      { row: 1, column: null, message: 'The file is empty' },
-    ]);
+    expect(
+      importProblems(refused([{ row: 1, column: null, message: 'The file is empty' }])),
+    ).toEqual([{ row: 1, column: null, message: 'The file is empty' }]);
   });
 
   it('treats a column it does not know as the whole row', () => {
@@ -118,7 +118,9 @@ describe('importProblems', () => {
   it('is null for any other failure', () => {
     expect(importProblems(refused(undefined))).toBeNull();
     expect(importProblems(refused({ row: 1 }))).toBeNull();
-    expect(importProblems(refused([{ row: 1, column: null, message: 'x' }], 'IMPORT_CONFLICT'))).toBeNull();
+    expect(
+      importProblems(refused([{ row: 1, column: null, message: 'x' }], 'IMPORT_CONFLICT')),
+    ).toBeNull();
     expect(importProblems(new Error('boom'))).toBeNull();
     expect(importProblems(undefined)).toBeNull();
   });

@@ -98,9 +98,9 @@ describe('itemToForm', () => {
   });
 
   it('turns missing optional values into empty text so inputs stay controlled', () => {
-    expect(itemToForm({ ...item, barcode: null, categoryId: null, reorderLevel: null })).toMatchObject(
-      { barcode: '', categoryId: '', reorderLevel: '' },
-    );
+    expect(
+      itemToForm({ ...item, barcode: null, categoryId: null, reorderLevel: null }),
+    ).toMatchObject({ barcode: '', categoryId: '', reorderLevel: '' });
   });
 
   it('comes back from the form as the same item data, through the update schema', () => {

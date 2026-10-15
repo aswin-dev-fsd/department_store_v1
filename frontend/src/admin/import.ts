@@ -40,7 +40,11 @@ export function importProblems(error: unknown): ImportError[] | null {
   const problems: ImportError[] = [];
   for (const detail of error.details as unknown[]) {
     if (typeof detail !== 'object' || detail === null) continue;
-    const { row, column, message } = detail as { row?: unknown; column?: unknown; message?: unknown };
+    const { row, column, message } = detail as {
+      row?: unknown;
+      column?: unknown;
+      message?: unknown;
+    };
     if (typeof row !== 'number' || typeof message !== 'string') continue;
     problems.push({ row, column: IMPORT_COLUMNS.find((name) => name === column) ?? null, message });
   }

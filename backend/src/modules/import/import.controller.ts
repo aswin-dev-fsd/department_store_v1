@@ -19,13 +19,7 @@ export function importController({ db }: AppDeps) {
         415,
       );
     }
-    const result = await service.importItems(
-      db,
-      requestContext(req),
-      id,
-      req.body,
-      req.ip ?? null,
-    );
+    const result = await service.importItems(db, requestContext(req), id, req.body, req.ip ?? null);
     res.status(201).json(success(result));
   };
 

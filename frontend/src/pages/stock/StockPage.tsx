@@ -77,7 +77,9 @@ function StockView({ branchId }: { branchId: number | null }) {
   const canFilterByCategory = branchId === null;
   const categories = useCategoryOptions(canFilterByCategory).data ?? [];
   const stock = useStock({ branchId, categoryId }, offset);
-  const categoryNames = new Map(categories.map((category) => [category.id, category.name] as const));
+  const categoryNames = new Map(
+    categories.map((category) => [category.id, category.name] as const),
+  );
 
   return (
     <div className="flex flex-col gap-6">

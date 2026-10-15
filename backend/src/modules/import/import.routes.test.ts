@@ -460,9 +460,7 @@ describe('a file with problems', () => {
     const res = await upload(cookie, branchId, csv);
 
     expect(res.status).toBe(422);
-    expect(res.body.error.details).toEqual([
-      { row: 1, column: null, message: expect.any(String) },
-    ]);
+    expect(res.body.error.details).toEqual([{ row: 1, column: null, message: expect.any(String) }]);
     await expectNothingSaved(branchId);
   });
 

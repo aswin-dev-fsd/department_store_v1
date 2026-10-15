@@ -135,11 +135,7 @@ export async function listStock(
 }
 
 /** Whether this item exists in this branch. */
-export async function itemInBranch(
-  db: DbOrTx,
-  branchId: number,
-  itemId: number,
-): Promise<boolean> {
+export async function itemInBranch(db: DbOrTx, branchId: number, itemId: number): Promise<boolean> {
   const [row] = await db
     .select({ id: items.id })
     .from(items)

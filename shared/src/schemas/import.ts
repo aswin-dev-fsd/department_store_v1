@@ -23,7 +23,8 @@ export type ImportColumn = (typeof IMPORT_COLUMNS)[number];
 /** A sanity cap on a reorder level or an opening stock, in packs. */
 const MAX_PACKS = 1_000_000;
 
-const PRICE_MESSAGE = 'Write the price in rupees like 145.50: digits and a dot, no commas or ₹ sign';
+const PRICE_MESSAGE =
+  'Write the price in rupees like 145.50: digits and a dot, no commas or ₹ sign';
 
 /** rupeesToPaise, but NaN instead of an exception for text that is not an amount. */
 function toPaise(text: string): number {
@@ -58,7 +59,12 @@ const packsCell = z
   .refine((text) => text === '' || /^-?\d{1,9}$/.test(text), 'Enter a whole number, like 12')
   .transform((text) => (text === '' ? null : Number(text)))
   .pipe(
-    z.number().int().min(0, 'Cannot be negative').max(MAX_PACKS, 'This number is too large').nullable(),
+    z
+      .number()
+      .int()
+      .min(0, 'Cannot be negative')
+      .max(MAX_PACKS, 'This number is too large')
+      .nullable(),
   );
 
 /**

@@ -91,26 +91,32 @@ describe('the demo catalogue', () => {
     expect(ean13('590123412345')).toBe('5901234123457');
   });
 
-  it.each([0, 1])('makes a file the import accepts for branch %i: its header, 50 valid rows', (branch) => {
-    const records = catalogRecords(branch);
-    expect(parse(catalogCsv(branch))[0]).toEqual([...IMPORT_COLUMNS]);
-    expect(records).toHaveLength(50);
-    for (const record of records) {
-      const row = importRowSchema.safeParse(record);
-      expect(row.success, record.code).toBe(true);
-      if (row.success) expect(row.data.selling_price).toBeLessThanOrEqual(row.data.mrp);
-    }
-  });
+  it.each([0, 1])(
+    'makes a file the import accepts for branch %i: its header, 50 valid rows',
+    (branch) => {
+      const records = catalogRecords(branch);
+      expect(parse(catalogCsv(branch))[0]).toEqual([...IMPORT_COLUMNS]);
+      expect(records).toHaveLength(50);
+      for (const record of records) {
+        const row = importRowSchema.safeParse(record);
+        expect(row.success, record.code).toBe(true);
+        if (row.success) expect(row.data.selling_price).toBeLessThanOrEqual(row.data.mrp);
+      }
+    },
+  );
 
-  it.each([0, 1])('leaves 3 items sold out and 4 below their reorder level at branch %i', (branch) => {
-    const stocks = PRODUCTS.map(([, , , , , reorder], index) => ({
-      stock: openingStock(index, branch),
-      reorder,
-    }));
-    expect(stocks.filter((item) => item.stock === 0)).toHaveLength(3);
-    expect(stocks.filter((item) => item.stock > 0 && item.stock < item.reorder)).toHaveLength(4);
-    expect(stocks.filter((item) => item.stock >= item.reorder).length).toBe(43);
-  });
+  it.each([0, 1])(
+    'leaves 3 items sold out and 4 below their reorder level at branch %i',
+    (branch) => {
+      const stocks = PRODUCTS.map(([, , , , , reorder], index) => ({
+        stock: openingStock(index, branch),
+        reorder,
+      }));
+      expect(stocks.filter((item) => item.stock === 0)).toHaveLength(3);
+      expect(stocks.filter((item) => item.stock > 0 && item.stock < item.reorder)).toHaveLength(4);
+      expect(stocks.filter((item) => item.stock >= item.reorder).length).toBe(43);
+    },
+  );
 
   it('is the same on every call: the stock differs by branch but not by run', () => {
     expect(catalogCsv(0)).toBe(catalogCsv(0));
@@ -322,14 +328,17 @@ describe('seedDev refusals', () => {
     ['a user', () => createUser(pool)],
     ['a branch', () => createBranch(pool)],
     ['the client settings', () => createClientSettings(pool)],
-  ])('refuses a database that already has %s of its own, and changes nothing', async (_label, add) => {
-    await add();
-    const before = await snapshot();
+  ])(
+    'refuses a database that already has %s of its own, and changes nothing',
+    async (_label, add) => {
+      await add();
+      const before = await snapshot();
 
-    await expect(seedDev(db, { nodeEnv: 'test' })).rejects.toMatchObject({ code: 'NOT_EMPTY' });
+      await expect(seedDev(db, { nodeEnv: 'test' })).rejects.toMatchObject({ code: 'NOT_EMPTY' });
 
-    expect(await snapshot()).toEqual(before);
-  });
+      expect(await snapshot()).toEqual(before);
+    },
+  );
 
   it('does not take one of the two seed branches for a finished seed', async () => {
     await createBranch(pool, { code: 'TPR' });

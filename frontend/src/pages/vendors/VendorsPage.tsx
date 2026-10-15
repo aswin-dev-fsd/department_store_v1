@@ -37,7 +37,9 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
           <h2 className="text-lg font-semibold">{vendor.name}</h2>
           {vendor.address && <p className="text-slate-700">{vendor.address}</p>}
           {vendor.phone && (
-            <p className="text-sm text-slate-600">{t('vendors.phoneLine', { phone: vendor.phone })}</p>
+            <p className="text-sm text-slate-600">
+              {t('vendors.phoneLine', { phone: vendor.phone })}
+            </p>
           )}
           {vendor.gstin && (
             <p className="text-sm text-slate-600">

@@ -249,21 +249,19 @@ describe('POST /vendors', () => {
     ['without the Z in the 14th place', '33ABCDE1234F1X5'],
     ['with a space inside', '33ABCDE 234F1Z5'],
     ['not a GSTIN at all', 'not a gstin'],
-  ])('refuses a GSTIN that is %s with 422 on the GSTIN, and creates nothing', async (_label, gstin) => {
-    const { branchId, cookie } = await cashierIn();
+  ])(
+    'refuses a GSTIN that is %s with 422 on the GSTIN, and creates nothing',
+    async (_label, gstin) => {
+      const { branchId, cookie } = await cashierIn();
 
-    const res = await request(app)
-      .post(URL)
-      .set('Cookie', cookie)
-      .send(body({ gstin }));
+      const res = await request(app).post(URL).set('Cookie', cookie).send(body({ gstin }));
 
-    expect(res.status).toBe(422);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    expect(res.body.error.details).toEqual([
-      { path: 'body.gstin', message: expect.any(String) },
-    ]);
-    expect(await stored(branchId)).toEqual([]);
-  });
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(res.body.error.details).toEqual([{ path: 'body.gstin', message: expect.any(String) }]);
+      expect(await stored(branchId)).toEqual([]);
+    },
+  );
 
   it.each([
     ['no name', { name: undefined }],
@@ -514,9 +512,7 @@ describe('PATCH /vendors/:id', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    expect(res.body.error.details).toEqual([
-      { path: 'body.gstin', message: expect.any(String) },
-    ]);
+    expect(res.body.error.details).toEqual([{ path: 'body.gstin', message: expect.any(String) }]);
     expect(await stored(branchId)).toMatchObject([{ gstin: GSTIN }]);
     expect(await auditCount('vendor.update')).toBe(0);
   });

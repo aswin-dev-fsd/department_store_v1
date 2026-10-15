@@ -83,7 +83,11 @@ function checkFile(csv: string): CheckedFile {
   } catch (error) {
     const line = (error as { lines?: unknown }).lines;
     const reason = error instanceof Error ? error.message : 'unreadable';
-    problems.add(typeof line === 'number' ? line : 1, null, `The file is not valid CSV (${reason})`);
+    problems.add(
+      typeof line === 'number' ? line : 1,
+      null,
+      `The file is not valid CSV (${reason})`,
+    );
     return checked;
   }
 
@@ -234,7 +238,8 @@ async function save(
             code: row.code,
             barcode: row.barcode,
             name: row.name,
-            categoryId: row.category === null ? null : (categoryIds.get(row.category.toLowerCase()) ?? null),
+            categoryId:
+              row.category === null ? null : (categoryIds.get(row.category.toLowerCase()) ?? null),
             mrpPaise: row.mrp,
             sellingPricePaise: row.selling_price,
             reorderLevel: row.reorder_level,

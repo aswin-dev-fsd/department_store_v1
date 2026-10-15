@@ -1,9 +1,4 @@
-import type {
-  CreateVendorInput,
-  IdParams,
-  ListVendorsQuery,
-  UpdateVendorInput,
-} from '@ds/shared';
+import type { CreateVendorInput, IdParams, ListVendorsQuery, UpdateVendorInput } from '@ds/shared';
 import type { RequestHandler } from 'express';
 import type { AppDeps } from '../../deps.js';
 import { activeBranchId } from '../../lib/branch-scope.js';

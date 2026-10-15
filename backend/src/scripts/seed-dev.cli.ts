@@ -31,7 +31,9 @@ async function main(): Promise<number> {
     out();
     for (const account of result.accounts) {
       const where = account.role === 'admin' ? 'Admin' : `branches ${account.branches.join(', ')}`;
-      out(`    ${account.username.padEnd(10)} ${account.temporaryPassword}   ${account.fullName} - ${where}`);
+      out(
+        `    ${account.username.padEnd(10)} ${account.temporaryPassword}   ${account.fullName} - ${where}`,
+      );
     }
     out();
     return 0;

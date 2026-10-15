@@ -98,7 +98,9 @@ export function ItemsPage() {
   const [creating, setCreating] = useState(false);
   const items = useItems(filters, offset);
   const categories = useCategoryOptions().data ?? [];
-  const categoryNames = new Map(categories.map((category) => [category.id, category.name] as const));
+  const categoryNames = new Map(
+    categories.map((category) => [category.id, category.name] as const),
+  );
 
   /** A new search or filter starts again from the first page. */
   function applyFilters(next: ItemFilters) {

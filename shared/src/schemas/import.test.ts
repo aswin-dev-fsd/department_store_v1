@@ -15,7 +15,9 @@ const cells = {
 /** The columns the schema complains about for these cells. */
 function columnsWithProblems(overrides: Record<string, string>): string[] {
   const result = importRowSchema.safeParse({ ...cells, ...overrides });
-  return result.success ? [] : [...new Set(result.error.issues.map((issue) => String(issue.path[0])))];
+  return result.success
+    ? []
+    : [...new Set(result.error.issues.map((issue) => String(issue.path[0])))];
 }
 
 describe('IMPORT_COLUMNS', () => {
@@ -36,7 +38,12 @@ describe('IMPORT_COLUMNS', () => {
 describe('importRowSchema', () => {
   it('reads a complete row: text trimmed, prices in paise, numbers as numbers', () => {
     expect(
-      importRowSchema.parse({ ...cells, code: ' RICE10 ', name: ' Rice 10 kg ', category: ' Grocery ' }),
+      importRowSchema.parse({
+        ...cells,
+        code: ' RICE10 ',
+        name: ' Rice 10 kg ',
+        category: ' Grocery ',
+      }),
     ).toEqual({
       code: 'RICE10',
       barcode: '8901234567890',
@@ -92,9 +99,12 @@ describe('importRowSchema', () => {
     expect(columnsWithProblems({ category: 'c'.repeat(101) })).toEqual(['category']);
   });
 
-  it.each(['0', '12', '1000000'])('accepts %j packs for the reorder level and the opening stock', (text) => {
-    expect(columnsWithProblems({ reorder_level: text, opening_stock: text })).toEqual([]);
-  });
+  it.each(['0', '12', '1000000'])(
+    'accepts %j packs for the reorder level and the opening stock',
+    (text) => {
+      expect(columnsWithProblems({ reorder_level: text, opening_stock: text })).toEqual([]);
+    },
+  );
 
   it.each(['-3', '1.5', 'abc', '1e3', '1000001', '12345678901'])(
     'refuses %j packs, on each of the two columns',

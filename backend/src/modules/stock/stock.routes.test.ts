@@ -188,7 +188,10 @@ describe('GET /stock', () => {
 
   it('also lists deactivated items (marked isActive false) and items at zero', async () => {
     const { userId, branchId, cookie } = await cashierIn();
-    const gone = await itemWithStock(branchId, userId, 5, { name: 'Discontinued', isActive: false });
+    const gone = await itemWithStock(branchId, userId, 5, {
+      name: 'Discontinued',
+      isActive: false,
+    });
     const empty = await itemWithStock(branchId, userId, 0, { name: 'Sold out' });
 
     const res = await request(app).get(URL).set('Cookie', cookie);
@@ -212,7 +215,9 @@ describe('GET /stock', () => {
     const theirs = await request(app).get(`${URL}?categoryId=${foreign}`).set('Cookie', cookie);
 
     expect(mine.body.data.total).toBe(1);
-    expect(mine.body.data.items).toMatchObject([{ itemId: rice, categoryId: grocery, quantity: 4 }]);
+    expect(mine.body.data.items).toMatchObject([
+      { itemId: rice, categoryId: grocery, quantity: 4 },
+    ]);
     expect(theirs.body.data).toMatchObject({ total: 0, items: [] });
   });
 
@@ -310,7 +315,9 @@ describe('GET /stock as the Admin', () => {
   });
 
   it('needs the branch: without ?branchId= it answers 422 on the branch', async () => {
-    const res = await request(app).get(URL).set('Cookie', await adminCookie());
+    const res = await request(app)
+      .get(URL)
+      .set('Cookie', await adminCookie());
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
@@ -320,7 +327,9 @@ describe('GET /stock as the Admin', () => {
   });
 
   it('answers 404 for a branch that does not exist', async () => {
-    const res = await request(app).get(`${URL}?branchId=999999`).set('Cookie', await adminCookie());
+    const res = await request(app)
+      .get(`${URL}?branchId=999999`)
+      .set('Cookie', await adminCookie());
 
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
@@ -437,7 +446,9 @@ describe('GET /stock/:itemId/movements', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ total: 3, limit: 2, offset: 1 });
-    expect(res.body.data.items.map((m: { balanceAfter: number }) => m.balanceAfter)).toEqual([7, 10]);
+    expect(res.body.data.items.map((m: { balanceAfter: number }) => m.balanceAfter)).toEqual([
+      7, 10,
+    ]);
   });
 
   it('orders by the ledger sequence, not by the clock: balance_after always follows the row below it', async () => {
@@ -454,7 +465,9 @@ describe('GET /stock/:itemId/movements', () => {
     const res = await request(app).get(`${URL}/${itemId}/movements`).set('Cookie', cookie);
 
     expect(res.body.data.items.map((m: { type: string }) => m.type)).toEqual(['sale', 'purchase']);
-    expect(res.body.data.items.map((m: { balanceAfter: number }) => m.balanceAfter)).toEqual([4, 5]);
+    expect(res.body.data.items.map((m: { balanceAfter: number }) => m.balanceAfter)).toEqual([
+      4, 5,
+    ]);
   });
 
   it("lists only that item's movements", async () => {
@@ -467,7 +480,9 @@ describe('GET /stock/:itemId/movements', () => {
     const res = await request(app).get(`${URL}/${rice}/movements`).set('Cookie', cookie);
 
     expect(res.body.data.total).toBe(1);
-    expect(res.body.data.items).toMatchObject([{ type: 'purchase', quantity: 10, balanceAfter: 10 }]);
+    expect(res.body.data.items).toMatchObject([
+      { type: 'purchase', quantity: 10, balanceAfter: 10 },
+    ]);
   });
 
   it('answers an empty page for an item that has no movements yet', async () => {
