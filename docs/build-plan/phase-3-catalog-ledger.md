@@ -182,6 +182,11 @@ postMovements(tx, {
 
 **Commit:** `feat(catalog): add vendors api`
 
+**As built (2026-10-15):**
+- **Files:** the named schema, routes, controller, service and tests (`vendors.routes.test.ts`, like categories and items), plus `vendors.model.ts` (the queries), a shared schema test, the export in `shared/src/index.ts`, the `/vendors` registration, a `createVendor` fixture and the overview §8 rows. No `lib` change, no migration, no new package.
+- **Open choices:** all three routes need `vendor:write` (overview §8 names no other permission), so an Admin gets 403 `FORBIDDEN` on the list too. One `PATCH /vendors/:id` edits and, with `isActive`, deactivates or reactivates; it is audited as `vendor.update` / `vendor.deactivate` / `vendor.activate`. The list takes `search` (any part of the name, any case) and `active` (left out: both), ordered by name. `name` is 1–100 characters; `phone` (up to 20), `address` (up to 200) and `gstin` are optional and cleared with null or a blank value. A GSTIN is typed in any case, stored upper-case and must match the 15-character pattern (2 digits, 5 letters, 4 digits, a letter, a letter or digit 1–9, `Z`, a letter or digit); its check character is not verified. Vendor names are not unique (the table has no such index and the task doesn't ask for one).
+- **Not run:** under option 3 nothing was run for this task: 47 route tests and 39 schema tests are written, but lint, types, format and the tests first run at Checkpoint 3 (`npm run format` may be needed then: Prettier was not run). The "tests pass" box above stays open until then. Two small pieces now exist twice, in items and vendors: the LIKE-escape helper and the `search` / `active` query fields.
+
 ---
 
 ## Task 3.6 — Stock read API

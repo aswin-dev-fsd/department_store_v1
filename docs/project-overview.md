@@ -568,7 +568,8 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | GET | `/items/lookup` | `bill:create` | Exact match among active items by `?barcode=` or `?code=`, else 404 |
 | POST, PATCH | `/items`, `/items/:id` | `item:write` | Create / edit an item; `isActive` deactivates or reactivates it |
 | GET, POST, PATCH | `/categories`, `/categories/:id` | `category:write` (read: `stock:read`) | Categories |
-| GET, POST, PATCH | `/vendors`, `/vendors/:id` | `vendor:write` | Vendors |
+| GET | `/vendors` | `vendor:write` | Search by name and list (`?search=&active=&limit&offset`; `active` left out shows both) |
+| POST, PATCH | `/vendors`, `/vendors/:id` | `vendor:write` | Create / edit a vendor; `isActive` deactivates or reactivates it. The optional GSTIN must be 15 characters in the GSTIN pattern |
 | GET | `/purchases`, `/purchases/:id` | `purchase:write` | List / view purchases |
 | POST | `/purchases` | `purchase:write` | Create a draft |
 | PUT | `/purchases/:id` | `purchase:write` | Edit a draft |

@@ -7,6 +7,7 @@ import { healthRoutes } from './modules/health/health.routes.js';
 import { itemsRoutes } from './modules/items/items.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
+import { vendorsRoutes } from './modules/vendors/vendors.routes.js';
 
 /** Every API route, mounted by createApp under /api/v1. */
 export function apiRoutes(deps: AppDeps): Router {
@@ -18,5 +19,6 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/admin/users', usersRoutes(deps));
   router.use('/categories', categoriesRoutes(deps));
   router.use('/items', itemsRoutes(deps));
+  router.use('/vendors', vendorsRoutes(deps));
   return router;
 }

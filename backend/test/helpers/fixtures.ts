@@ -113,6 +113,35 @@ export async function createItem(
   return id;
 }
 
+export interface VendorFixture {
+  name?: string;
+  phone?: string | null;
+  address?: string | null;
+  gstin?: string | null;
+  isActive?: boolean;
+}
+
+/** Insert a vendor for a branch (default: active, with no phone, address or GSTIN) and return its id. */
+export async function createVendor(
+  pool: Pool,
+  branchId: number,
+  options: VendorFixture = {},
+): Promise<number> {
+  const { rows } = await pool.query<{ id: string }>(
+    `insert into vendors (branch_id, name, phone, address, gstin, is_active)
+     values ($1, $2, $3, $4, $5, $6) returning id`,
+    [
+      branchId,
+      options.name ?? `Vendor ${next()}`,
+      options.phone ?? null,
+      options.address ?? null,
+      options.gstin ?? null,
+      options.isActive ?? true,
+    ],
+  );
+  return Number(rows[0]!.id);
+}
+
 /** Map a cashier to a branch. */
 export async function mapUser(pool: Pool, userId: number, branchId: number): Promise<void> {
   await pool.query('insert into user_branches (user_id, branch_id) values ($1, $2)', [

@@ -79,6 +79,18 @@ export {
   type UserBranch,
   type UserSummary,
 } from './schemas/users.js';
+export {
+  createVendorSchema,
+  GSTIN_PATTERN,
+  gstinSchema,
+  listVendorsQuerySchema,
+  updateVendorSchema,
+  vendorNameSchema,
+  type CreateVendorInput,
+  type ListVendorsQuery,
+  type UpdateVendorInput,
+  type Vendor,
+} from './schemas/vendors.js';
 export { formatPaise, rupeesToPaise } from './money.js';
 export {
   can,
