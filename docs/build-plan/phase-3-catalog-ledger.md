@@ -152,9 +152,15 @@ postMovements(tx, {
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(catalog): add items api`
+
+**As built (2026-10-15):**
+- **Files:** the named schema, routes, controller, service and tests (`items.routes.test.ts`, like categories), plus `items.model.ts` (the queries), a shared schema test, the export in `shared/src/index.ts` and the `/items` registration. Overview §8 and its error-code table are updated (`DUPLICATE_BARCODE` added; `DUPLICATE_CODE` now also covers item codes). No `lib` change, no migration, no new package.
+- **Open choices:** reads need `stock:read`, the lookup `bill:create` (overview §8) and writes `item:write`, so an Admin gets 403 on all of them (on the list: `NO_ACTIVE_BRANCH`). One `PATCH /items/:id` edits and, with `isActive`, deactivates or reactivates; it is audited as `item.update` / `item.deactivate` / `item.activate`, like branches. A category that is missing or belongs to another branch answers 422 on `categoryId`. The list takes `search`, `categoryId` and `active`; without `active` it returns active and inactive items. `code` and `barcode` match exactly, with case kept (the 3.1 index is case-sensitive). Prices are whole paise from 0 to ₹1 crore; a selling price above the MRP is a 422 on the selling price (on the MRP when only the MRP is lowered). `reorderLevel` is accepted; `hsnCode` and `gstRate` stay out of the API (PD-01). A duplicate is caught by the unique index and told apart (code or barcode) after the rollback.
+- **Run once:** lint, format check and type check clean, and both new test files green on the first run (75 route tests, 39 schema tests). The full gate was not run.
+- **Proven by breaking it once (10):** create in one transaction, the stock row at 0, the three permission checks (POST, PATCH, lookup), branch isolation on edit, list and lookup, lookup skipping deactivated items, the price rule on edit. **Not proven (6):** audit rows, the duplicate-to-code/barcode mapping (two cases), the `%`/`_` search escaping, the category check and the shared schema's price rule. I stopped the run when option 3 (run nothing per task) was chosen; their tests are written and passed once.
 
 ---
 

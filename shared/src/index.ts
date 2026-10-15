@@ -35,6 +35,21 @@ export {
 } from './schemas/categories.js';
 export { idParamSchema, optionalText, wholeNumberText, type IdParams } from './schemas/common.js';
 export {
+  createItemSchema,
+  itemCodeSchema,
+  itemNameSchema,
+  listItemsQuerySchema,
+  lookupItemQuerySchema,
+  MAX_PRICE_PAISE,
+  SELLING_ABOVE_MRP_MESSAGE,
+  updateItemSchema,
+  type CreateItemInput,
+  type Item,
+  type ListItemsQuery,
+  type LookupItemQuery,
+  type UpdateItemInput,
+} from './schemas/items.js';
+export {
   DEFAULT_PAGE_SIZE,
   MAX_PAGE_SIZE,
   paginationSchema,

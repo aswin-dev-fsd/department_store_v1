@@ -564,9 +564,9 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | GET, PUT | `/admin/settings` | `admin:settings` | Client settings: business name, address, phone (GSTIN waits for PD-01). PUT replaces the record |
 | POST | `/admin/branches/:id/import` | `admin:import` | CSV import of items and opening stock |
 | GET | `/admin/reports/:report` | `report:all` | Any report, any branch (`?branchId=`) |
-| GET | `/items` | `stock:read` | Search (`?search=&categoryId=`) |
-| GET | `/items/lookup` | `bill:create` | Exact match by `?barcode=` or `?code=` |
-| POST, PATCH | `/items`, `/items/:id` | `item:write` | Create / edit an item |
+| GET | `/items` | `stock:read` | Search and list, with stock (`?search=&categoryId=&active=&limit&offset`; `active` left out shows both) |
+| GET | `/items/lookup` | `bill:create` | Exact match among active items by `?barcode=` or `?code=`, else 404 |
+| POST, PATCH | `/items`, `/items/:id` | `item:write` | Create / edit an item; `isActive` deactivates or reactivates it |
 | GET, POST, PATCH | `/categories`, `/categories/:id` | `category:write` (read: `stock:read`) | Categories |
 | GET, POST, PATCH | `/vendors`, `/vendors/:id` | `vendor:write` | Vendors |
 | GET | `/purchases`, `/purchases/:id` | `purchase:write` | List / view purchases |
@@ -612,7 +612,8 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `PAYMENT_MISMATCH` | 400 | Payments don't equal the bill total |
 | `DOCUMENT_LOCKED` | 400 | Editing a posted purchase, or cancelling an already-cancelled document |
 | `DUPLICATE_INVOICE` | 400 | The vendor invoice was already entered |
-| `DUPLICATE_CODE` | 400 | A branch code that another branch already uses |
+| `DUPLICATE_CODE` | 400 | A branch code that another branch already uses, or an item code the branch already uses |
+| `DUPLICATE_BARCODE` | 400 | A barcode another item of the branch already has |
 | `DUPLICATE_NAME` | 400 | A category name the branch already uses (ignoring case) |
 | `NOT_SET_UP` | 404 | The client settings don't exist yet: `setup:client` has never run on this database |
 | `INTERNAL_ERROR` | 500 | Unexpected; the full stack is logged server-side |

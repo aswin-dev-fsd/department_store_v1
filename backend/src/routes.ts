@@ -4,6 +4,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { branchesRoutes } from './modules/branches/branches.routes.js';
 import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
+import { itemsRoutes } from './modules/items/items.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 
@@ -16,5 +17,6 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/admin/settings', settingsRoutes(deps));
   router.use('/admin/users', usersRoutes(deps));
   router.use('/categories', categoriesRoutes(deps));
+  router.use('/items', itemsRoutes(deps));
   return router;
 }
