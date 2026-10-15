@@ -1,7 +1,14 @@
 // The stock ledger service (D-02): `postMovements` is the only function in the system that changes
 // stock. It writes the ledger rows and the item_stock quantities in the caller's transaction, so a
 // bill, purchase or adjustment and its stock change are saved together or not at all.
-import { schema, type Tx } from '@ds/database';
+import { schema, type Db, type Tx } from '@ds/database';
+import type {
+  ListMovementsQuery,
+  ListStockQuery,
+  Page,
+  StockLine,
+  StockMovement,
+} from '@ds/shared';
 import { AppError, NotFoundError } from '../../lib/errors.js';
 import * as model from './stock.model.js';
 
@@ -128,4 +135,53 @@ export async function postMovements(
   await model.insertMovements(tx, rows);
 
   return rows.map((row) => ({ itemId: row.itemId, balanceAfter: row.balanceAfter }));
+}
+
+// ---- Reads (Task 3.6): what the stock screens show. They never change stock. ----
+
+/** Make sure a branch exists (the Admin names the branch to read); 404 otherwise. */
+export async function requireBranchExists(db: Db, branchId: number): Promise<void> {
+  if (!(await model.branchExists(db, branchId))) {
+    throw new NotFoundError('Branch not found');
+  }
+}
+
+/** One page of the branch's items with their current quantity, by name; active and inactive alike. */
+export async function listStock(
+  db: Db,
+  branchId: number,
+  query: ListStockQuery,
+): Promise<Page<StockLine>> {
+  const { rows, total } = await model.listStock(db, branchId, query);
+  return { items: rows, total, limit: query.limit, offset: query.offset };
+}
+
+/** One page of an item's ledger, newest first. An item of another branch is not found. */
+export async function listMovements(
+  db: Db,
+  branchId: number,
+  itemId: number,
+  query: ListMovementsQuery,
+): Promise<Page<StockMovement>> {
+  if (!(await model.itemInBranch(db, branchId, itemId))) {
+    throw new NotFoundError('Item not found');
+  }
+  const { rows, total } = await model.listMovements(db, branchId, itemId, query);
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      type: row.type,
+      quantity: row.quantity,
+      balanceAfter: row.balanceAfter,
+      refType: row.refType,
+      refId: row.refId,
+      reason: row.reason,
+      note: row.note,
+      createdBy: { id: row.createdById, fullName: row.createdByName },
+      createdAt: row.createdAt.toISOString(),
+    })),
+    total,
+    limit: query.limit,
+    offset: query.offset,
+  };
 }

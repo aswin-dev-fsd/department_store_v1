@@ -208,6 +208,11 @@ postMovements(tx, {
 
 **Commit:** `feat(stock): add stock and movement history api`
 
+**As built (2026-10-15):**
+- **Files:** the named schema, routes, controller and tests, plus read functions **appended** to the existing `stock.service.ts` and `stock.model.ts` (`postMovements` and the write queries are untouched; the model's header comment now says the writes take a transaction and the reads any connection), a shared schema test, the shared export, the `/stock` registration and the overview §8 rows. No `lib` change, no migration, no new package.
+- **Open choices:** both roles have `stock:read`. A cashier reads the branch they work in; naming it with `?branchId=` is accepted, naming another is 403 `FORBIDDEN`. Someone with `report:all` (the Admin, who works in no branch) must name it: missing is 422 on `query.branchId`, unknown is 404, a deactivated branch can be read. I used `report:all` because it is the permission that already means "any branch" (overview §8); the rule sits in `branchToRead` in the controller, next to the handlers, because it reads the request like `activeBranchId`. `GET /stock` lists every item of the branch, active or not (`isActive` says which), by name ignoring case; its only filter is `categoryId`, as the task says. Movements come newest first **by row id, not by time**: the id is the order the stock lock applied them in, which is the order `balance_after` follows (a test moves a clock time to prove it). Each row carries `type`, `quantity`, `balanceAfter`, `reason`, `createdBy {id, fullName}` and `createdAt` as the task names, plus `note`, `refType` and `refId`; the batch and expiry columns (PD-02) stay out. The movement types, reference types and reasons are added to `@ds/shared` as lists, with a backend test that they equal the database enums (as for roles).
+- **Not run:** under option 3 nothing was run for this task: 44 route tests and 26 schema tests are written, but lint, types, format and the tests first run at Checkpoint 3 (`npm run format` may be needed then). The "tests pass" box above stays open until then.
+
 ---
 
 ## Task 3.7 — CSV import

@@ -63,6 +63,22 @@ export {
   type UpdateSettingsInput,
 } from './schemas/settings.js';
 export {
+  ADJUSTMENT_REASONS,
+  itemIdParamSchema,
+  listMovementsQuerySchema,
+  listStockQuerySchema,
+  MOVEMENT_REF_TYPES,
+  MOVEMENT_TYPES,
+  type AdjustmentReason,
+  type ItemIdParams,
+  type ListMovementsQuery,
+  type ListStockQuery,
+  type MovementRefType,
+  type MovementType,
+  type StockLine,
+  type StockMovement,
+} from './schemas/stock.js';
+export {
   createUserSchema,
   fullNameSchema,
   listUsersQuerySchema,

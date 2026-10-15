@@ -580,8 +580,8 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | POST | `/bills/:id/cancel` | `bill:cancel` | Cancel a bill |
 | GET | `/bills/:id/receipt` | `bill:read` | Receipt data for printing |
 | GET | `/customers/lookup` | `bill:create` | Find a customer by `?phone=` |
-| GET | `/stock` | `stock:read` | Current stock |
-| GET | `/stock/:itemId/movements` | `stock:read` | Ledger history for one item |
+| GET | `/stock` | `stock:read` | Current stock per item, active and inactive (`?categoryId=&limit&offset`). A cashier reads their branch; the Admin names one with `?branchId=` |
+| GET | `/stock/:itemId/movements` | `stock:read` | Ledger history for one item, newest first (`?limit&offset`); the Admin adds `?branchId=` |
 | POST | `/stock/adjustments` | `stock:adjust` | Create an adjustment |
 | GET | `/reports/day-summary` | `report:own-day-summary` | The cashier's own day summary |
 | GET | `/reports/stock`, `/reports/low-stock` | `stock:read` | Own-branch stock reports |
