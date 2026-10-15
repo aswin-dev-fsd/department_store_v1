@@ -119,6 +119,20 @@ Logged in as the Admin, open **Administration**:
 3. **Users**: add each cashier. A card shows their **temporary password once**, with a Copy button; it cannot be looked up later, so copy it before pressing Done (a second password never replaces one that is still on screen). Then use **Branches** on the cashier's card to tick the branches they may work in: one branch and they go straight to billing, several and they pick one at login.
 4. **Reset password** and **Deactivate** ask for confirmation first. Your own row has neither (use "Change password" in the header). Deactivating a user ends their sessions at once.
 
+### Fill a dev database with demo data (optional)
+
+For trying the app by hand without typing in a catalogue. It needs an **empty** database: migrations applied, nothing else (do not run `setup:client` first).
+
+```bash
+npm run db:seed
+```
+
+- It creates the client settings (a made-up "Demo Department Store"), an Admin (`admin`), two cashiers (`cashier1` works in Tiruppur only; `cashier2` in both branches, so you can try the branch picker), the branches `TPR` and `CBE`, and in each branch 5 categories and 50 items with barcodes, prices and opening stock. A few items are sold out or below their reorder level on purpose, for billing and low-stock tests later.
+- It runs the same services as the screens, and the CSV import for the stock, so the accounts, the ledger and the audit rows are the real thing.
+- It prints the database it used first, then a **temporary password for each account, once**. Write them down: each person chooses a new password at the first login.
+- Running it again says "already seeded" and changes nothing. A database that already has other data (a user, the client settings or a branch) is refused untouched. It never runs with `NODE_ENV=production`.
+- The run is several steps, not one transaction. If it stops half-way, empty the database and run it again.
+
 ### Reset a password from the command line (recovery)
 
 Admins reset other people's passwords on the Users screen. This command is for when nobody can: for example the only Admin lost the temporary password before their first login (`setup:client` refuses to run twice).
@@ -143,6 +157,7 @@ All run from the repo root.
 | `npm run dev:frontend` | Build the shared packages, then run the Vite dev server |
 | `npm run setup:client -- --business-name … --admin-username … --admin-name …` | Create the client settings and the first Admin on a new database (see section 6) |
 | `npm run reset-password -- --username …` | Give a user a new temporary password from the command line: recovery when nobody can use the Admin screens (see section 6) |
+| `npm run db:seed` | Fill an empty dev database with demo data (two branches, an Admin, two cashiers, 50 items per branch) and print the temporary passwords (see section 6) |
 | `npm run verify` | **The gate:** lint, format check, type check, all tests. Runs at each checkpoint; nothing is run per task (see `docs/build-plan/README.md` step 6) |
 | `npm test` | All tests in every package |
 | `npm run check-types` | TypeScript check of every package |

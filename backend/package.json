@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "setup:client": "tsx src/scripts/setup-client.cli.ts",
     "reset-password": "tsx src/scripts/reset-password.cli.ts",
+    "db:seed": "tsx src/scripts/seed-dev.cli.ts",
     "build": "tsc -p tsconfig.build.json",
     "check-types": "tsc -p tsconfig.json",
     "test": "vitest run"

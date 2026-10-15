@@ -279,6 +279,14 @@ postMovements(tx, {
 
 **Commit:** `chore(dev): add dev seed script`
 
+**As built (2026-10-15):**
+- **Files:** `backend/src/scripts/seed-dev.ts` (the logic, exported and tested) and `seed-dev.cli.ts` (the thin executable), as for the other operator scripts, plus `seed-dev.test.ts`, the backend and root `db:seed` scripts, and a section and command row in `docs/dev-setup.md`. No new package, no migration.
+- **Open choices:**
+  - *How it works:* it calls the real services, so passwords, audit rows and rules are the real ones: `setupClient` (settings and the Admin), `createBranch`, `createUser`, `setUserBranches`, and the Task 3.7 `importItems` for each branch (which creates the categories, items, stock rows and `opening` movements). Passwords are generated temporary ones, printed once by the CLI and never stored or logged; each account must change its password at first login, like `setup:client`.
+  - *The data:* `admin`; `cashier1` works in TPR only; `cashier2` in TPR and CBE (to try the branch picker). Both branches sell the same 50 products, 10 in each of Grocery, Beverages, Personal care, Household and Stationery, with EAN-13 barcodes and rupee prices (selling price at or below the MRP). Opening stock is a fixed formula, so every run gives the same data: 50 to 99 packs, but 3 items sold out and 4 below their reorder level in each branch (different items in each), so 47 items per branch get an `opening` movement.
+  - *The guards:* it refuses when `NODE_ENV=production`; if branches `TPR` and `CBE` both exist it answers "already seeded", exit 0, changing nothing; and **(my addition)** if the database has any other data (a user, the client settings or a branch) it refuses with `NOT_EMPTY`, changing nothing, so demo data can never mix into a real database. The run is several transactions, not one: if it stops half-way, empty the database and run it again.
+- **Not run:** under option 3 nothing was run for this task: 23 tests are written (9 on the catalogue without a database, 9 on a real seeding of the test database, 5 on the refusals), but lint, types, format and the tests first run at Checkpoint 3. Both "Done when" boxes stay open: running `npm run db:seed` on a fresh dev database is a write to the dev database, so it waits for your go-ahead (and an empty database).
+
 ---
 
 ## Task 3.9 — Frontend: items, categories, vendors

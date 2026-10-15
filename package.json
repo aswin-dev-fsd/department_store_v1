@@ -28,7 +28,8 @@
     "format:check": "prettier --check .",
     "db:generate": "npm run db:generate -w @ds/database --",
     "db:migrate": "npm run db:migrate -w @ds/database --",
-    "db:check": "npm run db:check -w @ds/database --"
+    "db:check": "npm run db:check -w @ds/database --",
+    "db:seed": "npm run build:packages && npm run db:seed -w @ds/backend"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
