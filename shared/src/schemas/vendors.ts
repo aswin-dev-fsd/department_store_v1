@@ -1,7 +1,7 @@
 // Vendor API contract (cashiers manage their own branch's vendors; D-08). Used by the backend
 // (validation) and the frontend (forms).
 import { z } from 'zod';
-import { optionalText } from './common.js';
+import { activeFilterSchema, optionalText, searchTextSchema } from './common.js';
 import { paginationSchema } from './pagination.js';
 
 /** 15 characters: state code, the PAN, an entity number, "Z", a check character. */
@@ -53,16 +53,8 @@ export type UpdateVendorInput = z.infer<typeof updateVendorSchema>;
 
 /** Search by name (any part, any case); `active` left out means both. */
 export const listVendorsQuerySchema = paginationSchema.extend({
-  search: z
-    .string()
-    .trim()
-    .max(100, 'Use at most 100 characters')
-    .transform((value) => (value === '' ? undefined : value))
-    .optional(),
-  active: z
-    .enum(['true', 'false'])
-    .transform((value) => value === 'true')
-    .optional(),
+  search: searchTextSchema,
+  active: activeFilterSchema,
 });
 export type ListVendorsQuery = z.infer<typeof listVendorsQuerySchema>;
 

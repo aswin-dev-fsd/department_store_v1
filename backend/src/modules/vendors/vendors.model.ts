@@ -2,6 +2,7 @@
 // branch: vendors are branch-owned, so a vendor of another branch is simply not found.
 import { schema, type DbOrTx } from '@ds/database';
 import { and, asc, eq, ilike, sql, type SQL } from 'drizzle-orm';
+import { likePattern } from '../../lib/like.js';
 
 const { vendors } = schema;
 
@@ -11,11 +12,6 @@ export type NewVendorRow = typeof vendors.$inferInsert;
 export type VendorChanges = Partial<
   Pick<VendorRow, 'name' | 'phone' | 'address' | 'gstin' | 'isActive'>
 >;
-
-/** Escape the characters LIKE treats as wildcards, so a search for "100%" means those characters. */
-function likePattern(term: string): string {
-  return `%${term.replace(/[\\%_]/g, '\\$&')}%`;
-}
 
 /** Insert a vendor and return the new row. */
 export async function insertVendor(db: DbOrTx, values: NewVendorRow): Promise<VendorRow> {

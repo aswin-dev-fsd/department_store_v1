@@ -2,6 +2,7 @@
 // branch: items are branch-owned, so an item of another branch is simply not found.
 import { schema, type DbOrTx } from '@ds/database';
 import { and, asc, eq, getTableColumns, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { likePattern } from '../../lib/like.js';
 
 const { categories, items, itemStock } = schema;
 
@@ -25,11 +26,6 @@ export type ItemChanges = Partial<
 >;
 
 const withStock = { ...getTableColumns(items), stock: itemStock.quantity };
-
-/** Escape the characters LIKE treats as wildcards, so a search for "100%" means those characters. */
-function likePattern(term: string): string {
-  return `%${term.replace(/[\\%_]/g, '\\$&')}%`;
-}
 
 /** Insert an item. A code or barcode the branch already has raises a unique violation. */
 export async function insertItem(db: DbOrTx, values: NewItemRow): Promise<ItemRow> {

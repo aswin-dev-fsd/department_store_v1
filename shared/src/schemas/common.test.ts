@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { idParamSchema, optionalText } from './common.js';
+import { activeFilterSchema, idParamSchema, optionalText, searchTextSchema } from './common.js';
 import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, paginationSchema } from './pagination.js';
 import { z } from 'zod';
 
@@ -37,6 +37,42 @@ describe('optionalText', () => {
   it('refuses text over the limit', () => {
     expect(schema.safeParse({ note: '123456' }).success).toBe(false);
     expect(schema.safeParse({ note: '12345' }).success).toBe(true);
+  });
+});
+
+describe('searchTextSchema', () => {
+  const schema = z.object({ search: searchTextSchema });
+
+  it('trims the text, and treats a blank search as no search', () => {
+    expect(schema.parse({ search: '  rice ' })).toEqual({ search: 'rice' });
+    expect(schema.parse({ search: '   ' }).search).toBeUndefined();
+    expect(schema.parse({ search: '' }).search).toBeUndefined();
+  });
+
+  it('leaves an absent search absent', () => {
+    expect(schema.parse({})).toEqual({});
+  });
+
+  it('allows 100 characters and refuses more', () => {
+    expect(schema.safeParse({ search: 's'.repeat(100) }).success).toBe(true);
+    expect(schema.safeParse({ search: 's'.repeat(101) }).success).toBe(false);
+  });
+});
+
+describe('activeFilterSchema', () => {
+  const schema = z.object({ active: activeFilterSchema });
+
+  it('reads true and false from query-string text', () => {
+    expect(schema.parse({ active: 'true' })).toEqual({ active: true });
+    expect(schema.parse({ active: 'false' })).toEqual({ active: false });
+  });
+
+  it('leaves an absent filter absent, which means both', () => {
+    expect(schema.parse({})).toEqual({});
+  });
+
+  it.each(['maybe', 'TRUE', '1', '0', ''])('refuses %j', (value) => {
+    expect(schema.safeParse({ active: value }).success).toBe(false);
   });
 });
 

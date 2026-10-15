@@ -1,7 +1,7 @@
 // Item API contract (cashiers manage their own branch's items; overview §6.1; D-03, D-11, D-12).
 // Used by the backend (validation) and the frontend (forms). Prices are integer paise.
 import { z } from 'zod';
-import { optionalText, wholeNumberText } from './common.js';
+import { activeFilterSchema, optionalText, searchTextSchema, wholeNumberText } from './common.js';
 import { paginationSchema } from './pagination.js';
 
 /** A sanity cap on one price (₹1 crore, in paise): it catches a slipped decimal point. */
@@ -88,19 +88,11 @@ export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 
 /** Search by name, code or barcode (any part, any case); `active` left out means both. */
 export const listItemsQuerySchema = paginationSchema.extend({
-  search: z
-    .string()
-    .trim()
-    .max(100, 'Use at most 100 characters')
-    .transform((value) => (value === '' ? undefined : value))
-    .optional(),
+  search: searchTextSchema,
   categoryId: wholeNumberText('Must be a positive whole number')
     .pipe(z.number().int().min(1, 'Must be a positive whole number'))
     .optional(),
-  active: z
-    .enum(['true', 'false'])
-    .transform((value) => value === 'true')
-    .optional(),
+  active: activeFilterSchema,
 });
 export type ListItemsQuery = z.infer<typeof listItemsQuerySchema>;
 

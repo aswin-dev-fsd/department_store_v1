@@ -31,3 +31,17 @@ export const optionalText = (max: number) =>
     .transform((value) => (value === '' ? null : value))
     .nullable()
     .optional();
+
+/** A search box in a query string: trimmed, at most 100 characters; blank means no search. */
+export const searchTextSchema = z
+  .string()
+  .trim()
+  .max(100, 'Use at most 100 characters')
+  .transform((value) => (value === '' ? undefined : value))
+  .optional();
+
+/** A `true` / `false` filter in a query string; left out means "both". */
+export const activeFilterSchema = z
+  .enum(['true', 'false'])
+  .transform((value) => value === 'true')
+  .optional();
