@@ -143,7 +143,7 @@ All run from the repo root.
 | `npm run dev:frontend` | Build the shared packages, then run the Vite dev server |
 | `npm run setup:client -- --business-name … --admin-username … --admin-name …` | Create the client settings and the first Admin on a new database (see section 6) |
 | `npm run reset-password -- --username …` | Give a user a new temporary password from the command line: recovery when nobody can use the Admin screens (see section 6) |
-| `npm run verify` | **The gate:** lint, format check, type check, all tests. Runs at each checkpoint; per task, run lint, format check, type check and the task's own tests (see `docs/build-plan/README.md` step 6) |
+| `npm run verify` | **The gate:** lint, format check, type check, all tests. Runs at each checkpoint; nothing is run per task (see `docs/build-plan/README.md` step 6) |
 | `npm test` | All tests in every package |
 | `npm run check-types` | TypeScript check of every package |
 | `npm run lint` | ESLint. Any warning fails it |
