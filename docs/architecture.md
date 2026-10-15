@@ -2,7 +2,7 @@
 
 How the system is built and deployed **as it exists today**. For business rules and the plan, see [project-overview.md](project-overview.md); for decisions, [pending-decisions.md](pending-decisions.md).
 
-Last updated: 2026-10-10 · State: end of Phase 1 (foundation + staging deploy). Login, data and business features arrive from Phase 2 onwards.
+Last updated: 2026-10-15 · State: end of Phase 3 (access, then the catalog, the stock ledger and the CSV import, with their screens). Purchases, billing and reports arrive from Phase 4 onwards.
 
 ## Contents
 
@@ -165,8 +165,8 @@ department_store_v1/
 
 | Package | Purpose | Output | Used by |
 |---|---|---|---|
-| `@ds/shared` | API contract: money helpers (paise), response-envelope types, health types; later zod schemas and the permission map | `shared/dist` (tsc, incremental) | backend, frontend |
-| `@ds/database` | Drizzle client (`createDb`), TLS/connection settings, migration runner, `db:check` / `db:migrate` / `db:generate` CLIs, schema (empty until Phase 2) | `database/dist` (tsc, incremental) | backend |
+| `@ds/shared` | API contract: money helpers (paise), response-envelope types, health types, the zod schemas of every API area, the permission map, the ledger's movement vocabularies | `shared/dist` (tsc, incremental) | backend, frontend |
+| `@ds/database` | Drizzle client (`createDb`), TLS/connection settings, migration runner, `db:check` / `db:migrate` / `db:generate` CLIs, the schema (access, catalog and ledger tables) | `database/dist` (tsc, incremental) | backend |
 | `@ds/backend` | Express API | `backend/dist` (tsc) | deployed to Render |
 | `@ds/frontend` | React single-page app | `frontend/dist` (Vite) | deployed to Vercel |
 
@@ -187,11 +187,13 @@ department_store_v1/
 | `src/deps.ts` | `AppDeps` — what routes need from outside (today: `db`). Passed in, so tests supply a real test DB or a fake |
 | `src/db.ts` | The process-wide pool: `createDb(env.DATABASE_URL)` (max 10 connections) |
 | `src/routes.ts` | Mounts every module's router under `/api/v1` |
-| `src/lib/` | Shared helpers: `response` (envelope), `errors` (typed errors), `logger` (pino, secrets redacted), `audit` (`logAudit` + redaction), `changes` (`changedFields`: what really changed, for before/after audit rows), `db-errors` (`isUniqueViolation`, looks through Drizzle's wrapper), `temporary-password`, `branch-scope` |
-| `src/modules/<feature>/` | One folder per feature: `routes` → `controller` (req/res only) → `service` (logic) → `model` (database queries only) + tests |
-| `src/scripts/` | Operator command-line tasks. `<name>.ts` holds the logic (exported and tested), `<name>.cli.ts` is the thin executable, run with `npm run <name>`; `cli.ts` holds what they share (`out`, `fail`, `CliUsageError`). Today: `setup-client` and `reset-password` (see below) |
+| `src/lib/` | Shared helpers: `response` (envelope), `errors` (typed errors), `logger` (pino, secrets redacted), `audit` (`logAudit` + redaction), `changes` (`changedFields`: what really changed, for before/after audit rows), `db-errors` (`isUniqueViolation`, looks through Drizzle's wrapper), `like` (`likePattern`: a search pattern with the LIKE wildcards `%` and `_` escaped), `temporary-password`, `branch-scope` |
+| `src/modules/<feature>/` | One folder per feature: `routes` → `controller` (req/res only) → `service` (logic) → `model` (database queries only) + tests. Today: `auth`, `branches`, `categories`, `health`, `import`, `items`, `settings`, `stock`, `users`, `vendors` |
+| `src/scripts/` | Operator command-line tasks. `<name>.ts` holds the logic (exported and tested), `<name>.cli.ts` is the thin executable, run with `npm run <name>`; `cli.ts` holds what they share (`out`, `fail`, `CliUsageError`). Today: `setup-client`, `reset-password` and the dev-only `seed-dev` (`npm run db:seed`, see below) |
 
 **`setup:client`** creates a new client's `client_settings` row and its first Admin, in one transaction. The Admin gets a 16-character temporary password (letters and digits without look-alikes, from `crypto.randomInt`) which the script prints once to the terminal; the database holds only its bcrypt hash and `must_change_password` is set. Two audit rows are written (`client_settings.create`, `user.create`, no actor). It refuses, changing nothing, if any user or settings exist, even when two runs start together (an atomic insert decides the winner). It writes to `DATABASE_URL`, so for staging a variable set in the operator's terminal overrides `.env`; commands are in `docs/dev-setup.md`.
+
+**`db:seed`** (Task 3.8) fills an **empty** development database with demo data by calling the real services: `setupClient` (settings and the Admin), `createBranch` (`TPR`, `CBE`), `createUser` and `setUserBranches` (`cashier1` in Tiruppur, `cashier2` in both branches) and the CSV import for each branch (5 categories and 50 items each, EAN-13 barcodes, prices, opening stock through the ledger). The passwords are generated temporary ones, printed once. It refuses in production, answers "already seeded" when both branches exist, and refuses a database that holds any other data. It is several transactions, not one: after a half-way stop, empty the database and run it again.
 
 ### 5.2 Middleware order (every request)
 
@@ -206,6 +208,8 @@ department_store_v1/
 | 6 | `/api/v1` routes | Feature modules. Per route, as needed: `requireAuth(db)` → `requirePermission('…')` → `requireBranch` → `validate({ params, query, body })` → controller |
 | 7 | `notFound` | Unknown routes → 404 envelope |
 | 8 | `errorHandler` | Every error → failure envelope (below) |
+
+The CSV import is the one route that reads a `text/csv` body: `express.text` (5 MB cap) runs inside that route, after login and the permission check, so a file is read only for someone allowed to send it. The route is mounted ahead of the branches routes on the same prefix, so it answers its own path with its own permission (`admin:import`) instead of inheriting `admin:branches`.
 
 **Route guards** (`backend/src/middleware/`, Task 2.4):
 
@@ -226,7 +230,9 @@ department_store_v1/
 | `ForbiddenError` | 403 | `FORBIDDEN` (or specific) | message |
 | `NotFoundError` / unknown route | 404 | `NOT_FOUND` | message |
 | malformed JSON body | 400 | `INVALID_JSON` | message |
-| body over 1 MB | 413 | `PAYLOAD_TOO_LARGE` | message |
+| body over the route's cap (1 MB; 5 MB for the CSV import) | 413 | `PAYLOAD_TOO_LARGE` | message |
+| import body that is not `text/csv` | 415 | `CSV_REQUIRED` | message |
+| import file with problems | 422 | `IMPORT_INVALID` | `details: [{ row, column, message }]`, every problem; nothing saved |
 | anything else | 500 | `INTERNAL_ERROR` | generic message only — full error logged server-side, never sent |
 
 Every response uses the envelope: `{ success, data | error, meta: { timestamp, version } }`.
@@ -252,6 +258,15 @@ Every response uses the envelope: `{ success, data | error, meta: { timestamp, v
 | `PATCH /api/v1/admin/users/:id` | yes | Admin → Users | `UserSummary`. A new `fullName`, or `isActive` to deactivate / reactivate |
 | `POST /api/v1/admin/users/:id/reset-password` | yes | Admin → Users | `{ temporaryPassword }`, shown once; ends the user's sessions; they must change it at next login |
 | `PUT /api/v1/admin/users/:id/branches` | yes | Admin → Users | `UserSummary`. Replaces the cashier's whole list of branches |
+| `POST /api/v1/admin/branches/:id/import` | yes | Admin → Import | `{ categoriesCreated, itemsCreated, openingMovements }` (201). The CSV file is the request body (`Content-Type: text/csv`, up to 5 MB); `admin:import` |
+| `GET /api/v1/categories` | yes | Catalog → Categories, drop-downs | `Page<Category>` by name (ignoring case); `stock:read`, active branch |
+| `POST /api/v1/categories`, `PATCH /api/v1/categories/:id` | yes | Catalog → Categories | `Category` (201 / 200); `category:write`. A name the branch already uses (any case) answers 400 `DUPLICATE_NAME` |
+| `GET /api/v1/items` | yes | Catalog → Items | `Page<Item>` by name, with stock; `?search=&categoryId=&active=&limit&offset` (`active` left out: both); `stock:read` |
+| `GET /api/v1/items/lookup` | yes | the counter (Phase 5) | one active `Item` by exact `?barcode=` or `?code=`, else 404; `bill:create` |
+| `POST /api/v1/items`, `PATCH /api/v1/items/:id` | yes | Catalog → Items | `Item`; `item:write`. Create inserts the item **and** its stock row (0) in one transaction; `isActive` deactivates or reactivates; 400 `DUPLICATE_CODE` / `DUPLICATE_BARCODE`; a selling price above the MRP is a 422 |
+| `GET /api/v1/vendors`, `POST /api/v1/vendors`, `PATCH /api/v1/vendors/:id` | yes | Catalog → Vendors | `Page<Vendor>` (`?search=&active=`) / `Vendor`; all need `vendor:write`. The optional GSTIN must match the 15-character pattern |
+| `GET /api/v1/stock` | yes | Stock | `Page<StockLine>` (every item of the branch with its quantity, by name; `?categoryId=`); `stock:read`. A cashier reads their branch; the Admin names it with `?branchId=` |
+| `GET /api/v1/stock/:itemId/movements` | yes | Stock → history | `Page<StockMovement>`, newest first, with type, quantity, balance after, reason, note, who and when; same branch rule |
 
 **Login flow details:** an unknown username is still checked against a dummy bcrypt hash, so response time doesn't reveal which usernames exist. Every failure answers `INVALID_CREDENTIALS` and is audited with the attempted username, never the password. Until a temporary password is changed, every route except me / change-password / logout answers 403 `PASSWORD_CHANGE_REQUIRED`. Every login event writes an audit row in the same transaction (D-30).
 
@@ -269,6 +284,15 @@ Every response uses the envelope: `{ success, data | error, meta: { timestamp, v
 - **Deactivating or resetting ends all the user's sessions in the same transaction.** Deleting them at once matters beyond the next request: otherwise reactivating a user would bring their old sessions back to life (the session check alone would accept them again). Both cases are tested.
 - **Branch mapping** (`PUT /:id/branches`) replaces the whole list, for cashiers only. A branch can be *added* only if it exists and is active; one already mapped may stay after being deactivated, so a list can be saved again unchanged. A cashier working in a removed branch loses it on their next request. Audit rows record ids and codes before and after.
 - **`reset-password` command** (`npm run reset-password -- --username <name>`) shares its core (`resetUserPassword`) with the API route. It is for when nobody can use the Admin screens, e.g. the only Admin lost the password before first login; it prints the new temporary password once, writes an audit row with no actor, and works for a deactivated account too (with a note).
+
+**Catalog, stock and import rules** (Phase 3):
+- **Branch scoping:** categories, items and vendors are read and written through the session's active branch; a record of another branch is a 404, never a leak. The Admin works in no branch, so gets 403 on all of them. Stock reads are the exception: someone holding `report:all` (the Admin) names the branch with `?branchId=` (missing: 422; unknown: 404), while a cashier naming any branch but their own gets 403.
+- **Audit:** every create and edit writes one audit row in the same transaction, with before/after for the fields that really changed (`category.create` / `category.update`, `item.create` / `item.update` / `item.activate` / `item.deactivate`, `vendor.*` likewise, `branch.import` with the counts). Names and prices are plain data in these rows; nothing secret is involved.
+- **Duplicates** are typed errors, never a 500: categories use an atomic `INSERT … ON CONFLICT DO NOTHING`; items and vendors catch the unique violation and then look at which of code or barcode is taken. Two cashiers adding the same code at once give one 201 and one 400.
+- **Money** is whole paise end to end. The shared schemas refuse a selling price above the MRP when both are sent, and the item service compares a single new price with the stored other one.
+- **Search** is `ILIKE` with the wildcards escaped (`lib/like`), over the name, code and barcode of items and the name of vendors; lookups by barcode or code are exact.
+- **Stock reads** order the movements by row id, newest first: the id is the order the stock lock applied them in, which is the order `balance_after` follows (the clock time is not).
+- **CSV import** checks the whole file before it saves anything: header, every row against the shared row schema, the price rule, repeats inside the file, and codes and barcodes the branch already has; every problem is answered at once as `[{ row, column, message }]` (row 1 is the header). A good file is saved in one transaction: missing categories (matched by name in any letter case), items and stock rows in batches of 500 per statement, then one `opening` movement per item with stock through `postMovements`. Two imports at once cannot both win: the loser gets 422 (duplicates) or 400 `IMPORT_CONFLICT`, never a 500.
 
 ### 5.5 Configuration
 
@@ -291,6 +315,15 @@ An invalid setting stops the server at startup with a list of variable names —
 ### 5.6 Logging
 
 pino writes one JSON line per event. Secrets (`password`, `token`, cookies, `Authorization`, `Set-Cookie`) are redacted; request bodies are never logged. Levels: 5xx → error, 4xx → warn, else info. Business history goes to the audit log (D-30, from Phase 2), not to these logs.
+
+### 5.7 The stock ledger service
+
+`stock.service.postMovements(tx, { branchId, userId, movements })` is the **only** code that changes `item_stock` (Task 3.2); the import calls it for opening stock, and later purchases, bills and adjustments will. It never opens a transaction: the caller passes its own, so a stock change commits or rolls back with the document behind it.
+
+- It locks the stock rows of the items involved with one statement, `SELECT … ORDER BY item_id FOR UPDATE OF item_stock`, joined to `items` so that an item of another branch (or none) is simply not returned and answers 404. One ordered statement means two callers needing overlapping items queue in the same order and cannot deadlock.
+- It walks the movements in order, tracking each item's running balance and its lowest point, and throws `INSUFFICIENT_STOCK` (listing every short item) **before writing anything**. Then it writes all the quantities in one `UPDATE … FROM (VALUES …)` and all the ledger rows in one `INSERT`. Each row records `balance_after`, so the history reads as a running total.
+- The invariant, checked by the tests after every scenario: an item's stock equals the sum of its ledger rows, and each row's `balance_after` equals the running total up to it. The concurrency tests (two counters selling the last unit; opposite orders of the same two items) were run ten times in a row when the service was built.
+- Reads (`GET /stock`, the history) live in the same module but never write.
 
 ---
 
@@ -354,6 +387,12 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | `/admin/branches` | Branches | List (20 per page), add, edit, deactivate (asks first), reactivate |
 | `/admin/users` | Users | List with each user's branches; add; edit name; branch checklist for cashiers; reset password; deactivate (asks first) and reactivate. A new or reset temporary password appears once in a card with Copy and Done |
 | `/admin/settings` | Settings | Business name, address, phone |
+| `/admin/import` | Import | The Admin chooses a branch and a CSV file; the counts on success, a Row / Column / Problem table when the file has problems; a template to download (`public/import-template.csv`) |
+| `/catalog` | Catalog | Opens the first of Items, Categories and Vendors that the person may use |
+| `/catalog/items` | Items | Search by name, code or barcode (on Enter or Search), category filter, status filter (Active only by default); add, edit, deactivate (asks first), reactivate. Prices are typed in rupees |
+| `/catalog/categories` | Categories | List, add, rename |
+| `/catalog/vendors` | Vendors | Search by name, status filter; add, edit, deactivate (asks first), reactivate |
+| `/stock` | Stock | The number in stock per item (cashier: their branch, with a category filter; Admin: chooses the branch), a Low stock badge, and **Show history** for the movement table |
 | `/billing` | Billing | Placeholder until Phase 5 |
 | `/no-access` | No access | Shown when the role lacks the page's permission |
 
@@ -367,6 +406,18 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Safeguards | Your own row has no Deactivate or Reset (the server refuses them too). Deactivate and Reset password ask inline first, with Cancel focused. The branch code stays editable, with a hint that it appears on bill numbers (Task 5.6 will lock it once bills exist) |
 | Errors | `describeFailure` puts `DUPLICATE_CODE` and `DUPLICATE_USERNAME` next to their fields, server validation next to its fields, and anything else as one message |
 | Limits | Lists page at 20. The branch checklist loads up to 100 active branches. No search or filters yet (`architecture.md` §14) |
+
+**Catalog, stock and import screens** (Tasks 3.9–3.10)
+
+| Aspect | How it works |
+|---|---|
+| Structure | The same split as the Admin area. `catalog/` holds the data layer (`keys`, `queries`, `mutations`, `filters` with the API paths, `forms`, `sections`); `stock/` holds `paths`, `keys`, `queries` and `display`; `admin/import.ts` the import call. `CatalogLayout` shows links to the sections the person may open; the header has one **Catalog** link (permission `item:write`) and a **Stock** link (`stock:read`) |
+| Keys and refreshing | Keys start with `catalog` or `stock`, so logging out or switching branch clears them. An item change refreshes the item lists; a category change refreshes the category lists and drop-downs; an import refreshes stock, items and categories |
+| The item form | Prices are typed in rupees and converted with `rupeesToPaise`, then checked by the same shared schemas the server applies (selling price at or below the MRP). Text that is not an amount, or a reorder level that is not a whole number, gets its own plain message. The API names the prices `mrpPaise` / `sellingPricePaise`, so errors are renamed to the form's `mrp` / `sellingPrice` fields. `DUPLICATE_CODE` / `DUPLICATE_BARCODE` land next to their fields |
+| Search | Runs when asked (Enter or the Search button), not per keystroke, so a slow connection is not asked a question per letter. A new search or filter starts again from page 1 |
+| Stock | `StockPage` reads `me.permissions`: with `report:all` (the Admin) it shows a branch drop-down of active branches and passes `?branchId=`; otherwise the cashier's own branch. The categories API cannot be asked about another branch, so the Admin sees no category filter or names (§14). Movement times are shown in Indian time (`lib/dates.ts`) whatever the computer's timezone |
+| Import | `api.postCsv` sends the file's text as `text/csv` (the client otherwise sends JSON). A refused import's `details` are read by `importProblems` into the problems table; any other failure shows one message. The server's problem messages are shown as written (English), not through the dictionary |
+| Limits | Lists page at 20; the category drop-downs load up to 100 categories; the Admin's branch drop-downs list active branches only |
 
 **Worth knowing**
 - A deactivated user sees "Wrong username or password" at login: the server gives the same reply for a wrong password, an unknown username and an inactive account, so the app never reveals which accounts exist. The Admin tells them.
@@ -384,7 +435,10 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | `rupeesToPaise`, `formatPaise` | Money as integer paise; Indian digit grouping (`₹1,00,000.00`) |
 | `ApiSuccess`, `ApiFailure`, `ApiResponse`, `ApiMeta`, `ApiErrorBody` | The response envelope |
 | `HealthStatus`, `LivenessStatus` | Health endpoint data |
-| *(Phase 2+)* zod schemas, permission map, billing math | Validation and rules used by both ends |
+| `PERMISSIONS`, `ROLE_PERMISSIONS`, `can` | The role → permission map (a backend test checks the roles match the database enum) |
+| zod schemas and types for auth, branches, users, settings, categories, items, vendors, stock and the CSV import | Validation shared by the server and the forms. Includes `paginationSchema` / `Page<T>`, the query-string pieces `searchTextSchema` and `activeFilterSchema`, and the item price rule (`SELLING_ABOVE_MRP_MESSAGE`) |
+| `MOVEMENT_TYPES`, `MOVEMENT_REF_TYPES`, `ADJUSTMENT_REASONS` | The ledger's vocabularies (a backend test checks they equal the database enums) |
+| *(Phase 4+)* billing math | Totals, discounts, round-off |
 
 ---
 
@@ -401,7 +455,7 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 | Proxies | `trust proxy` configured | real-IP check via audit IPs (Task 2.5) |
 | Auth | Login, logout, me, select-branch, change-password (§5.4); bcrypt cost 12, 72-byte limit, timing-safe for unknown usernames; 32-byte tokens stored as SHA-256; httpOnly SameSite=lax cookie; forced password change enforced by the server. Verified: a real login leaves neither password nor token in the logs (cookies show as `[redacted]`) | login rate limit (Task 7.1) |
 | Audit | `logAudit` in the same transaction as each change; login, failed login, logout, branch switch, password change (and failed change), and the setup of the client and first Admin are all audited. Redaction hides fields named like password / token / secret / hash, but leaves true/false values visible, so a flag such as `mustChangePassword` still shows what changed (an earlier version hid it; found and fixed in Task 2.7) | every later write (D-30) |
-| Branch isolation | `activeBranchId(req)` on every branch-owned query; access ends immediately on unmapping or branch deactivation | — |
+| Branch isolation | `activeBranchId(req)` on every branch-owned query; access ends immediately on unmapping or branch deactivation. Catalog and stock queries filter by branch, so another branch's record is a 404. The one cross-branch read, stock, is open only to `report:all` and needs the branch named | — |
 | Cross-site request forgery | Three layers: the session cookie is `SameSite=lax`; the API reads only `application/json` bodies, which a foreign site can't send without a CORS preflight; and the preflight is refused for any origin but ours. Tested (`auth.routes.test.ts`: text/plain and form bodies → 422, no cookie; foreign-origin preflight gets no allow-origin) and re-checked on staging through Vercel | one more pass in Task 7.2 |
 | Abuse | — | login rate limit (Task 7.1) |
 
@@ -434,7 +488,7 @@ Backend test files run one at a time (they share one database), with 30 s timeou
 ## 11. Build and deploy pipeline
 
 ```
-  local:   edit → npm run verify (lint · format · types · 96 tests) → commit → git push
+  local:   edit → commit → git push   (npm run verify runs at each checkpoint, not per task)
   GitHub:  main updated
   Vercel:  install + build frontend → atomic switch to the new version   (~30 s)
   Render:  npm ci → build packages + backend → db:migrate → start → health check passes
@@ -442,7 +496,7 @@ Backend test files run one at a time (they share one database), with 30 s timeou
 ```
 
 - Deploys trigger on every push to `main`; there is no separate release step.
-- The quality gate runs **locally** before each commit. Nothing in the pipeline re-runs it yet — see §14.
+- The quality gate (`npm run verify`) runs **locally**, at each checkpoint (end of a phase). Since 2026-10-15 nothing is run per task, so code pushed between checkpoints is deployed to staging unchecked. Nothing in the pipeline re-runs the gate — see §14.
 - Rollback: Render keeps previous deploys (one-click rollback); Vercel can promote an earlier deployment.
 
 ---
@@ -474,6 +528,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | pino / pino-http | 10.4.0 / 11.0.0 |
 | drizzle-orm / drizzle-kit / pg | 0.45.4 / 0.31.11 / 8.23.1 |
 | dotenv | 18.0.7 |
+| csv-parse | 7.0.3 (the CSV import) |
 | React / React Router / TanStack Query | 19.3.0 / 7.18.4 / 5.104.1 |
 | Vite / @vitejs/plugin-react / Tailwind | 8.3.4 / 6.1.2 / 4.3.3 |
 | Vitest / Supertest / tsx | 5.0.3 / 7.3.1 / 4.23.15 |
@@ -495,7 +550,13 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | `npm audit`: 4 moderate (esbuild inside dev-only drizzle-kit) | none at runtime | Accepted; recheck in Task 7.2; never `npm audit fix --force` |
 | Screens (pages, shell, route guard) have no automated tests; only the logic behind them does (routing, session rules, cache, error text, form checks) | a broken screen, as opposed to broken logic, is caught only by the manual browser check done in each task | Component tests need extra packages (Testing Library and a DOM environment, or Playwright), which need approval. Revisit before the billing screen (Phase 5), where the cost of a UI regression is highest |
 | Field messages from the `@ds/shared` schemas ("Enter the username", …) are English text, not `t()` keys | forms would still show English field errors once the Tamil dictionary exists (FP-07) | When FP-07 starts, make the schemas return message keys and translate them in the frontend |
-| Admin lists have no search or filters, and the cashier branch checklist shows at most 100 active branches | a store with many staff pages through users 20 at a time; more than 100 branches would hide some in the checklist | Add search and a role/status filter when a client needs them (the API already filters users by role and status); the 100-branch limit is far beyond a department store chain |
+| The Admin's branch and user lists have no search or filters (the catalog lists do), and the cashier branch checklist shows at most 100 active branches | a store with many staff pages through users 20 at a time; more than 100 branches would hide some in the checklist | Add search and a role/status filter when a client needs them (the API already filters users by role and status); the 100-branch limit is far beyond a department store chain |
+| The Admin's stock list has no category filter and no category names | the categories API cannot be asked about another branch, so the screen has nothing to filter or label with | A small API change: the category name in each stock row, or `?branchId=` on categories |
+| The Admin's branch drop-downs (Stock, Import) list active branches only | a deactivated branch's stock cannot be viewed, nor can a file be imported into it | Include inactive branches there when a client needs it |
+| The CSV import's speed is measured only for 1,000 rows | a file near the 5 MB cap (tens of thousands of rows) needs proportionally more database round trips and could approach Vercel's 30 s proxy limit | Measure on staging with a large catalogue before go-live; split the file if needed |
+| The import's problem messages are the server's English text, and the catalog and stock screens show other server text only through the dictionary | not translatable once Tamil exists (FP-07) | Return message keys with the problems when FP-07 starts |
+| Since 2026-10-15 nothing is run per task, so tasks pushed between checkpoints deploy to staging unchecked | a broken task can reach staging until the next checkpoint | Accepted for speed; the first gap (a GitHub Actions run of the gate on every push, not waited for) would catch it |
+| npm warns on every install that the install scripts of `bcrypt` and `esbuild` are not on its `allowScripts` list | none today: bcrypt's prebuilt binary loads and esbuild uses its platform package (the auth tests pass from a clean install) | Review with `npm approve-scripts` if npm starts enforcing the list |
 | Production platform undecided (AWS leaning) | deploy kit and backups (Tasks 7.4–7.5) wait for it | PD-03 |
 
 ---
