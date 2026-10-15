@@ -41,7 +41,7 @@ Follow these steps for every task, in order.
 3. **State the plan.** Before editing, write in chat: the task ID, the files you will create or change, and how you will verify. A few lines.
 4. **Red.** Where the task lists tests, write them first and run them. They must fail for the expected reason.
 5. **Green.** Implement until those tests pass. Change only the files the task names, plus their tests. If a change elsewhere is needed, report it rather than making it.
-6. **Run the gate.** `npm run verify` (lint, format check, type check, all tests; available from Task 1.9) — all green. Then confirm each "Done when" item by actually running or checking it.
+6. **Run the checks.** `npm run lint`, `npm run format:check`, `npm run check-types`, then the tests the task added or changed (`npm run build:packages` first if `shared` or `database` changed, then `npm run test -w @ds/<workspace> -- <test files>`) — all green. The full `npm run verify` (every test in every workspace) runs at each 🛑 CHECKPOINT, not per task. Then confirm each "Done when" item by actually running or checking it.
 7. **Record.** In `progress.md`, set the task to DONE with today's date and a one-line note (anything surprising, any follow-up). If a doc is now out of date, update it in the same change.
 8. **Commit.** One commit per task, using the message in the task (DreamLand §10 format).
 9. **Report and stop.** In chat: what was done, test results, and anything the user should know.
@@ -67,7 +67,7 @@ The user, at a checkpoint: works through the phase's "Checkpoint review" list, s
 
 - **Small tasks** keep each change easy to review and easy to undo.
 - **Tests written first** define "done" before the code exists.
-- **The gate after every task** catches a mistake in the task that caused it, not three tasks later.
+- **Lint, types and the task's own tests after every task** catch a mistake in the task that caused it; **the full gate at each checkpoint** catches anything that slipped between modules, before more is built on top.
 - **`progress.md` holds the state**, so any session — or a different AI tool — resumes exactly where the last one stopped.
 - **Checkpoints** put a human review where it matters: before more work is built on top.
 
