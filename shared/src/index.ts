@@ -35,6 +35,14 @@ export {
 } from './schemas/categories.js';
 export { idParamSchema, optionalText, wholeNumberText, type IdParams } from './schemas/common.js';
 export {
+  IMPORT_COLUMNS,
+  importRowSchema,
+  type ImportColumn,
+  type ImportError,
+  type ImportResult,
+  type ImportRow,
+} from './schemas/import.js';
+export {
   createItemSchema,
   itemCodeSchema,
   itemNameSchema,

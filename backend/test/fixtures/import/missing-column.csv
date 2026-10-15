@@ -1,0 +1,2 @@
+code,barcode,name,category,selling_price,reorder_level,opening_stock
+A1,,Item without an MRP column,Grocery,90,,5

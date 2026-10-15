@@ -1,0 +1,6 @@
+code,barcode,name,category,mrp,selling_price,reorder_level,opening_stock
+RICE10,8901234567890,Rice 10 kg,Grocery,650.00,620.00,5,24
+OIL1L,8901234500011,"Sunflower oil, 1 l",Grocery,185.50,180,10,40
+SOAP,,Bath soap,Personal care,45,42.5,,0
+NOTEBOOK,,Notebook 200 pages,stationery,60,55,2,
+PEN,,Ball pen,Stationery,10,10,,12

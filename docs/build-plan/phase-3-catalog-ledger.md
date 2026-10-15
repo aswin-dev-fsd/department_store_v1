@@ -244,6 +244,16 @@ postMovements(tx, {
 
 **Commit:** `feat(import): add csv import for items and opening stock`
 
+**As built (2026-10-15):**
+- **Files:** the named schema, routes, controller, service and tests (`import.routes.test.ts`, like the other modules) and three fixtures (`valid-5-rows.csv`, `errors.csv`, `missing-column.csv`; the 1,000-row file is generated inside the test), plus `import.model.ts` (the queries), a shared schema test, the shared export, the overview rows and error codes, and the route registration, placed **ahead of** the branches routes so the import answers its own path with `admin:import` rather than inheriting `admin:branches`. No `lib` change, no migration. `csv-parse` 7.0.3 is installed in `@ds/backend`, pinned exactly (an approved package; the install ran after your go-ahead in the session).
+- **Open choices:**
+  - *The file:* the columns may come in any order and letter case, other columns are ignored, and a byte order mark or CRLF line ends are fine. `code` and `name` are required; the other cells may be blank, a blank `opening_stock` is 0, and only an item with stock above 0 gets an `opening` movement. A row with more values than the header (an unquoted comma) is an error. Rows count from 1 for the header, and blank lines are skipped but still counted, so a row number is the line in the file.
+  - *The checks:* the same rules as the items API (a selling price above the MRP is an error), plus a barcode repeated in the file or already in the branch, which would otherwise be a database error. A code or barcode repeated in the file, or already in the branch, is reported on every row it affects, with the other problems of the file. Each cell reports its first problem only.
+  - *Categories:* matched by name in any letter case; an existing one is reused, a missing one is created once, spelt as first seen in the file.
+  - *The answers:* 201 with `{ categoriesCreated, itemsCreated, openingMovements }`; 422 `IMPORT_INVALID` with every `{ row, column, message }` (`column` is null for a problem with the whole row or file); 415 `CSV_REQUIRED` for a body that is not `text/csv`; 413 for a file over 5 MB; 400 `IMPORT_CONFLICT` when another change collided while saving (nothing saved, never a 500). One `branch.import` audit row with the counts.
+  - *Speed:* rows go in batches of 500 per statement, so 1,000 rows take about 20 round trips to the database, far inside the 10 seconds asked for and the 30-second proxy limit noted in the pending decisions. A file of tens of thousands of rows (the 5 MB cap) needs proportionally more round trips and was not measured.
+- **Not run:** under option 3 nothing was run for this task except the package install: 25 route tests and 30 schema tests are written, but lint, types, format and the tests first run at Checkpoint 3. I read `csv-parse` 7's source for the behaviours the tests rely on: an empty line is a record, a trailing newline is not, an unclosed quote throws, and `relax_column_count` does not throw. The "tests pass" box above stays open until the checkpoint.
+
 ---
 
 ## Task 3.8 — Dev seed script

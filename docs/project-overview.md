@@ -482,6 +482,8 @@ Payment: Cash ₹500 + UPI ₹536 = ₹1,036 ✓
 
 **CSV import format (proposed, Phase 3):** `code, barcode, name, category, mrp, selling_price, reorder_level, opening_stock`. Prices are written in rupees (e.g. `145.50`) and converted to paise. The import checks every row first and shows all errors. It saves only if the whole file is valid **(proposed)**.
 
+*As built (Task 3.7):* the header must name all eight columns, in any order and letter case; other columns are ignored. `code` and `name` are required. `barcode`, `category`, `reorder_level` and `opening_stock` may be blank: a blank stock is 0, and only an item with stock above 0 gets an `opening` ledger row. A selling price above the MRP, a code or barcode repeated in the file or already in the branch, and a row with more values than the header (an unquoted comma) are errors. Categories are matched by name in any letter case, and created when missing. Rows are numbered as in a spreadsheet: the header is row 1.
+
 ### 7.2 Login and branch selection
 1. Enter username and password.
 2. A session cookie is set.
@@ -562,7 +564,7 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | POST | `/admin/users/:id/reset-password` | `admin:users` | New one-time temporary password (not for your own account); ends the user's sessions |
 | PUT | `/admin/users/:id/branches` | `admin:users` | Replace a cashier's whole list of branches |
 | GET, PUT | `/admin/settings` | `admin:settings` | Client settings: business name, address, phone (GSTIN waits for PD-01). PUT replaces the record |
-| POST | `/admin/branches/:id/import` | `admin:import` | CSV import of items and opening stock |
+| POST | `/admin/branches/:id/import` | `admin:import` | CSV import of items and opening stock. The file is the request body (`Content-Type: text/csv`, up to 5 MB). 201 with the counts, or 422 `IMPORT_INVALID` listing every problem, with nothing saved |
 | GET | `/admin/reports/:report` | `report:all` | Any report, any branch (`?branchId=`) |
 | GET | `/items` | `stock:read` | Search and list, with stock (`?search=&categoryId=&active=&limit&offset`; `active` left out shows both) |
 | GET | `/items/lookup` | `bill:create` | Exact match among active items by `?barcode=` or `?code=`, else 404 |
@@ -616,6 +618,9 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `DUPLICATE_CODE` | 400 | A branch code that another branch already uses, or an item code the branch already uses |
 | `DUPLICATE_BARCODE` | 400 | A barcode another item of the branch already has |
 | `DUPLICATE_NAME` | 400 | A category name the branch already uses (ignoring case) |
+| `IMPORT_INVALID` | 422 | The CSV file has problems; `details` lists every `{ row, column, message }` and nothing was saved |
+| `IMPORT_CONFLICT` | 400 | The branch's items or categories changed while the file was being saved; nothing was saved, import again |
+| `CSV_REQUIRED` | 415 | The import body was not sent as `text/csv` |
 | `NOT_SET_UP` | 404 | The client settings don't exist yet: `setup:client` has never run on this database |
 | `INTERNAL_ERROR` | 500 | Unexpected; the full stack is logged server-side |
 

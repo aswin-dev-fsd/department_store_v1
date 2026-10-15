@@ -1,0 +1,14 @@
+code,barcode,name,category,mrp,selling_price,reorder_level,opening_stock
+OK1,,Good item,Grocery,100.00,90.00,,5
+BADPRICE,,Bad price item,Grocery,abc,90.00,,5
+,,No code item,Grocery,100,90,,
+NONAME,,,Grocery,100,90,,
+DUP1,,First duplicate,Grocery,100,90,,
+DUP1,,Second duplicate,Grocery,100,90,,
+EXIST1,,Already in branch,Grocery,100,90,,
+NEGSTOCK,,Negative stock,Grocery,100,90,,-3
+ABOVEMRP,,Selling above MRP,Grocery,100,120,,
+BADREORDER,,Bad reorder level,Grocery,100,90,x,
+BARCODEDUP1,111,First barcode,Grocery,100,90,,
+BARCODEDUP2,111,Second barcode,Grocery,100,90,,
+BARCODEEXIST,222,Barcode in branch,Grocery,100,90,,
