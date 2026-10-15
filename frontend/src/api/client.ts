@@ -25,7 +25,23 @@ export class ApiError extends Error {
   }
 }
 
+/** A request body already turned into text, with the Content-Type to send it under. */
+interface TextBody {
+  contentType: string;
+  text: string;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  return send<T>(
+    method,
+    path,
+    body === undefined
+      ? undefined
+      : { contentType: 'application/json', text: JSON.stringify(body) },
+  );
+}
+
+async function send<T>(method: string, path: string, body?: TextBody): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
@@ -34,8 +50,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       headers:
         body === undefined
           ? { Accept: 'application/json' }
-          : { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+          : { Accept: 'application/json', 'Content-Type': body.contentType },
+      body: body?.text,
     });
   } catch (error) {
     throw new ApiError('NETWORK_ERROR', 'Could not reach the server', 0, undefined, {
@@ -69,5 +85,8 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
+  /** POST a CSV file's text as it is, with Content-Type text/csv (the CSV import). */
+  postCsv: <T>(path: string, csv: string) =>
+    send<T>('POST', path, { contentType: 'text/csv', text: csv }),
   delete: <T>(path: string) => request<T>('DELETE', path),
 };

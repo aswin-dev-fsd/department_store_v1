@@ -16,12 +16,14 @@ import { CatalogHomePage } from './pages/CatalogHomePage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { LoginPage } from './pages/LoginPage';
 import { BranchesPage } from './pages/admin/BranchesPage';
+import { ImportPage } from './pages/admin/ImportPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { ItemsPage } from './pages/items/ItemsPage';
 import { NoAccessPage } from './pages/NoAccessPage';
 import { StatusPage } from './pages/StatusPage';
+import { StockPage } from './pages/stock/StockPage';
 import { VendorsPage } from './pages/vendors/VendorsPage';
 
 const queryClient = createQueryClient();
@@ -32,6 +34,7 @@ const ADMIN_PAGES: Record<AdminSection['slug'], ReactNode> = {
   branches: <BranchesPage />,
   users: <UsersPage />,
   settings: <SettingsPage />,
+  import: <ImportPage />,
 };
 
 // The same for the catalog: one page per section, addressed and guarded from catalog/sections.ts
@@ -84,6 +87,14 @@ const router = createBrowserRouter([
                 ),
               })),
             ],
+          },
+          {
+            path: '/stock',
+            element: (
+              <RequirePermission permission="stock:read">
+                <StockPage />
+              </RequirePermission>
+            ),
           },
           {
             path: '/billing',

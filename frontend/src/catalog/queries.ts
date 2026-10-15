@@ -28,10 +28,14 @@ export function useCategories(offset: number) {
   });
 }
 
-/** All the branch's categories for the drop-downs (the API's largest page). */
-export function useCategoryOptions() {
+/**
+ * All the branch's categories for the drop-downs (the API's largest page). Pass `false` when the
+ * caller has no branch (an Admin), so no request is made.
+ */
+export function useCategoryOptions(enabled = true) {
   return useQuery({
     queryKey: catalogKeys.categoryOptions,
+    enabled,
     queryFn: async (): Promise<Category[]> => {
       const page = await api.get<Page<Category>>(`/categories?limit=${MAX_PAGE_SIZE}`);
       return page.items;

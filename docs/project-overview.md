@@ -245,11 +245,11 @@ Any error → errorHandler → { success: false, error: { code, message, details
 | Purchases | Cashier | List; draft editor; post; cancel |
 | Items and categories | Cashier | Add and edit items, prices, barcodes, reorder levels (Catalog → Items, Categories; built in Phase 3) |
 | Vendors | Cashier | Add and edit vendors (Catalog → Vendors; built in Phase 3) |
-| Stock | Cashier, Admin | Current stock; movement history per item |
+| Stock | Cashier, Admin | Current stock; movement history per item (built in Phase 3; the Admin chooses the branch) |
 | Stock adjustment | Cashier | +/− quantity with a reason |
 | Reports | Cashier (limited), Admin (all) | See [6.10](#610-reports-d-22) |
 | Admin: Branches, Users and mapping, Settings | Admin | Setup (built in Phase 2). A new or reset temporary password appears once, with a Copy button |
-| Admin: CSV import | Admin | Items and opening stock per branch (Phase 3) |
+| Admin: CSV import | Admin | Items and opening stock per branch (Phase 3; Administration → Import) |
 | Change password | All | Forced at first login and after a reset |
 | No access | All | Shown when the role lacks the page's permission |
 | Status | Anyone, no login | API and database health (`/status`) |

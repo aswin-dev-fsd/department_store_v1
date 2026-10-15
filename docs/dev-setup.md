@@ -133,6 +133,15 @@ npm run db:seed
 - Running it again says "already seeded" and changes nothing. A database that already has other data (a user, the client settings or a branch) is refused untouched. It never runs with `NODE_ENV=production`.
 - The run is several steps, not one transaction. If it stops half-way, empty the database and run it again.
 
+### Import a branch's items and stock from a CSV file
+
+Logged in as the Admin, open **Administration → Import**. Choose the branch, pick the file, and press **Import into …**. The same page has a link to download the template: replace its two example rows with your items (save your spreadsheet as CSV).
+
+- The whole file is checked first. If any row has a problem, **nothing is imported** and the page lists every problem with its row and column (row 1 is the header, so the first item is row 2).
+- Prices are in rupees, like `145.50`, and the selling price cannot be above the MRP. A blank opening stock means 0. A code or barcode may appear only once in the file and must not already exist in the branch, so importing the same file twice is refused.
+- When it finishes, the page shows how many items and categories were created and how many items got opening stock. Open **Stock** to check the numbers against your file; **Show history** on an item lists the movement that put its stock there.
+- The Admin picks the branch from a drop-down on the Import and Stock pages (active branches only); a cashier's Stock page always shows the branch they work in.
+
 ### Reset a password from the command line (recovery)
 
 Admins reset other people's passwords on the Users screen. This command is for when nobody can: for example the only Admin lost the temporary password before their first login (`setup:client` refuses to run twice).

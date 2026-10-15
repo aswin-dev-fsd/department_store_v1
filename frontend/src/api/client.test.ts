@@ -42,6 +42,31 @@ describe('api client', () => {
     );
   });
 
+  it('POSTs a CSV file as plain text with the text/csv content type, and unwraps the reply', async () => {
+    const fetchMock = respondWith({ success: true, data: { itemsCreated: 2 }, meta }, 201);
+    const csv = 'code,name\nA1,"Rice, 10 kg"\n';
+    await expect(api.postCsv('/admin/branches/3/import', csv)).resolves.toEqual({
+      itemsCreated: 2,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/admin/branches/3/import',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: csv,
+        headers: { Accept: 'application/json', 'Content-Type': 'text/csv' },
+      }),
+    );
+  });
+
+  it('sends a request without a body with no Content-Type', async () => {
+    const fetchMock = respondWith({ success: true, data: {}, meta });
+    await api.get('/health');
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.headers).toEqual({ Accept: 'application/json' });
+    expect(init.body).toBeUndefined();
+  });
+
   it('throws ApiError carrying the code, message, details and status of an error envelope', async () => {
     const details = [{ itemId: 7, available: 0, requested: 1 }];
     respondWith(

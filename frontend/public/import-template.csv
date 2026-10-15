@@ -1,0 +1,3 @@
+code,barcode,name,category,mrp,selling_price,reorder_level,opening_stock
+EXAMPLE1,,Example item - delete this row,Grocery,145.50,140,10,25
+EXAMPLE2,8901234567890,"Example, with a comma - delete this row",Grocery,60,55,,

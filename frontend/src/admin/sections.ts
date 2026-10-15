@@ -3,7 +3,7 @@ import type { MessageKey } from '../i18n/en';
 
 export interface AdminSection {
   /** Last part of the address: the section lives at /admin/<slug>. */
-  slug: 'branches' | 'users' | 'settings';
+  slug: 'branches' | 'users' | 'settings' | 'import';
   path: `/admin/${AdminSection['slug']}`;
   /** What the matching API area enforces; the route and the links both use it. */
   permission: Permission;
@@ -33,6 +33,13 @@ export const ADMIN_SECTIONS: readonly AdminSection[] = [
     permission: 'admin:settings',
     label: 'nav.adminSettings',
     blurb: 'adminHome.settingsBlurb',
+  },
+  {
+    slug: 'import',
+    path: '/admin/import',
+    permission: 'admin:import',
+    label: 'nav.adminImport',
+    blurb: 'adminHome.importBlurb',
   },
 ];
 

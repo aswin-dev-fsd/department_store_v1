@@ -17,6 +17,7 @@ describe('ADMIN_SECTIONS', () => {
       branches: 'admin:branches',
       users: 'admin:users',
       settings: 'admin:settings',
+      import: 'admin:import',
     });
   });
 });
@@ -27,6 +28,7 @@ describe('visibleSections', () => {
       'branches',
       'users',
       'settings',
+      'import',
     ]);
   });
 

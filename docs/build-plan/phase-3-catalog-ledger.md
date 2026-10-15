@@ -343,6 +343,14 @@ postMovements(tx, {
 
 **Commit:** `feat(frontend): add stock and import screens`
 
+**As built (2026-10-15):**
+- **Files:** `pages/stock/{StockPage,MovementsPanel}.tsx`, `pages/admin/ImportPage.tsx`, `frontend/public/import-template.csv` and the labels in `en.ts`, plus: `frontend/src/stock/` (API paths, query keys, queries, display helpers), `admin/import.ts` (the import call and the reading of its 422 problems), `lib/dates.ts` (times in Indian time), a `postCsv` call in `api/client.ts` (the import sends raw `text/csv`, which the JSON-only client could not), an **Import section** in `admin/sections.ts` (so it gets its hub card, sub-menu entry and route from the one list; its existing test was updated), the routes in `App.tsx`, a "Stock" link in `AppShell.tsx`, and an `enabled` flag on `useCategoryOptions`. 23 logic tests. No new package.
+- **Open choices:**
+  - *Stock:* `/stock` for cashiers (their branch) and the Admin (who chooses the branch from a drop-down of active branches). Cards with the number in stock; **Show history** opens the movement table inline (when, what, change, balance after, reason or note, who), 20 per page, times in Indian time. A cashier can filter by category. A **Low stock** badge (my addition) shows when stock is at or below the reorder level.
+  - *Known gap:* the categories API cannot be asked about another branch, so the Admin's stock list has no category filter and no category names. A small backend change (for example the category name in each stock row, or `?branchId=` on categories) would close it; it is not done.
+  - *Import:* Administration → Import. Choose a branch, pick the file, press "Import into TPR". Success shows the counts; a 422 shows the table of Row, Column and Problem; any other failure shows a message (`IMPORT_CONFLICT`, a file over 5 MB and a non-CSV file have their own wording). The page explains the file format and links the template, which holds the header and two example rows marked "delete this row". The problem messages are shown as the server wrote them (English), not through the dictionary.
+- **Not run:** under option 3 nothing was run for this task. The logic is covered by 23 tests (API paths, query keys, the low-stock rule, Indian-time formatting, the import call and its refreshes, reading the 422 problems, the new client call), but the screens have no automated tests, so types, lint, format, build and tests first run at Checkpoint 3, and the first real look at these screens is the manual check. Both "Done when" boxes stay open: that check needs the dev servers and a seeded dev database (waiting for your go-ahead on the seed), plus a valid CSV file and a broken one.
+
 ---
 
 ## 🛑 Checkpoint 3
