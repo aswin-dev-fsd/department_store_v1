@@ -312,6 +312,16 @@ postMovements(tx, {
 
 **Commit:** `feat(frontend): add items, categories and vendors screens`
 
+**As built (2026-10-15):**
+- **Files:** the six pages (`pages/items/{ItemsPage,ItemForm}.tsx`, `pages/categories/{CategoriesPage,CategoryForm}.tsx`, `pages/vendors/{VendorsPage,VendorForm}.tsx`) and the labels in `en.ts`, plus the layer behind them in `frontend/src/catalog/` (query keys, list queries and API paths, mutations, form conversions, sections: the same split as `admin/`) with 68 logic tests, `components/{CatalogLayout,SearchBox}.tsx`, `pages/CatalogHomePage.tsx`, the routes in `App.tsx` and one "Catalog" link in `AppShell.tsx`. No new package.
+- **Open choices:**
+  - *Where:* a Catalog area at `/catalog` with a sub-menu (Items, Categories, Vendors), like Administration. The header link shows for anyone with `item:write`; each section checks its own permission, and `/catalog` opens the first section the person may use. The Admin has none of these permissions, so sees no Catalog link.
+  - *Lists:* cards like the Admin screens, 20 per page. Items: search by name, code or barcode, a category filter and a status filter (Active only, the default; Inactive only; both). Vendors: search by name and the same status filter. Categories: a plain list. A search runs when you press Enter or Search, not on every keystroke, to spare a slow connection.
+  - *The item form:* prices are typed in rupees and converted with `rupeesToPaise`, then checked by the shared schemas (selling price at or below the MRP). A price or reorder level that is not a number gets its own plain message ("Write the price in rupees, like 145.50"). Server errors land next to their fields: `DUPLICATE_CODE` on the code, `DUPLICATE_BARCODE` on the barcode, the price rule on the selling price, a bad category on the category. The code stays editable, because the API allows it.
+  - *Deactivate* asks first, with the same inline confirm bar as branches and users; *Reactivate* is one click. The category drop-down lists up to 100 categories (the API's largest page).
+  - *One existing label changed:* `error.DUPLICATE_CODE` read "Another branch already uses this code." and now reads "That code is already in use.", because item codes raise the same error code.
+- **Not run:** under option 3 nothing was run for this task. The logic is covered by 68 tests (API paths, form conversions against the shared schemas, mutations and their refreshes, sections), but the screens themselves have no automated tests (there is no component-test package, as before), so types, lint, format, build and tests first run at Checkpoint 3, and the first real look at these screens is the manual check. Both "Done when" boxes stay open: that check needs the dev servers and a seeded dev database (waiting for your go-ahead on the seed).
+
 ---
 
 ## Task 3.10 — Frontend: stock and import screens

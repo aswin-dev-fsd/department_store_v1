@@ -17,6 +17,7 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { to: '/admin', label: 'nav.admin', permission: 'admin:branches' },
   { to: '/billing', label: 'nav.billing', permission: 'bill:create' },
+  { to: '/catalog', label: 'nav.catalog', permission: 'item:write' },
 ];
 
 const linkStyle = 'rounded-md px-2 py-2 underline-offset-4 hover:underline';

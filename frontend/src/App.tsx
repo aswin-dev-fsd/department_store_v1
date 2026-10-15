@@ -3,20 +3,26 @@ import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ADMIN_SECTIONS, type AdminSection } from './admin/sections';
 import { createQueryClient } from './auth/queryClient';
+import { CATALOG_SECTIONS, type CatalogSection } from './catalog/sections';
 import { AdminLayout } from './components/AdminLayout';
 import { AppShell } from './components/AppShell';
 import { AuthGate } from './components/AuthGate';
+import { CatalogLayout } from './components/CatalogLayout';
 import { RequirePermission } from './components/RequirePermission';
 import { AdminHomePage } from './pages/AdminHomePage';
 import { BillingPage } from './pages/BillingPage';
 import { BranchPickerPage } from './pages/BranchPickerPage';
+import { CatalogHomePage } from './pages/CatalogHomePage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { LoginPage } from './pages/LoginPage';
 import { BranchesPage } from './pages/admin/BranchesPage';
 import { SettingsPage } from './pages/admin/SettingsPage';
 import { UsersPage } from './pages/admin/UsersPage';
+import { CategoriesPage } from './pages/categories/CategoriesPage';
+import { ItemsPage } from './pages/items/ItemsPage';
 import { NoAccessPage } from './pages/NoAccessPage';
 import { StatusPage } from './pages/StatusPage';
+import { VendorsPage } from './pages/vendors/VendorsPage';
 
 const queryClient = createQueryClient();
 
@@ -26,6 +32,13 @@ const ADMIN_PAGES: Record<AdminSection['slug'], ReactNode> = {
   branches: <BranchesPage />,
   users: <UsersPage />,
   settings: <SettingsPage />,
+};
+
+// The same for the catalog: one page per section, addressed and guarded from catalog/sections.ts
+const CATALOG_PAGES: Record<CatalogSection['slug'], ReactNode> = {
+  items: <ItemsPage />,
+  categories: <CategoriesPage />,
+  vendors: <VendorsPage />,
 };
 
 const router = createBrowserRouter([
@@ -52,6 +65,21 @@ const router = createBrowserRouter([
                 element: (
                   <RequirePermission permission={section.permission}>
                     {ADMIN_PAGES[section.slug]}
+                  </RequirePermission>
+                ),
+              })),
+            ],
+          },
+          {
+            path: '/catalog',
+            element: <CatalogLayout />,
+            children: [
+              { index: true, element: <CatalogHomePage /> },
+              ...CATALOG_SECTIONS.map((section) => ({
+                path: section.slug,
+                element: (
+                  <RequirePermission permission={section.permission}>
+                    {CATALOG_PAGES[section.slug]}
                   </RequirePermission>
                 ),
               })),

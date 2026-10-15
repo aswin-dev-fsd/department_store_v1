@@ -243,8 +243,8 @@ Any error → errorHandler → { success: false, error: { code, message, details
 | **Billing (counter)** | Cashier | Create bills; the main screen |
 | Bills | Cashier | Find a bill, view, reprint, cancel |
 | Purchases | Cashier | List; draft editor; post; cancel |
-| Items and categories | Cashier | Add and edit items, prices, barcodes, reorder levels |
-| Vendors | Cashier | Add and edit vendors |
+| Items and categories | Cashier | Add and edit items, prices, barcodes, reorder levels (Catalog → Items, Categories; built in Phase 3) |
+| Vendors | Cashier | Add and edit vendors (Catalog → Vendors; built in Phase 3) |
 | Stock | Cashier, Admin | Current stock; movement history per item |
 | Stock adjustment | Cashier | +/− quantity with a reason |
 | Reports | Cashier (limited), Admin (all) | See [6.10](#610-reports-d-22) |
