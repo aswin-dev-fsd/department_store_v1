@@ -465,11 +465,11 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 
 | Package | Runner | What | Count |
 |---|---|---|---|
-| shared | Vitest | money helpers, permission map, zod schemas | 130 |
+| shared | Vitest | money helpers, permission map, zod schemas (access, catalog, stock, import) | 279 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
-| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, operator scripts, schema constraints of the access, catalog and ledger tables (against the Neon test database, ~4–6 min) | 297 |
-| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin data hooks, paging, branch checklist, admin sections, clipboard | 134 |
-| **Total** | | | **573** |
+| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock and import APIs, the stock ledger service with its concurrency tests, operator scripts and the dev seed, schema constraints of the access, catalog and ledger tables (against the Neon test database, about 10 min) | 565 |
+| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin and catalog data hooks, paging, branch checklist, admin and catalog sections, stock display rules, the import call, clipboard | 225 |
+| **Total** | | | **1,081** |
 
 **Backend test harness** (`backend/test/`):
 
@@ -481,7 +481,7 @@ tests                → createTestDb() (pool 20) / resetDb() (truncate public t
                        both refuse to run outside the harness
 ```
 
-Backend test files run one at a time (they share one database), with 30 s timeouts for Singapore round trips. A full `npm run verify` takes about 1–2 minutes.
+Backend test files run one at a time (they share one database), with 30 s timeouts for Singapore round trips. A full `npm run verify` takes about 12 minutes, almost all of it the backend suite; that is why nothing is run per task and the gate runs at each checkpoint (`build-plan/README.md`, step 6).
 
 ---
 
@@ -557,6 +557,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | The import's problem messages are the server's English text, and the catalog and stock screens show other server text only through the dictionary | not translatable once Tamil exists (FP-07) | Return message keys with the problems when FP-07 starts |
 | Since 2026-10-15 nothing is run per task, so tasks pushed between checkpoints deploy to staging unchecked | a broken task can reach staging until the next checkpoint | Accepted for speed; the first gap (a GitHub Actions run of the gate on every push, not waited for) would catch it |
 | npm warns on every install that the install scripts of `bcrypt` and `esbuild` are not on its `allowScripts` list | none today: bcrypt's prebuilt binary loads and esbuild uses its platform package (the auth tests pass from a clean install) | Review with `npm approve-scripts` if npm starts enforcing the list |
+| The frontend bundle is 524 kB (154 kB gzipped), over Vite's 500 kB chunk warning | every `npm run build` prints the warning; nothing breaks, but the first page load grows with each phase | Split by route with `React.lazy` when the size starts to matter (the billing screen is the large one still to come); raise the limit only knowingly |
 | Production platform undecided (AWS leaning) | deploy kit and backups (Tasks 7.4–7.5) wait for it | PD-03 |
 
 ---

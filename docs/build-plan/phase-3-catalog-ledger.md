@@ -308,7 +308,7 @@ postMovements(tx, {
 4. Show server errors (duplicate code or barcode, price rule) next to the relevant fields.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass (Checkpoint 3, 2026-10-17)
 - [ ] Manual check on seeded data: create, edit, search, deactivate
 
 **Commit:** `feat(frontend): add items, categories and vendors screens`
@@ -339,7 +339,7 @@ postMovements(tx, {
    - Link to download `import-template.csv`.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass (Checkpoint 3, 2026-10-17)
 - [ ] Manual check: import a valid file and a broken file
 
 **Commit:** `feat(frontend): add stock and import screens`

@@ -189,7 +189,7 @@ All run from the repo root.
 ## 8. Tests
 
 - `npm test` runs everything. Backend tests run against `TEST_DATABASE_URL` only. A guard stops the run before connecting if that variable is missing or names your dev database.
-- Backend test files run **one at a time** (they share one database), and every query crosses to Singapore, so a full run takes about 25 seconds and grows with the project.
+- Backend test files run **one at a time** (they share one database), and every query crosses to Singapore, so the backend suite (565 tests at Checkpoint 3) takes about 10 minutes and grows with the project; a full `npm run verify` is about 12 minutes. That is why nothing is run per task.
 - One package: `npm test -w @ds/backend`. One file: `npx vitest run --root backend src/modules/health/health.test.ts`.
 - Database tests use `createTestDb()` and `resetDb()` from `backend/test/helpers/db.ts` (see `AGENTS.md`).
 
