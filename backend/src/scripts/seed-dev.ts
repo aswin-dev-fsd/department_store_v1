@@ -7,10 +7,11 @@ import { IMPORT_COLUMNS, type CreateBranchInput, type ImportResult } from '@ds/s
 import { inArray, sql } from 'drizzle-orm';
 import { AppError } from '../lib/errors.js';
 import type { RequestContext } from '../middleware/auth.js';
+import { changePassword, type SessionUser } from '../modules/auth/auth.service.js';
 import { createBranch } from '../modules/branches/branches.service.js';
 import { importItems } from '../modules/import/import.service.js';
 import { createUser, setUserBranches } from '../modules/users/users.service.js';
-import { setupClient, type SetupClientResult } from './setup-client.js';
+import { setupClient } from './setup-client.js';
 
 const DEMO_BUSINESS = 'Demo Department Store';
 
@@ -32,12 +33,27 @@ const BRANCHES: readonly CreateBranchInput[] = [
   },
 ];
 
-const ADMIN = { username: 'admin', fullName: 'Demo Admin' } as const;
+/**
+ * The three accounts and their passwords. The passwords are fixed and public (they are written
+ * here and in docs/dev-setup.md): fine for a throwaway dev database, which is the only place the
+ * seed runs (see the guards on seedDev). Never reuse them for anything real.
+ */
+const ADMIN = { username: 'admin', fullName: 'Demo Admin', password: 'admin@123' } as const;
 
 /** One works in a single branch, one in both (to try the branch picker). */
 const CASHIERS = [
-  { username: 'cashier1', fullName: 'Demo Cashier (Tiruppur)', branches: ['TPR'] },
-  { username: 'cashier2', fullName: 'Demo Cashier (both branches)', branches: ['TPR', 'CBE'] },
+  {
+    username: 'cashier1',
+    fullName: 'Demo Cashier (Tiruppur)',
+    password: 'cashier1@123',
+    branches: ['TPR'],
+  },
+  {
+    username: 'cashier2',
+    fullName: 'Demo Cashier (both branches)',
+    password: 'cashier2@123',
+    branches: ['TPR', 'CBE'],
+  },
 ] as const;
 
 /** [code, name, category, MRP in rupees, selling price in rupees, reorder level in packs] */
@@ -153,8 +169,8 @@ export interface SeededAccount {
   role: 'admin' | 'cashier';
   /** Codes of the branches the account works in; none for the Admin. */
   branches: string[];
-  /** Shown once by the CLI, never stored or logged; the person must change it at first login. */
-  temporaryPassword: string;
+  /** The fixed dev password (public, see ADMIN); no change is forced at the first login. */
+  password: string;
 }
 
 export type SeededBranch = { code: string; name: string } & ImportResult;
@@ -168,14 +184,28 @@ export interface SeedOptions {
   nodeEnv: string;
 }
 
-/** The Admin as the services see a caller; the session fields only matter for HTTP requests. */
-function actingAs(admin: SetupClientResult['admin']): RequestContext {
-  return {
-    user: { ...admin, role: 'admin', mustChangePassword: true },
-    activeBranchId: null,
-    sessionId: 0,
-    sessionToken: '',
-  };
+/** A caller as the services see one; the session fields only matter for HTTP requests. */
+function asCaller(user: SessionUser): RequestContext {
+  return { user, activeBranchId: null, sessionId: 0, sessionToken: '' };
+}
+
+/**
+ * The password change a person makes at the first login, made for them: the generated temporary
+ * password is replaced by the fixed dev one through the real change-password service, so it is
+ * hashed and audited like any other, and no change is forced at login.
+ */
+async function chooseDevPassword(
+  db: Db,
+  caller: RequestContext,
+  temporaryPassword: string,
+  password: string,
+): Promise<void> {
+  await changePassword(
+    db,
+    caller,
+    { currentPassword: temporaryPassword, newPassword: password },
+    null,
+  );
 }
 
 /** Whether the database holds anything the seed would collide with: a user, the settings or a branch. */
@@ -189,9 +219,10 @@ async function hasData(db: Db): Promise<boolean> {
 }
 
 /**
- * Fill an empty database with demo data: the client settings, an Admin and two cashiers, the
- * branches TPR and CBE, and in each branch 5 categories and 50 items with barcodes, prices and
- * opening stock (through the CSV import, so the stock ledger is filled the real way).
+ * Fill an empty database with demo data: the client settings, an Admin and two cashiers with fixed
+ * dev passwords, the branches TPR and CBE, and in each branch 5 categories and 50 items with
+ * barcodes, prices and opening stock (through the CSV import, so the stock ledger is filled the
+ * real way).
  *
  * - Refuses in production, changing nothing.
  * - When both seed branches already exist, answers `already-seeded` and changes nothing.
@@ -230,7 +261,9 @@ export async function seedDev(db: Db, { nodeEnv }: SeedOptions): Promise<SeedRes
     adminUsername: ADMIN.username,
     adminFullName: ADMIN.fullName,
   });
-  const admin = actingAs(setup.admin);
+  const adminUser: SessionUser = { ...setup.admin, role: 'admin', mustChangePassword: true };
+  await chooseDevPassword(db, asCaller(adminUser), setup.temporaryPassword, ADMIN.password);
+  const admin = asCaller({ ...adminUser, mustChangePassword: false });
 
   const branchIds = new Map<string, number>();
   for (const input of BRANCHES) {
@@ -244,7 +277,7 @@ export async function seedDev(db: Db, { nodeEnv }: SeedOptions): Promise<SeedRes
       fullName: setup.admin.fullName,
       role: 'admin',
       branches: [],
-      temporaryPassword: setup.temporaryPassword,
+      password: ADMIN.password,
     },
   ];
   for (const cashier of CASHIERS) {
@@ -261,12 +294,19 @@ export async function seedDev(db: Db, { nodeEnv }: SeedOptions): Promise<SeedRes
       { branchIds: cashier.branches.map((code) => branchIds.get(code)!) },
       null,
     );
+    const { id, username, fullName } = created.user;
+    await chooseDevPassword(
+      db,
+      asCaller({ id, username, fullName, role: 'cashier', mustChangePassword: true }),
+      created.temporaryPassword,
+      cashier.password,
+    );
     accounts.push({
-      username: created.user.username,
-      fullName: created.user.fullName,
+      username,
+      fullName,
       role: 'cashier',
       branches: [...cashier.branches],
-      temporaryPassword: created.temporaryPassword,
+      password: cashier.password,
     });
   }
 

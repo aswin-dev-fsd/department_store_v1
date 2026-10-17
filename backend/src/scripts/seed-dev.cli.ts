@@ -26,13 +26,13 @@ async function main(): Promise<number> {
       );
     }
     out();
-    out('  Accounts. The temporary passwords are shown only now; write them down. Each');
-    out('  person is asked to choose a new password at the first login:');
+    out('  Logins. These passwords are fixed, for development and testing only, and no one is');
+    out('  asked to change them at the first login:');
     out();
     for (const account of result.accounts) {
       const where = account.role === 'admin' ? 'Admin' : `branches ${account.branches.join(', ')}`;
       out(
-        `    ${account.username.padEnd(10)} ${account.temporaryPassword}   ${account.fullName} - ${where}`,
+        `    ${account.username.padEnd(10)} ${account.password.padEnd(14)} ${account.fullName} - ${where}`,
       );
     }
     out();

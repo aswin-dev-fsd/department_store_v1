@@ -1,6 +1,6 @@
 // The dev seed (Task 3.8). The demo catalogue is checked without a database; the seeding itself
 // runs once against the real test database, so the services it calls are exercised for real.
-import { IMPORT_COLUMNS, importRowSchema } from '@ds/shared';
+import { changePasswordSchema, IMPORT_COLUMNS, importRowSchema } from '@ds/shared';
 import { parse } from 'csv-parse/sync';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createTestDb, resetDb } from '../../test/helpers/db.js';
@@ -137,7 +137,7 @@ describe('seedDev on an empty database', () => {
     return result;
   }
 
-  it('creates the client settings, an Admin and two cashiers, who must all change their password', async () => {
+  it('creates the client settings, an Admin and two cashiers, none forced to change their password', async () => {
     const settings = await pool.query('select business_name from client_settings');
     expect(settings.rows).toEqual([{ business_name: 'Demo Department Store' }]);
 
@@ -145,26 +145,35 @@ describe('seedDev on an empty database', () => {
       'select username, role, is_active, must_change_password from users order by id',
     );
     expect(users.rows).toEqual([
-      { username: 'admin', role: 'admin', is_active: true, must_change_password: true },
-      { username: 'cashier1', role: 'cashier', is_active: true, must_change_password: true },
-      { username: 'cashier2', role: 'cashier', is_active: true, must_change_password: true },
+      { username: 'admin', role: 'admin', is_active: true, must_change_password: false },
+      { username: 'cashier1', role: 'cashier', is_active: true, must_change_password: false },
+      { username: 'cashier2', role: 'cashier', is_active: true, must_change_password: false },
     ]);
   });
 
-  it('returns each account with its own temporary password, which is the one stored (as a hash)', async () => {
+  it('gives each account its fixed dev password, stored only as a hash', async () => {
     const { accounts } = seeded();
-    expect(accounts.map((account) => account.username)).toEqual(['admin', 'cashier1', 'cashier2']);
-    const passwords = accounts.map((account) => account.temporaryPassword);
-    for (const password of passwords) expect(password).toMatch(/^[A-Za-z0-9]{16}$/);
-    expect(new Set(passwords).size).toBe(3);
+    expect(accounts.map(({ username, password }) => [username, password])).toEqual([
+      ['admin', 'admin@123'],
+      ['cashier1', 'cashier1@123'],
+      ['cashier2', 'cashier2@123'],
+    ]);
 
     const { rows } = await pool.query('select username, password_hash from users');
     for (const account of accounts) {
       const stored = rows.find((row) => row.username === account.username);
-      expect(stored.password_hash).not.toContain(account.temporaryPassword);
-      await expect(verifyPassword(account.temporaryPassword, stored.password_hash)).resolves.toBe(
-        true,
-      );
+      expect(stored.password_hash).not.toContain(account.password);
+      await expect(verifyPassword(account.password, stored.password_hash)).resolves.toBe(true);
+    }
+  });
+
+  it('keeps the dev passwords within the rules for a chosen password', () => {
+    for (const { username, password } of seeded().accounts) {
+      const checked = changePasswordSchema.safeParse({
+        currentPassword: 'x',
+        newPassword: password,
+      });
+      expect(checked.success, username).toBe(true);
     }
   });
 
@@ -294,12 +303,29 @@ describe('seedDev on an empty database', () => {
       'select action, count(*)::int as n from audit_logs group by action order by action',
     );
     expect(rows).toEqual([
+      { action: 'auth.password_change', n: 3 },
       { action: 'branch.create', n: 2 },
       { action: 'branch.import', n: 2 },
       { action: 'client_settings.create', n: 1 },
       { action: 'user.branches_update', n: 2 },
       { action: 'user.create', n: 3 },
     ]);
+  });
+
+  it('audits each password change as made by the account itself, from forced to not forced', async () => {
+    const { rows } = await pool.query(
+      `select u.username, a.before, a.after
+         from audit_logs a join users u on u.id = a.actor_id
+        where a.action = 'auth.password_change'
+        order by u.id`,
+    );
+    expect(rows).toEqual(
+      ['admin', 'cashier1', 'cashier2'].map((username) => ({
+        username,
+        before: { mustChangePassword: true },
+        after: { mustChangePassword: false },
+      })),
+    );
   });
 
   it('answers "already seeded" on a second run, and changes nothing', async () => {

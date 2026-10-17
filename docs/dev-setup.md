@@ -129,9 +129,16 @@ npm run db:seed
 
 - It creates the client settings (a made-up "Demo Department Store"), an Admin (`admin`), two cashiers (`cashier1` works in Tiruppur only; `cashier2` in both branches, so you can try the branch picker), the branches `TPR` and `CBE`, and in each branch 5 categories and 50 items with barcodes, prices and opening stock. A few items are sold out or below their reorder level on purpose, for billing and low-stock tests later.
 - It runs the same services as the screens, and the CSV import for the stock, so the accounts, the ledger and the audit rows are the real thing.
-- It prints the database it used first, then a **temporary password for each account, once**. Write them down: each person chooses a new password at the first login.
-- Running it again says "already seeded" and changes nothing. A database that already has other data (a user, the client settings or a branch) is refused untouched. It never runs with `NODE_ENV=production`.
+- It prints the database it used first, then the three logins (the table below).
+- The passwords are **fixed and public**: they are written in `backend/src/scripts/seed-dev.ts` and here. That is fine for a throwaway dev database and nowhere else, so never reuse them. Nobody is asked to change them at the first login, so you can go straight to the screens.
+- Running it again says "already seeded" and changes nothing. A database that already has other data (a user, the client settings or a branch) is refused untouched, which includes staging after `setup:client`. It never runs with `NODE_ENV=production`.
 - The run is several steps, not one transaction. If it stops half-way, empty the database and run it again.
+
+| Username | Password | Role | Works in |
+|---|---|---|---|
+| `admin` | `admin@123` | Admin | no branch; picks one on the Stock and Import pages |
+| `cashier1` | `cashier1@123` | Cashier | Tiruppur (`TPR`) only |
+| `cashier2` | `cashier2@123` | Cashier | `TPR` and Coimbatore (`CBE`); picks one at login |
 
 ### Import a branch's items and stock from a CSV file
 
@@ -166,7 +173,7 @@ All run from the repo root.
 | `npm run dev:frontend` | Build the shared packages, then run the Vite dev server |
 | `npm run setup:client -- --business-name … --admin-username … --admin-name …` | Create the client settings and the first Admin on a new database (see section 6) |
 | `npm run reset-password -- --username …` | Give a user a new temporary password from the command line: recovery when nobody can use the Admin screens (see section 6) |
-| `npm run db:seed` | Fill an empty dev database with demo data (two branches, an Admin, two cashiers, 50 items per branch) and print the temporary passwords (see section 6) |
+| `npm run db:seed` | Fill an empty dev database with demo data (two branches, an Admin, two cashiers, 50 items per branch) with fixed dev logins (see section 6) |
 | `npm run verify` | **The gate:** lint, format check, type check, all tests. Runs at each checkpoint; nothing is run per task (see `docs/build-plan/README.md` step 6) |
 | `npm test` | All tests in every package |
 | `npm run check-types` | TypeScript check of every package |
@@ -198,7 +205,7 @@ All run from the repo root.
 **Rebuilding a broken *dev* database** (never production):
 1. In the Neon console, open **`dept-store-dev`** → SQL Editor, and run: `drop schema public cascade; create schema public; drop schema if exists drizzle cascade;`
 2. Run `npm run db:migrate`.
-3. Load demo data with `npm run db:seed` once Task 3.8 has added it.
+3. Load demo data with `npm run db:seed` (section 6).
 
 ## 10. Troubleshooting
 
