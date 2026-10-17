@@ -178,7 +178,7 @@ postMovements(tx, {
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass (first run: Checkpoint 3, 2026-10-15)
 
 **Commit:** `feat(catalog): add vendors api`
 
@@ -204,7 +204,7 @@ postMovements(tx, {
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass (first run: Checkpoint 3, 2026-10-15)
 
 **Commit:** `feat(stock): add stock and movement history api`
 
@@ -240,7 +240,7 @@ postMovements(tx, {
    4. If there are no errors, run one transaction: categories, then items, then stock via `postMovements`.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass (first run: Checkpoint 3, 2026-10-15)
 
 **Commit:** `feat(import): add csv import for items and opening stock`
 
@@ -286,6 +286,7 @@ postMovements(tx, {
   - *The data:* `admin`; `cashier1` works in TPR only; `cashier2` in TPR and CBE (to try the branch picker). Both branches sell the same 50 products, 10 in each of Grocery, Beverages, Personal care, Household and Stationery, with EAN-13 barcodes and rupee prices (selling price at or below the MRP). Opening stock is a fixed formula, so every run gives the same data: 50 to 99 packs, but 3 items sold out and 4 below their reorder level in each branch (different items in each), so 47 items per branch get an `opening` movement.
   - *The guards:* it refuses when `NODE_ENV=production`; if branches `TPR` and `CBE` both exist it answers "already seeded", exit 0, changing nothing; and **(my addition)** if the database has any other data (a user, the client settings or a branch) it refuses with `NOT_EMPTY`, changing nothing, so demo data can never mix into a real database. The run is several transactions, not one: if it stops half-way, empty the database and run it again.
 - **Not run:** under option 3 nothing was run for this task: 23 tests are written (9 on the catalogue without a database, 9 on a real seeding of the test database, 5 on the refusals), but lint, types, format and the tests first run at Checkpoint 3. Both "Done when" boxes stay open: running `npm run db:seed` on a fresh dev database is a write to the dev database, so it waits for your go-ahead (and an empty database).
+- **Changed at Checkpoint 3 (2026-10-17), at your request:** the three accounts now have fixed dev passwords instead of generated temporary ones, and no password change is forced at the first login. After creating each account the seed does the first-login step itself, through the real `changePassword` service: the generated temporary password is replaced by the fixed one (hashed like any other, one `auth.password_change` audit row per account, `must_change_password` cleared). The passwords are in `seed-dev.ts` and `docs/dev-setup.md`, and the choice is recorded as D-32. Because they are weak and public, the guards carry the weight: the seed refuses `NODE_ENV=production` and any database that already has data, so staging after `setup:client` is refused. The seed tests were changed to match: the flag, the fixed passwords and their hashes, the password rules, and one more audit action.
 
 ---
 
