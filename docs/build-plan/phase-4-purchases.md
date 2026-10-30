@@ -58,6 +58,15 @@
 
 **Commit:** `feat(purchases): add draft purchases api`
 
+**As built (2026-10-30):**
+- **Files:** the named shared schema, routes, controller, service and test (`backend/src/modules/purchases/purchases.drafts.test.ts`), plus, as for every Phase 3 module, `purchases.model.ts` (the queries), a shared schema test (`shared/src/schemas/purchases.test.ts`), the export in `shared/src/index.ts` and the `/purchases` registration in `backend/src/routes.ts`. No `lib` change, no migration, no new package.
+- **Routes:** `GET /purchases` (`?status=&vendorId=&from=&to=&limit=&offset=`, newest invoice date first; the date range compares the invoice date, both ends included), `GET /purchases/:id` (with lines in entry order, each with the item's code and name, and who created, posted and cancelled it), `POST /purchases` (201), `PUT /purchases/:id`. All need `purchase:write` and a chosen branch.
+- **One body for create and edit:** vendor, invoice number (trimmed, 1–50 characters), invoice date (a real YYYY-MM-DD date), optional notes, and zero or more lines (item, quantity, cost price, optional new MRP and selling price). Totals, status and the post and cancel fields are the server's, and batch and expiry are not accepted until PD-02: zod drops them all.
+- **Choices the task left open:** an edit replaces the whole draft, so notes left out are cleared; it writes and audits only what really changed (the changed header fields, plus `lines` before and after when the lines differ), and an edit that changes nothing writes nothing. The same item may appear on two lines (an invoice may list it twice). A duplicate invoice is caught from the Task 4.1 unique index, so two counters saving the same invoice at once also get `DUPLICATE_INVOICE`, not a 500. The vendor and items are checked on every save, so an item deactivated after the draft was started must be removed before the draft is saved again.
+- **Caps** (sanity limits, like the item price cap): 1,000,000 packs a line (the import's cap), 500 lines, and a total that must stay below 2^53 paise so it is added up exactly.
+- **Not run:** under option 3 the 45 route tests and 37 schema tests are written but not run; the "Done when" box is ticked at Checkpoint 4.
+- **Not in the task, so not built (proposed for you):** refusing a draft line whose new selling price is above its new MRP. Task 4.3 checks the rule at posting, against the item's stored prices too.
+
 ---
 
 ## Task 4.3 — Post a purchase

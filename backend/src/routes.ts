@@ -6,6 +6,7 @@ import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { importRoutes } from './modules/import/import.routes.js';
 import { itemsRoutes } from './modules/items/items.routes.js';
+import { purchasesRoutes } from './modules/purchases/purchases.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { stockRoutes } from './modules/stock/stock.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
@@ -22,6 +23,7 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/admin/users', usersRoutes(deps));
   router.use('/categories', categoriesRoutes(deps));
   router.use('/items', itemsRoutes(deps));
+  router.use('/purchases', purchasesRoutes(deps));
   router.use('/stock', stockRoutes(deps));
   router.use('/vendors', vendorsRoutes(deps));
   return router;
