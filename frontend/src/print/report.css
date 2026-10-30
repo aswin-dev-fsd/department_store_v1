@@ -1,0 +1,43 @@
+/* Reports on A4 paper (Task 6.8). The screen layout is Tailwind; when printing, the menus and the
+   report controls are hidden (`print:hidden`), and the tables use the whole page in black on
+   white. Receipts print from their own frame with print/receipt.css and are not affected. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10pt;
+  }
+
+  .report-table {
+    overflow: visible !important;
+    break-inside: auto;
+  }
+
+  .report-table table {
+    width: 100%;
+  }
+
+  .report-table thead {
+    display: table-header-group;
+  }
+
+  .report-table tr {
+    break-inside: avoid;
+  }
+
+  .report-table th,
+  .report-table td {
+    border-bottom: 1px solid #999;
+    padding: 1.5mm 2mm;
+  }
+
+  .report-list div {
+    border-bottom: 1px solid #999;
+  }
+}

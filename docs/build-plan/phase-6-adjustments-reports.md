@@ -245,6 +245,24 @@
 
 **Commit:** `feat(frontend): add report screens`
 
+**As built (2026-10-30):**
+- **Files:**
+  - `frontend/src/pages/reports/`: `CashierReportsLayout`, `MyDayEndPage`, `BranchStockReportPage`, `AdminReportsPage`, and `ReportTables` (the shared tables and the Print button).
+  - `frontend/src/print/report.css` and `en.ts`.
+  - Also `frontend/src/reports/{paths,queries}.ts` with `paths.test.ts`, the routes in `App.tsx`, the **Reports** menu link in `AppShell.tsx`, and `print:hidden` on the header.
+- **Cashier**, at `/reports` (`report:own-day-summary`), has sub-tabs **My day-end**, **Stock** and **Low stock**.
+  - **My day-end:** a date, today (IST) by default. **Count the drawer** shows the cash expected, then UPI and card to compare with the payment app and the card machine. **The day in full** follows: bills, subtotal, discount, round-off, net total, the three payment modes, and cancelled bills as count and value.
+  - **Stock and low stock:** for the active branch, paged.
+- **Admin**, at `/reports/all` (`report:all`):
+  - **Choices:** the report (all five), the branch or **All branches**, and a day or a from/to range (this month so far by default). The range is checked on the screen: not backwards, at most 366 days.
+  - **Day summary:** a row per cashier, a total row per branch, and a grand total.
+  - **Item-wise sales:** the items total, the round-off and the bills total, with the round-off note.
+  - **Purchase register:** subtotals per vendor, a grand total, and the cancelled purchases in a separate table.
+  - Each answer is labelled with its report, so switching reports never draws one report's data as another's.
+- **Printing:** **Print** prints the page on A4 (12 mm margins). The menus, the choices and the pager are hidden, and each table's header repeats on every page. Receipts are unaffected, since they print from their own frame.
+- **Amounts:** all through `formatPaise`.
+- **Not run** (option 3): the 6 tests (`reports/paths.test.ts`), check-types, the build and the manual check against the Bills screen.
+
 ---
 
 ## Task 6.9 — i18n sweep

@@ -29,6 +29,10 @@ import { PurchasesPage } from './pages/purchases/PurchasesPage';
 import { StatusPage } from './pages/StatusPage';
 import { AdjustmentPage } from './pages/stock/AdjustmentPage';
 import { StockPage } from './pages/stock/StockPage';
+import { AdminReportsPage } from './pages/reports/AdminReportsPage';
+import { BranchStockReportPage } from './pages/reports/BranchStockReportPage';
+import { CashierReportsLayout } from './pages/reports/CashierReportsLayout';
+import { MyDayEndPage } from './pages/reports/MyDayEndPage';
 import { VendorsPage } from './pages/vendors/VendorsPage';
 
 const queryClient = createQueryClient();
@@ -98,6 +102,27 @@ const router = createBrowserRouter([
             element: (
               <RequirePermission permission="stock:read">
                 <StockPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/reports',
+            element: (
+              <RequirePermission permission="report:own-day-summary">
+                <CashierReportsLayout />
+              </RequirePermission>
+            ),
+            children: [
+              { index: true, element: <MyDayEndPage /> },
+              { path: 'stock', element: <BranchStockReportPage low={false} /> },
+              { path: 'low-stock', element: <BranchStockReportPage low /> },
+            ],
+          },
+          {
+            path: '/reports/all',
+            element: (
+              <RequirePermission permission="report:all">
+                <AdminReportsPage />
               </RequirePermission>
             ),
           },

@@ -21,6 +21,8 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: '/purchases', label: 'nav.purchases', permission: 'purchase:write' },
   { to: '/catalog', label: 'nav.catalog', permission: 'item:write' },
   { to: '/stock', label: 'nav.stock', permission: 'stock:read' },
+  { to: '/reports', label: 'nav.reports', permission: 'report:own-day-summary' },
+  { to: '/reports/all', label: 'nav.reports', permission: 'report:all' },
 ];
 
 const linkStyle = 'rounded-md px-2 py-2 underline-offset-4 hover:underline';
@@ -40,7 +42,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-slate-200 bg-white print:hidden">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2">
           <span className="text-lg font-semibold">{t('app.name')}</span>
           {links.length > 0 && (
