@@ -132,7 +132,7 @@ For trying the app by hand without typing in a catalogue. It needs an **empty** 
 npm run db:seed
 ```
 
-- It creates the client settings (a made-up "Demo Department Store"), an Admin (`admin`), two cashiers (`cashier1` works in Tiruppur only; `cashier2` in both branches, so you can try the branch picker), the branches `TPR` and `CBE`, and in each branch 5 categories and 50 items with barcodes, prices and opening stock. A few items are sold out or below their reorder level on purpose, for billing and low-stock tests later.
+- It creates the client settings (a made-up "Demo Department Store"), an Admin (`admin`), two cashiers (`cashier1` works in Tiruppur only; `cashier2` in both branches, so you can try the branch picker), the branches `TPR` and `CBE`, and in each branch 5 categories, 50 items with barcodes, prices and opening stock, and 3 vendors (Arun Traders, Balaji Agencies, Kongu Wholesale Mart) for trying purchases. A few items are sold out or below their reorder level on purpose, for billing and low-stock tests later.
 - It runs the same services as the screens, and the CSV import for the stock, so the accounts, the ledger and the audit rows are the real thing.
 - It prints the database it used first, then the three logins (the table below).
 - The passwords are **fixed and public**: they are written in `backend/src/scripts/seed-dev.ts` and here. That is fine for a throwaway dev database and nowhere else, so never reuse them. Nobody is asked to change them at the first login, so you can go straight to the screens.

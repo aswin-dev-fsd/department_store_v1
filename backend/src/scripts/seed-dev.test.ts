@@ -225,6 +225,20 @@ describe('seedDev on an empty database', () => {
     ]);
   });
 
+  it('creates the same 3 active vendors in each branch, for trying purchases', async () => {
+    const { rows } = await pool.query(
+      `select b.code, string_agg(v.name, ', ' order by v.name) as vendors,
+              bool_and(v.is_active) as active
+         from vendors v join branches b on b.id = v.branch_id
+        group by b.code order by b.code`,
+    );
+    const names = 'Arun Traders, Balaji Agencies, Kongu Wholesale Mart';
+    expect(rows).toEqual([
+      { code: 'CBE', vendors: names, active: true },
+      { code: 'TPR', vendors: names, active: true },
+    ]);
+  });
+
   it('stores prices in paise, taking the first product as the example', async () => {
     const { rows } = await pool.query(
       `select b.code, i.mrp_paise, i.selling_price_paise, i.reorder_level
@@ -309,6 +323,7 @@ describe('seedDev on an empty database', () => {
       { action: 'client_settings.create', n: 1 },
       { action: 'user.branches_update', n: 2 },
       { action: 'user.create', n: 3 },
+      { action: 'vendor.create', n: 6 },
     ]);
   });
 

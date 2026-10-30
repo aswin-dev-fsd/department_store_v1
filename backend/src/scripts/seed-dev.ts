@@ -11,6 +11,7 @@ import { changePassword, type SessionUser } from '../modules/auth/auth.service.j
 import { createBranch } from '../modules/branches/branches.service.js';
 import { importItems } from '../modules/import/import.service.js';
 import { createUser, setUserBranches } from '../modules/users/users.service.js';
+import { createVendor } from '../modules/vendors/vendors.service.js';
 import { setupClient } from './setup-client.js';
 
 const DEMO_BUSINESS = 'Demo Department Store';
@@ -54,6 +55,13 @@ const CASHIERS = [
     password: 'cashier2@123',
     branches: ['TPR', 'CBE'],
   },
+] as const;
+
+/** Made-up vendors, the same three in each branch (vendors belong to one branch), for purchases. */
+export const VENDORS = [
+  { name: 'Arun Traders', phone: '9843012345', address: 'Market Road' },
+  { name: 'Balaji Agencies', phone: '9443067890', address: 'Bazaar Street' },
+  { name: 'Kongu Wholesale Mart', phone: null, address: null },
 ] as const;
 
 /** [code, name, category, MRP in rupees, selling price in rupees, reorder level in packs] */
@@ -222,7 +230,7 @@ async function hasData(db: Db): Promise<boolean> {
  * Fill an empty database with demo data: the client settings, an Admin and two cashiers with fixed
  * dev passwords, the branches TPR and CBE, and in each branch 5 categories and 50 items with
  * barcodes, prices and opening stock (through the CSV import, so the stock ledger is filled the
- * real way).
+ * real way), and 3 vendors per branch.
  *
  * - Refuses in production, changing nothing.
  * - When both seed branches already exist, answers `already-seeded` and changes nothing.
@@ -320,6 +328,15 @@ export async function seedDev(db: Db, { nodeEnv }: SeedOptions): Promise<SeedRes
       null,
     );
     branches.push({ code: input.code, name: input.name, ...imported });
+    for (const vendor of VENDORS) {
+      await createVendor(
+        db,
+        admin,
+        branchIds.get(input.code)!,
+        { name: vendor.name, phone: vendor.phone, address: vendor.address, gstin: null },
+        null,
+      );
+    }
   }
   return { status: 'seeded', accounts, branches };
 }
