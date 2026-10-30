@@ -105,6 +105,12 @@
 
 **Commit:** `feat(bills): add gapless bill number allocation`
 
+**As built (2026-10-30):**
+- **Files:** the two named. The single query is in the service rather than a model file, because the task names only the service and the query is the whole service.
+- **How it is safe:** the upsert inserts the row at 1 or adds 1 to it; either way the row stays locked until the bill's transaction ends, so a second counter waits for the first to commit or roll back. A rolled-back bill takes its number back with it.
+- **Tests (16):** the four the task lists, with the concurrency test as 10 runs of 50 parallel transactions (each holds the lock 10 ms, so they really queue); plus a rollback of the very first bill of a year (no row left, the next bill is 1), and 20 parallel bills with 5 failing (the 15 saved get 1–15).
+- **Not run:** under option 3 the tests are written but not run; both boxes are ticked at Checkpoint 5A.
+
 ---
 
 ## Task 5.4 — Customer lookup
