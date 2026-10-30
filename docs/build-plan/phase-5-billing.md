@@ -34,6 +34,14 @@
 
 **Commit:** `feat(database): add billing and customer tables`
 
+**As built (2026-10-30):**
+- **Files:** `database/src/schema/billing.ts` (the two enums, `bills`, `bill_lines`, `bill_payments`, `bill_sequences`), `customers.ts`, `schema/index.ts`, migration `0003_billing_and_customers.sql` (+ snapshot and journal), and `backend/test/schema/billing.schema.test.ts` (26 tests, raw SQL).
+- **The SQL, read line by line:** it only adds (2 enums, 5 tables, 8 foreign keys, 3 CHECKs, 3 unique constraints, 3 indexes); nothing hand-written.
+- **Choices the task left open:** columns as in overview §5.2 "Documents" and `customers`; every foreign key `ON DELETE RESTRICT`, like the earlier phases; the money columns are required with no default, because the server always computes them; `fy` is text like `26-27`; `bill_date` is a `date` (the IST business date); bills have no `updated_at` (a bill is only ever cancelled, and the cancel fields record when); the GST columns copy the items' types (`hsn_code` text, `gst_rate` numeric(5,2)), all nullable (PD-01).
+- **Applied to:** the dev database (on top of 0000–0002). Staging gets it at Render's next build.
+- **Not run:** under option 3 the 26 tests, check-types and the empty-database apply wait for Checkpoint 5A, so both "Done when" boxes stay open.
+- **Not in the task, so not built (proposed for you):** unique `bill_lines (bill_id, line_no)`; indexes on `bill_lines (bill_id)` and `bill_payments (bill_id)` (PostgreSQL doesn't index foreign keys, and both are read by bill); a CHECK that `customers.phone` is 10 digits (Task 5.4 normalises it in the service); non-negative CHECKs on the bill amounts.
+
 ---
 
 ## Task 5.2 — Billing math helpers
