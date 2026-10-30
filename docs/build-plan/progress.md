@@ -103,7 +103,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | 6.7 | Frontend: stock adjustment | DONE | 2026-10-30 | `pages/stock/AdjustmentPage.tsx` at `/stock/adjust` (button on the Stock page for `stock:adjust`): pick the item and see its stock, − / + with packs, a reason, a note for "Other", a "stock X → Y" confirmation, below-zero caught on screen and from the server; afterwards the movement history inline. 12 tests written (`stock/adjustment.test.ts`, `stock/mutations.test.ts`); **not run** (option 3). **Deviations:** the pure form checks and the mutation as their own files; the route and the Stock page button. |
 | 6.8 | Frontend: reports | DONE | 2026-10-30 | Cashier `/reports`: **My day-end** (date, today by default; cash expected, UPI, card; the day in full with cancelled apart), **Stock**, **Low stock** for the active branch. Admin `/reports/all`: any of the five reports for one branch or all, a day or a range (checked on screen), tables with branch / vendor subtotals and grand totals. **Print** on A4 without the menus (`print/report.css`). 6 tests written (`reports/paths.test.ts`); **not run** (option 3). **Deviations:** `frontend/src/reports/` paths and queries, the routes, a **Reports** menu link, `print:hidden` on the app header. |
 | 6.9 | i18n sweep | DONE | 2026-10-30 | `scripts/check-i18n.mjs` (TypeScript parser, no new package) fails with file:line on literal JSX text and literal placeholder / title / alt / aria-label values in `frontend/src/**/*.tsx`; `npm run check:i18n`, now part of `npm run verify`; README and dev-setup updated. The sweep found **no** hard-coded text (every screen already used `t()`); the checker was proven on a throwaway file (6 of 6 kinds caught). `check:i18n` passes; the rest of the gate waits for Checkpoint 6. |
-| 🛑 | Checkpoint 6 | TODO | | |
+| 🛑 | Checkpoint 6 | IN PROGRESS | 2026-10-30 | Agent steps done (summary below): clean-install gate passed after two test-only fixes (1,627 tests, backend 3 min 37 s on local PostgreSQL, i18n check in the gate), build passed; sabotage proofs 22 of 22 protections caught. Waiting for the user's review list |
 
 ## Phase 7 — Hardening
 
@@ -348,3 +348,52 @@ The agent adds one entry per checkpoint: what was built, number of tests, (propo
 - Run `acceptance-billing.md` at the counter and send the results.
 - Confirm or change the proposed items above.
 - Decide PD-04 if you can.
+
+### Checkpoint 6 — Adjustments and reports (2026-10-30)
+
+**Gate from a clean install:** every `dist/` deleted, then `npm ci`, then `npm run verify`, which now includes `check:i18n`. Two failures, both in tests written under option 3; the features were right:
+- **Types:** the `totals()` helper in `day-summary.service.test.ts` required the whole payments record while callers passed part of it.
+- **Tests (1 of 876 backend):** `adjustments.test.ts` compared `created_by`, a bigint the `pg` driver returns as text, with a number.
+
+After the fix (`f23d857`) the whole gate passed: lint, format, types, `check:i18n`, and **1,627 tests**. By workspace: shared 442, database 12, backend 876 (3 min 37 s on local PostgreSQL), frontend 297. That is 105 more than at Checkpoint 5. `npm run build` passed. The frontend bundle is 613.5 kB, over Vite's 500 kB warning.
+
+**Built:**
+- **6.1** stock adjustments with reasons, through the ledger and audited.
+- **6.2** the day sales summary.
+- **6.3** item-wise sales.
+- **6.4** the stock and low-stock reports.
+- **6.5** the purchase register.
+- **6.6** the report routes: a cashier sees their own day and their branch's stock; the Admin sees every report for one branch or all; queries are strict and ranges at most 366 days.
+- **6.7** the adjustment screen.
+- **6.8** the report screens: cashier day-end, stock, low stock; the Admin reports page; A4 printing.
+- **6.9** the i18n check, now in the gate. It found no hard-coded text.
+
+**Sabotage proofs: 22 of 22 protections caught.** They ran on a throwaway copy of `f23d857` against the local test database (1 min 19 s), plus 3 re-runs. Each protection was removed once and its test went red:
+- **Adjustments:** the permission; the audit row and its before value; "other" needs a note; quantity not 0; the strict body.
+- **Cashier visibility:** own cashier, own branch, own branch's stock, and the strict day and stock queries.
+- **Permissions:** the Admin-only reports, and the cashier-only own-day route.
+- **Report rules:** the 366-day and not-backwards ranges; 404 for an unknown branch.
+- **Filters:** completed bills only in the day totals and payments and in item-wise sales; no drafts in the register; active items only; low stock at or below the level.
+
+**A lesson on running the proofs:** the first run reported 5 as not caught. All 5 edited `shared/src` and ran a backend test, but the backend loads `@ds/shared` from the built `dist/`, which the copy links to the real, unchanged build. So the edit never reached the code under test. Re-run against the shared tests that guard the same schemas, all were caught. Shared-schema proofs must use the shared tests, or rebuild `shared` inside the copy.
+
+**Not provable on its own:** the low-stock `reorder_level IS NOT NULL` condition. Comparing a quantity with an empty reorder level is never true in SQL, so the other condition already keeps such items out. It stays for clarity.
+
+**(Proposed) items for the user to confirm:**
+- The report layouts (Task 6.8) and the i18n check (Task 6.9), as the review list asks.
+- An adjustment's cap of 1,000,000 packs.
+- There is no separate adjustment document: the ledger row's `ref_id` stays empty.
+- The purchase register is not paged.
+- The Admin's stock and low stock cover every branch when none is chosen.
+- The day summary for the Admin can be narrowed to one cashier (`cashierId`).
+
+**Known issues:**
+- The frontend bundle is 613.5 kB.
+- Still open from Phase 5: the Task 5.11 counter checklist has no results yet; the Checkpoint 5 review list, its proposed items and PD-04 (printer) are open.
+- The Checkpoint 3, 4 and 5A review lists were never done.
+- Staging was not checked after the Phase 5 and 6 pushes. Migrations: none new in Phase 6.
+
+**Your review (Checkpoint 6 list in `phase-6-adjustments-reports.md`):**
+- Make a few bills (one split, one cancelled), then open **Reports → My day-end** as each cashier and the Admin's **Reports**, and check the numbers by hand.
+- Make an adjustment and see it in the item's history.
+- Confirm or change the proposed items above.

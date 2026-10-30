@@ -465,11 +465,11 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 
 | Package | Runner | What | Count |
 |---|---|---|---|
-| shared | Vitest | money helpers, permission map, bill math, dates and financial years, zod schemas (access, catalog, stock, import, purchases, customers, bills) | 424 |
+| shared | Vitest | money helpers, permission map, bill math, dates and financial years, zod schemas (access, catalog, stock, import, purchases, customers, bills, adjustments, reports) | 442 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
-| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock, import and purchase APIs (drafts, posting with its concurrency test, cancelling), the stock ledger service with its concurrency tests, operator scripts and the dev seed, the customer and bill APIs (bill numbers, creation and its concurrency tests, cancel, list, view, receipt), schema constraints of the access, catalog, ledger, purchase and billing tables (about 3 min on local PostgreSQL; 31 min against Neon) | 807 |
-| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin and catalog data hooks, paging, branch checklist, admin and catalog sections, stock display rules, the import call, clipboard, the purchase editor's conversions and data hooks | 242 |
-| **Total** | | | **1,485** |
+| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock, import and purchase APIs (drafts, posting with its concurrency test, cancelling), the stock ledger service with its concurrency tests, operator scripts and the dev seed, the customer and bill APIs (bill numbers, creation and its concurrency tests, cancel, list, view, receipt), stock adjustments with their concurrency test, the four reports and the report routes with who sees what, schema constraints of the access, catalog, ledger, purchase and billing tables (about 3½ min on local PostgreSQL; 31 min against Neon at Checkpoint 5A) | 876 |
+| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin and catalog data hooks, paging, branch checklist, admin and catalog sections, stock display rules, the import call, clipboard, the purchase editor's conversions and data hooks, the bill draft and payment arithmetic, the bill and adjustment calls, the bills list and report addresses | 297 |
+| **Total** | | | **1,627** |
 
 **Backend test harness** (`backend/test/`):
 
@@ -481,7 +481,7 @@ tests                → createTestDb() (pool 20; { max } for bigger concurrency
                        both refuse to run outside the harness
 ```
 
-Backend test files run one at a time (they share one database), with 30 s timeouts sized for Singapore round trips. On local PostgreSQL a full `npm run verify` takes about 4 minutes (the backend suite ~3); against Neon the backend suite took 31 minutes at Checkpoint 5A. Nothing is run per task, and the gate runs at each checkpoint (`build-plan/README.md`, step 6).
+Backend test files run one at a time (they share one database), with 30 s timeouts sized for Singapore round trips. On local PostgreSQL a full `npm run verify` takes about 4½ minutes (the backend suite ~3½; Checkpoint 6). It also runs `check:i18n` (Task 6.9), which fails on UI text written into a screen instead of the dictionary; against Neon the backend suite took 31 minutes at Checkpoint 5A. Nothing is run per task, and the gate runs at each checkpoint (`build-plan/README.md`, step 6).
 
 ---
 

@@ -26,7 +26,7 @@
 2. **Green** — one transaction: `postMovements` + `logAudit`.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(stock): add stock adjustments with reasons`
 
@@ -60,7 +60,7 @@
 2. **Green** — implement with SQL aggregates.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(reports): add day sales summary`
 
@@ -88,7 +88,7 @@
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(reports): add item-wise sales report`
 
@@ -113,7 +113,7 @@
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(reports): add stock and low-stock reports`
 
@@ -142,7 +142,7 @@
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(reports): add purchase register`
 
@@ -174,7 +174,7 @@
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(reports): add report routes with role visibility`
 
@@ -207,7 +207,7 @@
 3. A confirmation showing "stock X → Y". After saving, link to the item's movement history.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass
 - [ ] Manual check: one adjustment of each reason, plus one that would go below zero
 
 **Commit:** `feat(frontend): add stock adjustment screen`
@@ -240,7 +240,7 @@
 4. Amounts are formatted with `formatPaise`.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass
 - [ ] Manual check on seeded data with a few bills: figures match the Bills screen
 
 **Commit:** `feat(frontend): add report screens`
@@ -279,8 +279,8 @@
 3. Add `check:i18n` to the gate in `README.md`.
 
 **Done when:**
-- [ ] `npm run check:i18n` passes
-- [ ] The rest of the gate passes
+- [x] `npm run check:i18n` passes
+- [x] The rest of the gate passes
 
 **Commit:** `refactor(frontend): move all ui text to the i18n dictionary`
 
