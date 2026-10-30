@@ -4,7 +4,7 @@ import { catalogKeys } from '../catalog/keys';
 import { DEFAULT_ITEM_FILTERS } from '../catalog/filters';
 import { stockKeys } from '../stock/keys';
 import { billKeys } from './keys';
-import { createBillOptions } from './mutations';
+import { cancelBillOptions, createBillOptions } from './mutations';
 
 const meta = { timestamp: '2026-10-30T00:00:00.000Z', version: '0.1.0' };
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -49,6 +49,23 @@ describe('createBillOptions', () => {
     expect(url).toBe('/api/v1/bills');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual(input);
+    expect([billsStale(), stockStale(), itemsStale()]).toEqual([true, true, true]);
+  });
+});
+
+describe('cancelBillOptions', () => {
+  it('POSTs the reason to the bill and refreshes bills, stock and items', async () => {
+    const billsStale = seed(billKeys.detail(7));
+    const stockStale = seed(stockKeys.list({ branchId: null, categoryId: null }, 0));
+    const itemsStale = seed(catalogKeys.itemList(DEFAULT_ITEM_FILTERS, 0));
+
+    const observer = new MutationObserver(client, cancelBillOptions(client) as never);
+    await observer.mutate({ id: 7, input: { reason: 'Wrong item billed' } } as never);
+
+    const [url, init] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
+    expect(url).toBe('/api/v1/bills/7/cancel');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ reason: 'Wrong item billed' });
     expect([billsStale(), stockStale(), itemsStale()]).toEqual([true, true, true]);
   });
 });

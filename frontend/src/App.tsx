@@ -11,6 +11,8 @@ import { CatalogLayout } from './components/CatalogLayout';
 import { RequirePermission } from './components/RequirePermission';
 import { AdminHomePage } from './pages/AdminHomePage';
 import { BillingPage } from './pages/billing/BillingPage';
+import { BillDetailPage } from './pages/bills/BillDetailPage';
+import { BillsPage } from './pages/bills/BillsPage';
 import { BranchPickerPage } from './pages/BranchPickerPage';
 import { CatalogHomePage } from './pages/CatalogHomePage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
@@ -119,6 +121,22 @@ const router = createBrowserRouter([
             element: (
               <RequirePermission permission="bill:create">
                 <BillingPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/bills',
+            element: (
+              <RequirePermission permission="bill:read">
+                <BillsPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/bills/:id',
+            element: (
+              <RequirePermission permission="bill:read">
+                <BillDetailPage />
               </RequirePermission>
             ),
           },

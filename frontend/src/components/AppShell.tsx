@@ -17,6 +17,7 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { to: '/admin', label: 'nav.admin', permission: 'admin:branches' },
   { to: '/billing', label: 'nav.billing', permission: 'bill:create' },
+  { to: '/bills', label: 'nav.bills', permission: 'bill:read' },
   { to: '/purchases', label: 'nav.purchases', permission: 'purchase:write' },
   { to: '/catalog', label: 'nav.catalog', permission: 'item:write' },
   { to: '/stock', label: 'nav.stock', permission: 'stock:read' },

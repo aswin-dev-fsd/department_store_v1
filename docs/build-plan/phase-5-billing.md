@@ -367,6 +367,13 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 
 **Commit:** `feat(frontend): add bills screen with reprint and cancel`
 
+**As built (2026-10-30):**
+- **Files:** `frontend/src/pages/bills/{BillsPage,BillDetailPage,BillStatusBadge}.tsx` and `en.ts` as listed. Also: `bills/paths.ts` and `paths.test.ts`, list and detail queries and keys, `cancelBillOptions` with a test in `bills/mutations.test.ts`, the `/bills` and `/bills/:id` routes in `App.tsx` (`bill:read`), and a **Bills** link in the main menu (`AppShell.tsx`).
+- **List:** search by part of the bill number or by the customer's mobile (applied on Enter, sent as 10 digits; a number that is not a mobile is not sent and the screen says so). Filters for date from/to and status. 20 bills a page, newest first, each with number, time, cashier, customer or "Walk-in", total and a Completed/Cancelled badge.
+- **Detail:** lines (name, code, price, quantity, discount, total), subtotal, discount, round-off, total, and payments by mode. A cancelled bill shows who cancelled it, when and why. **Reprint receipt** uses `printReceipt` from Task 5.9.
+- **Cancel** shows only for a completed bill and a user with `bill:cancel`. One panel holds the reason (3–200 characters; the server's field message shows next to it) and a confirmation naming the bill number and total, reminding the cashier to hand the money back themselves (overview §6.6). An already-cancelled bill gets its own message. Afterwards the bill, stock and item queries refresh, so the status shows **Cancelled** and the Stock screen shows the stock back.
+- **Not run:** under option 3, the 4 new tests (3 paths, 1 mutation), check-types, the build and the manual find, reprint and cancel wait for Checkpoint 5.
+
 ---
 
 ## Task 5.11 — Counter acceptance test
