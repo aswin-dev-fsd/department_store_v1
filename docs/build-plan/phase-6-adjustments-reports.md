@@ -92,6 +92,12 @@
 
 **Commit:** `feat(reports): add item-wise sales report`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `item-sales.model.ts` for the SQL.
+- **`itemSales(db, { from, to, branchId?, limit, offset })`** returns a `Page` of `{ item: { id, code, name }, branch: { id, code }, quantity, valuePaise }`. It covers completed bills whose IST `bill_date` is in the range, both ends included. The value is the sum of line totals after line discounts. Rows are sorted by value (highest first), then name, then id, so pages are stable. The item's current code and name are shown; the bill lines keep the names as sold.
+- **Range totals** cover every page: `itemsValuePaise`, the bills' summed `roundOffPaise`, and `billsTotalPaise`. The `note` explains that items add up to the bills total less the round-off.
+- **Tests:** 6, on a hand-worked fixture of 6 bills: 2 branches, a cancelled bill, 23:30 and 00:10 IST, and round-offs of ±0.25. One test checks that the day summaries' total less the items' value equals the summed round-off, both over a range where it nets to 0 and over one where it is +0.25. **Not run** (option 3).
+
 ---
 
 ## Task 6.4 — Stock and low-stock reports
