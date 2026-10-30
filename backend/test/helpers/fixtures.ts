@@ -83,6 +83,10 @@ export interface ItemFixture {
   mrpPaise?: number;
   sellingPricePaise?: number;
   isActive?: boolean;
+  /** A category of the same branch; none by default. */
+  categoryId?: number | null;
+  /** In packs; none (no low-stock warning) by default. */
+  reorderLevel?: number | null;
 }
 
 /**
@@ -96,8 +100,9 @@ export async function createItem(
 ): Promise<number> {
   const n = next();
   const { rows } = await pool.query<{ id: string }>(
-    `insert into items (branch_id, code, barcode, name, mrp_paise, selling_price_paise, is_active)
-     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
+    `insert into items (branch_id, code, barcode, name, mrp_paise, selling_price_paise, is_active,
+                        category_id, reorder_level)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
     [
       branchId,
       options.code ?? `ITEM${n}`,
@@ -106,6 +111,8 @@ export async function createItem(
       options.mrpPaise ?? 10000,
       options.sellingPricePaise ?? 9000,
       options.isActive ?? true,
+      options.categoryId ?? null,
+      options.reorderLevel ?? null,
     ],
   );
   const id = Number(rows[0]!.id);

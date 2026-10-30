@@ -117,6 +117,15 @@
 
 **Commit:** `feat(reports): add stock and low-stock reports`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `stock-report.model.ts` for the SQL, and `categoryId` and `reorderLevel` options on the `createItem` test fixture.
+- **`stockReport` and `lowStockReport`** both take `{ branchId, categoryId?, limit, offset }` and return a `Page` of `{ item: { id, code, name }, category: { id, name } | null, quantity, sellingPricePaise, reorderLevel }`.
+  - Both cover only the branch's active items.
+  - The stock report is sorted by name.
+  - The low-stock report lists items with a reorder level and stock at or below it, emptiest first, then by name. An item without a reorder level never appears, even at 0.
+- **Movement history** per item is already served by `GET /stock/:itemId/movements` (Task 3.6), so the report does not repeat it.
+- **Tests:** 8. **Not run** (option 3).
+
 ---
 
 ## Task 6.5 — Purchase register
