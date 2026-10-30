@@ -1,5 +1,15 @@
 import { ApiError } from '../api/client';
 import { errorMessage } from '../api/errors';
+import { t } from '../i18n/t';
+
+/**
+ * A field message fit to show: zod's built-in wording for a missing or mistyped value ("Invalid
+ * input: expected number, received undefined") is for developers, so it becomes a plain line.
+ * Every schema should give its own message; this only catches one that was missed.
+ */
+export function plainMessage(message: string): string {
+  return /^Invalid input\b/.test(message) ? t('form.checkField') : message;
+}
 
 /** One message per field name. */
 export type FieldErrors = Record<string, string>;
@@ -29,7 +39,7 @@ export function validateForm<T>(schema: FormSchema<T>, values: unknown): FormRes
   const errors: FieldErrors = {};
   for (const issue of result.error.issues) {
     const field = String(issue.path[0] ?? '');
-    if (field && !(field in errors)) errors[field] = issue.message;
+    if (field && !(field in errors)) errors[field] = plainMessage(issue.message);
   }
   return { ok: false, errors };
 }
@@ -44,7 +54,7 @@ export function serverFieldErrors(error: unknown): FieldErrors {
     const { path, message } = detail as { path?: unknown; message?: unknown };
     if (typeof path !== 'string' || typeof message !== 'string') continue;
     const [part, field] = path.split('.');
-    if (part === 'body' && field && !(field in errors)) errors[field] = message;
+    if (part === 'body' && field && !(field in errors)) errors[field] = plainMessage(message);
   }
   return errors;
 }

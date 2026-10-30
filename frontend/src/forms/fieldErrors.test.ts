@@ -2,7 +2,7 @@ import { changePasswordSchema, loginSchema } from '@ds/shared';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../api/client';
 import { t } from '../i18n/t';
-import { describeFailure, serverFieldErrors, validateForm } from './fieldErrors';
+import { describeFailure, plainMessage, serverFieldErrors, validateForm } from './fieldErrors';
 
 describe('validateForm', () => {
   it('returns the parsed data when the form is valid (trimmed by the schema)', () => {
@@ -102,5 +102,14 @@ describe('describeFailure', () => {
       fields: {},
       message: t('error.DUPLICATE_USERNAME'),
     });
+  });
+});
+
+describe('plainMessage', () => {
+  it("turns zod's built-in wording into a plain line, and keeps every schema's own message", () => {
+    expect(plainMessage('Invalid input: expected number, received undefined')).toBe(
+      'Check this field.',
+    );
+    expect(plainMessage('Choose a vendor')).toBe('Choose a vendor');
   });
 });

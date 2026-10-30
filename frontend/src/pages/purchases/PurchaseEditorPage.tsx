@@ -5,7 +5,7 @@ import { errorMessage } from '../../api/errors';
 import { parseRupees } from '../../catalog/forms';
 import { ItemPicker } from '../../components/ItemPicker';
 import { QueryProblem } from '../../components/QueryProblem';
-import { Button, Card, ErrorAlert, Notice, SelectField, TextField } from '../../components/ui';
+import { Button, Card, ErrorAlert, Notice, TextField } from '../../components/ui';
 import { describeFailure, type FieldErrors } from '../../forms/fieldErrors';
 import type { MessageKey } from '../../i18n/en';
 import { t } from '../../i18n/t';
@@ -32,6 +32,7 @@ import {
 } from '../../purchases/mutations';
 import { usePurchase, useVendorOptions } from '../../purchases/queries';
 import { PurchaseStatusBadge } from './PurchaseStatusBadge';
+import { VendorPicker } from './VendorPicker';
 
 const LINE_LABELS: Record<LineField, MessageKey> = {
   quantity: 'purchases.col.quantity',
@@ -75,7 +76,6 @@ function DraftEditor({ purchase }: DraftEditorProps) {
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirmingPost, setConfirmingPost] = useState(false);
-  const [vendorSearch, setVendorSearch] = useState('');
   const pickerRef = useRef<HTMLInputElement>(null);
   const linesRef = useRef<HTMLDivElement>(null);
 
@@ -89,22 +89,32 @@ function DraftEditor({ purchase }: DraftEditorProps) {
   const busy = create.isPending || update.isPending || post.isPending;
   const total = runningTotal(values.lines);
 
-  const vendorChoices = (vendors.data ?? []).filter(
-    (vendor) =>
-      vendor.name.toLowerCase().includes(vendorSearch.trim().toLowerCase()) ||
-      String(vendor.id) === values.vendorId,
-  );
+  /** Forget the messages of the fields just edited, so a corrected field stops showing one. */
+  function clearErrors(fields: string[]) {
+    setErrors((current) => {
+      const next = { ...current };
+      for (const field of fields) delete next[field];
+      return next;
+    });
+    // A server refusal belongs to the values it was given; editing starts afresh
+    create.reset();
+    update.reset();
+    post.reset();
+  }
 
   function change(next: Partial<EditorValues>) {
     setValues((current) => ({ ...current, ...next }));
     setDirty(true);
     setSaved(false);
+    clearErrors(Object.keys(next).filter((field) => field !== 'lines'));
   }
 
   function changeLine(key: string, field: LineField, text: string) {
+    const index = values.lines.findIndex((line) => line.key === key);
     change({
       lines: values.lines.map((line) => (line.key === key ? { ...line, [field]: text } : line)),
     });
+    clearErrors([`lines.${index}.${field}`, 'lines']);
   }
 
   function addLine(line: EditorLine) {
@@ -178,29 +188,12 @@ function DraftEditor({ purchase }: DraftEditorProps) {
         className="flex flex-col gap-6"
       >
         <Card className="grid gap-4 md:grid-cols-2">
-          <TextField
-            label={t('purchases.vendorSearch')}
-            name="vendorSearch"
-            type="search"
-            autoComplete="off"
-            value={vendorSearch}
-            onChange={(event) => setVendorSearch(event.target.value)}
-          />
-          <SelectField
-            label={t('purchases.vendor')}
-            name="vendorId"
-            data-entry=""
+          <VendorPicker
+            vendors={vendors.data ?? []}
             value={values.vendorId}
             error={shown.vendorId}
-            onChange={(event) => change({ vendorId: event.target.value })}
-          >
-            <option value="">{t('purchases.chooseVendor')}</option>
-            {vendorChoices.map((vendor) => (
-              <option key={vendor.id} value={vendor.id}>
-                {vendor.name}
-              </option>
-            ))}
-          </SelectField>
+            onChange={(vendorId) => change({ vendorId })}
+          />
           <TextField
             label={t('purchases.invoiceNo')}
             name="vendorInvoiceNo"

@@ -429,9 +429,11 @@ export const en = {
   'purchases.editorIntro':
     'Nothing changes in stock until you post. Press Enter to move to the next box.',
   'purchases.backToList': 'Back to purchases',
-  'purchases.vendorSearch': 'Find a vendor',
   'purchases.vendor': 'Vendor',
-  'purchases.chooseVendor': 'Choose a vendor',
+  'purchases.vendorHint': 'Type a few letters of the name, then pick from the list.',
+  'purchases.vendorNoMatch': 'No vendor matches "{text}". Add it under Catalog → Vendors.',
+  'purchases.noVendors': 'This branch has no vendors yet. Add one under Catalog → Vendors.',
+  'purchases.vendorMatches': 'Matching vendors',
   'purchases.invoiceNo': 'Vendor invoice number',
   'purchases.invoiceDate': 'Invoice date',
   'purchases.notes': 'Notes (optional)',
@@ -588,6 +590,7 @@ export const en = {
   'noAccess.title': 'No access',
   'noAccess.body': 'Your account is not allowed to open this page.',
 
+  'form.checkField': 'Check this field.',
   'error.generic': 'Something went wrong. Please try again.',
   'error.NETWORK_ERROR': 'Cannot reach the server. Check the internet connection and try again.',
   'error.BAD_RESPONSE': 'The server sent an unexpected reply. Try again in a moment.',

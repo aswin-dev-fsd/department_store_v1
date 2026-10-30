@@ -37,7 +37,8 @@ const paiseSchema = z
   .min(0, 'A price cannot be negative')
   .max(MAX_PRICE_PAISE, 'This price is too large');
 
-const positiveId = (message: string) => z.number().int().min(1, message);
+/** A required id: missing, not a number or below 1 all read as `message` (e.g. "Choose a vendor"). */
+const positiveId = (message: string) => z.number({ error: message }).int(message).min(1, message);
 
 /**
  * The vendor's own invoice number: trimmed, 1–50 characters. Unique per vendor and branch, in any

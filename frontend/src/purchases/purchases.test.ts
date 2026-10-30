@@ -182,10 +182,10 @@ describe('convertEditor', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors).toMatchObject({
-      vendorId: expect.any(String),
+      vendorId: 'Choose a vendor',
       vendorInvoiceNo: expect.any(String),
       'lines.1.quantity': 'Enter a whole number of packs, like 12.',
-      'lines.1.cost': 'Enter the cost price.',
+      'lines.1.cost': 'Enter the cost per pack.',
       'lines.2.quantity': 'Enter at least 1',
       'lines.2.newMrp': 'Write the price in rupees, like 145.50.',
     });

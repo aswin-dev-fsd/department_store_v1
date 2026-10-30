@@ -1,7 +1,7 @@
 import { purchaseDraftSchema, type Item, type Purchase, type PurchaseDraftInput } from '@ds/shared';
 import { ApiError } from '../api/client';
 import { paiseToInput, parseRupees } from '../catalog/forms';
-import type { FieldErrors } from '../forms/fieldErrors';
+import { plainMessage, type FieldErrors } from '../forms/fieldErrors';
 import { t } from '../i18n/t';
 
 // The purchase editor's state is text, so every input stays controlled. Money is typed in rupees
@@ -138,7 +138,7 @@ function toEditorField(path: readonly PropertyKey[]): string {
 }
 
 function addError(errors: FieldErrors, field: string, message: string): void {
-  if (field !== '' && !(field in errors)) errors[field] = message;
+  if (field !== '' && !(field in errors)) errors[field] = plainMessage(message);
 }
 
 export type DraftResult =
