@@ -37,7 +37,10 @@ export interface BillDraft {
 }
 
 export type BillDraftAction =
-  | { type: 'add'; item: Pick<Item, 'id' | 'code' | 'name' | 'mrpPaise' | 'sellingPricePaise' | 'stock'> }
+  | {
+      type: 'add';
+      item: Pick<Item, 'id' | 'code' | 'name' | 'mrpPaise' | 'sellingPricePaise' | 'stock'>;
+    }
   | { type: 'setQuantity'; key: string; quantity: string }
   | { type: 'setDiscount'; key: string; discount: string }
   | { type: 'remove'; key: string }
@@ -137,18 +140,37 @@ export function summarizeDraft(draft: BillDraft): DraftSummary {
     const discountPaise = line.discount.trim() === '' ? 0 : parseRupees(line.discount);
     const overStock = quantity !== null && quantity > line.stock;
     if (quantity === null || quantity < 1) {
-      return { key: line.key, lineTotalPaise: null, problem: t('billing.quantityFormat'), overStock };
+      return {
+        key: line.key,
+        lineTotalPaise: null,
+        problem: t('billing.quantityFormat'),
+        overStock,
+      };
     }
     if (discountPaise === null) {
-      return { key: line.key, lineTotalPaise: null, problem: t('billing.discountFormat'), overStock };
+      return {
+        key: line.key,
+        lineTotalPaise: null,
+        problem: t('billing.discountFormat'),
+        overStock,
+      };
     }
     try {
-      const computed = computeLine({ unitPricePaise: line.unitPricePaise, quantity, discountPaise });
+      const computed = computeLine({
+        unitPricePaise: line.unitPricePaise,
+        quantity,
+        discountPaise,
+      });
       valid.push(computed);
       input.push({ itemId: line.itemId, quantity, discountPaise });
       return { key: line.key, lineTotalPaise: computed.lineTotalPaise, problem: null, overStock };
     } catch {
-      return { key: line.key, lineTotalPaise: null, problem: t('billing.discountTooLarge'), overStock };
+      return {
+        key: line.key,
+        lineTotalPaise: null,
+        problem: t('billing.discountTooLarge'),
+        overStock,
+      };
     }
   });
 
@@ -163,7 +185,8 @@ export function summarizeDraft(draft: BillDraft): DraftSummary {
   return {
     lines,
     totals,
-    ready: draft.lines.length > 0 && lines.every((line) => line.problem === null) && totals !== null,
+    ready:
+      draft.lines.length > 0 && lines.every((line) => line.problem === null) && totals !== null,
     input,
   };
 }
@@ -175,9 +198,12 @@ export function useBillDraft() {
   return {
     draft,
     summary,
-    add: (item: Extract<BillDraftAction, { type: 'add' }>['item']) => dispatch({ type: 'add', item }),
-    setQuantity: (key: string, quantity: string) => dispatch({ type: 'setQuantity', key, quantity }),
-    setDiscount: (key: string, discount: string) => dispatch({ type: 'setDiscount', key, discount }),
+    add: (item: Extract<BillDraftAction, { type: 'add' }>['item']) =>
+      dispatch({ type: 'add', item }),
+    setQuantity: (key: string, quantity: string) =>
+      dispatch({ type: 'setQuantity', key, quantity }),
+    setDiscount: (key: string, discount: string) =>
+      dispatch({ type: 'setDiscount', key, discount }),
     remove: (key: string) => dispatch({ type: 'remove', key }),
     reset: () => dispatch({ type: 'reset' }),
   };

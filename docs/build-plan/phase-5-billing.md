@@ -307,6 +307,14 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 
 **Commit:** `feat(frontend): add payment panel and bill save`
 
+**As built (2026-10-30):**
+- **Files:** `frontend/src/pages/billing/PaymentPanel.tsx`, `CustomerField.tsx`, `BillingPage.tsx`, `BillLinesTable.tsx` (short-stock marks), `en.ts`; plus `pages/billing/payments.ts` + `payments.test.ts` (the payment arithmetic, pure) and `frontend/src/bills/{keys,mutations,queries}.ts` + `mutations.test.ts` (the `POST /bills` call and the customer lookup, in the same pattern as `purchases/`).
+- **Payment panel:** cash, UPI and card amounts in rupees; "Rest in cash" fills cash with what UPI and card leave; "Still to pay", "Paid too much by" or "Paid in full". The cash handed over works out the change due and is never sent; less than the cash amount is refused. Only modes above ₹0 are sent.
+- **Save** is enabled only when every line is valid, the payments equal the total exactly, and any phone typed is a valid mobile. `INSUFFICIENT_STOCK` marks each short line "Available: N" until the lines change; `PAYMENT_MISMATCH` shows in the payment panel; anything else shows above Save. On success: "Bill TPR/26-27/000001 saved", with the change to give if a cash amount handed over was entered, then lines, payments and customer empty and the cursor goes back to the scan box. Printing is a `TODO(5.9)` at that point.
+- **Customer:** the phone is looked up once it is a whole mobile number; a known name is shown; for a new customer, or one with no name on record, a name field appears. The server creates or fills in the customer on save.
+- **Keys (proposed):** F2 search, F8 payment (first amount field), F9 save; listed under the page title.
+- **Not run:** under option 3 the 17 new tests (16 payment, 1 mutation), check-types, the build and the four manual bills wait for Checkpoint 5.
+
 ---
 
 ## Task 5.9 — Receipt printing

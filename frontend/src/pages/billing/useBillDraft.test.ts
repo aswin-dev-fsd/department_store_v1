@@ -3,9 +3,30 @@ import { describe, expect, it } from 'vitest';
 import { billDraftReducer, EMPTY_DRAFT, summarizeDraft, type BillDraft } from './useBillDraft';
 
 // The overview §6.4 items
-const rice = { id: 1, code: 'R10', name: 'Rice 10 kg', mrpPaise: 68000, sellingPricePaise: 65000, stock: 5 };
-const oil = { id: 2, code: 'O1', name: 'Sunflower Oil 1 L', mrpPaise: 15000, sellingPricePaise: 14550, stock: 50 };
-const soap = { id: 3, code: 'S100', name: 'Bath Soap 100 g', mrpPaise: 4000, sellingPricePaise: 3825, stock: 50 };
+const rice = {
+  id: 1,
+  code: 'R10',
+  name: 'Rice 10 kg',
+  mrpPaise: 68000,
+  sellingPricePaise: 65000,
+  stock: 5,
+};
+const oil = {
+  id: 2,
+  code: 'O1',
+  name: 'Sunflower Oil 1 L',
+  mrpPaise: 15000,
+  sellingPricePaise: 14550,
+  stock: 50,
+};
+const soap = {
+  id: 3,
+  code: 'S100',
+  name: 'Bath Soap 100 g',
+  mrpPaise: 4000,
+  sellingPricePaise: 3825,
+  stock: 50,
+};
 
 function add(state: BillDraft, ...items: (typeof rice)[]): BillDraft {
   return items.reduce((next, item) => billDraftReducer(next, { type: 'add', item }), state);
@@ -31,7 +52,11 @@ describe('billDraftReducer', () => {
 
   it('counts from 0 when the line had an unreadable quantity', () => {
     let draft = add(EMPTY_DRAFT, rice);
-    draft = billDraftReducer(draft, { type: 'setQuantity', key: draft.lines[0]!.key, quantity: '' });
+    draft = billDraftReducer(draft, {
+      type: 'setQuantity',
+      key: draft.lines[0]!.key,
+      quantity: '',
+    });
     draft = add(draft, rice);
     expect(draft.lines[0]!.quantity).toBe('1');
   });
@@ -63,7 +88,11 @@ describe('summarizeDraft', () => {
   /** The worked example: rice ₹20 off, 2 oil, 3 soap. */
   function workedExample(): BillDraft {
     let draft = add(EMPTY_DRAFT, rice, oil, oil, soap, soap, soap);
-    draft = billDraftReducer(draft, { type: 'setDiscount', key: draft.lines[0]!.key, discount: '20' });
+    draft = billDraftReducer(draft, {
+      type: 'setDiscount',
+      key: draft.lines[0]!.key,
+      discount: '20',
+    });
     return draft;
   }
 
@@ -93,8 +122,16 @@ describe('summarizeDraft', () => {
 
   it('recalculates when a quantity or discount changes', () => {
     let draft = workedExample();
-    draft = billDraftReducer(draft, { type: 'setQuantity', key: draft.lines[2]!.key, quantity: '4' });
-    draft = billDraftReducer(draft, { type: 'setDiscount', key: draft.lines[0]!.key, discount: '' });
+    draft = billDraftReducer(draft, {
+      type: 'setQuantity',
+      key: draft.lines[2]!.key,
+      quantity: '4',
+    });
+    draft = billDraftReducer(draft, {
+      type: 'setDiscount',
+      key: draft.lines[0]!.key,
+      discount: '',
+    });
     // 65000 + 29100 + 4 × 3825 = 109400
     expect(summarizeDraft(draft).totals).toMatchObject({
       subtotalPaise: 109400,
@@ -107,35 +144,61 @@ describe('summarizeDraft', () => {
     ['a blank quantity', { quantity: '' }, 'Enter a whole number of packs, like 2.'],
     ['a quantity of 0', { quantity: '0' }, 'Enter a whole number of packs, like 2.'],
     ['a part pack', { quantity: '1.5' }, 'Enter a whole number of packs, like 2.'],
-    ['a discount that is not an amount', { discount: 'ten' }, 'Write the discount in rupees, like 20.50.'],
-    ['a discount above the line amount', { discount: '650.01' }, 'The discount cannot be more than the line amount.'],
-  ])('flags %s on its line, leaves it out of the totals, and is not ready', (_label, change, problem) => {
-    let draft = add(EMPTY_DRAFT, rice, oil);
-    const key = draft.lines[0]!.key;
-    if ('quantity' in change) draft = billDraftReducer(draft, { type: 'setQuantity', key, quantity: change.quantity });
-    if ('discount' in change) draft = billDraftReducer(draft, { type: 'setDiscount', key, discount: change.discount });
+    [
+      'a discount that is not an amount',
+      { discount: 'ten' },
+      'Write the discount in rupees, like 20.50.',
+    ],
+    [
+      'a discount above the line amount',
+      { discount: '650.01' },
+      'The discount cannot be more than the line amount.',
+    ],
+  ])(
+    'flags %s on its line, leaves it out of the totals, and is not ready',
+    (_label, change, problem) => {
+      let draft = add(EMPTY_DRAFT, rice, oil);
+      const key = draft.lines[0]!.key;
+      if ('quantity' in change)
+        draft = billDraftReducer(draft, { type: 'setQuantity', key, quantity: change.quantity });
+      if ('discount' in change)
+        draft = billDraftReducer(draft, { type: 'setDiscount', key, discount: change.discount });
 
-    const summary = summarizeDraft(draft);
-    expect(summary.lines[0]).toMatchObject({ lineTotalPaise: null, problem });
-    expect(summary.totals).toMatchObject({ subtotalPaise: 14550 });
-    expect(summary.ready).toBe(false);
-  });
+      const summary = summarizeDraft(draft);
+      expect(summary.lines[0]).toMatchObject({ lineTotalPaise: null, problem });
+      expect(summary.totals).toMatchObject({ subtotalPaise: 14550 });
+      expect(summary.ready).toBe(false);
+    },
+  );
 
   it('allows a discount equal to the line amount', () => {
     let draft = add(EMPTY_DRAFT, rice);
-    draft = billDraftReducer(draft, { type: 'setDiscount', key: draft.lines[0]!.key, discount: '650' });
+    draft = billDraftReducer(draft, {
+      type: 'setDiscount',
+      key: draft.lines[0]!.key,
+      discount: '650',
+    });
     expect(summarizeDraft(draft).lines[0]).toMatchObject({ lineTotalPaise: 0, problem: null });
   });
 
   it('warns when a quantity is above the stock shown, but still lets the server decide', () => {
     let draft = add(EMPTY_DRAFT, rice);
-    draft = billDraftReducer(draft, { type: 'setQuantity', key: draft.lines[0]!.key, quantity: '6' });
+    draft = billDraftReducer(draft, {
+      type: 'setQuantity',
+      key: draft.lines[0]!.key,
+      quantity: '6',
+    });
     const summary = summarizeDraft(draft);
     expect(summary.lines[0]).toMatchObject({ overStock: true, problem: null });
     expect(summary.ready).toBe(true);
   });
 
   it('has no totals and is not ready while the bill is empty', () => {
-    expect(summarizeDraft(EMPTY_DRAFT)).toEqual({ lines: [], totals: null, ready: false, input: [] });
+    expect(summarizeDraft(EMPTY_DRAFT)).toEqual({
+      lines: [],
+      totals: null,
+      ready: false,
+      input: [],
+    });
   });
 });
