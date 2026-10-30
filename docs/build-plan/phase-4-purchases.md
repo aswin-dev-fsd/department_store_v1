@@ -27,6 +27,14 @@
 
 **Commit:** `feat(database): add purchase tables`
 
+**As built (2026-10-30):**
+- **Files:** `database/src/schema/purchases.ts` (the `purchase_status` enum, `purchases`, `purchase_lines`), `schema/index.ts`, migration `0002_purchases.sql` (+ snapshot and journal), and `backend/test/schema/purchases.schema.test.ts` (17 tests, raw SQL; the file the "Done when" test needs).
+- **The SQL, read line by line:** it only adds things (one enum, two tables, 7 foreign keys, 2 CHECKs, 1 index) and changes nothing that exists. Drizzle could express the partial unique index (`lower(vendor_invoice_no)` and `WHERE status <> 'cancelled'`), so nothing in the migration is hand-written.
+- **Choices the task left open:** columns as in overview §5.2 "Documents"; every foreign key `ON DELETE RESTRICT`, like Phase 3; `total_paise` and `line_total_paise` required with no default, because the server always computes them (Task 4.2); `purchase_lines` has no `updated_at`, because editing a draft replaces all its lines (Task 4.2); drafts count for the unique index, so a second draft of the same invoice is refused too.
+- **Applied to:** the dev database (on top of 0000 and 0001 and the seeded data). Staging gets it at Render's next build; it only adds tables.
+- **Not run:** under option 3 the 17 tests are written but not run, and "applies to an empty database" is checked at Checkpoint 4, so both "Done when" boxes stay open.
+- **Not in the task, so not built (proposed for you):** an index on `purchase_lines (purchase_id)` (PostgreSQL doesn't index foreign keys, and lines are always read by purchase); non-negative CHECKs on the totals and the new prices; CHECKs tying the status to its fields (posted ⇒ `posted_by`/`posted_at` set; cancelled ⇒ the cancel fields set); a composite foreign key that keeps the vendor in the purchase's branch (Task 4.2 refuses it in the service).
+
 ---
 
 ## Task 4.2 — Purchase drafts API

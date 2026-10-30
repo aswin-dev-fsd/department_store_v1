@@ -15,6 +15,13 @@
       "when": 1791992966318,
       "tag": "0001_catalog_and_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793331533012,
+      "tag": "0002_purchases",
+      "breakpoints": true
     }
   ]
 }
