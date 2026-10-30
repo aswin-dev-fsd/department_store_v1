@@ -30,6 +30,12 @@
 
 **Commit:** `feat(stock): add stock adjustments with reasons`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `shared/src/schemas/adjustments.test.ts`, the exports in `shared/src/index.ts`, and the mount in `backend/src/routes.ts` (`/stock/adjustments`, before `/stock`). No model file: the only write is `postMovements`.
+- **Contract:** `POST /api/v1/stock/adjustments` with `{ itemId, quantity, reason, note? }`, strict. The quantity is a signed whole number of packs, not 0, at most 1,000,000 either way (proposed, the same cap as a purchase line). The reason is `damage`, `expiry`, `theft`, `count_correction` or `other`. The note is trimmed, at most 200 characters, blank means none, and is required for `other` (422 on `body.note`). Answers 201 with `{ itemId, quantity, reason, note, balanceBefore, balanceAfter }`.
+- **Rules:** `stock:adjust` (cashiers; the Admin gets 403) and a chosen branch. One transaction: one `adjustment` movement (`ref_type` `adjustment`, `ref_id` empty because there is no separate adjustment document, reason and note on the row), then the audit row `stock.adjust` on the item with the stock before and after, the change, the reason and the note. Below zero → 400 `INSUFFICIENT_STOCK` with the usual details, nothing saved and no audit. Another branch's item → 404.
+- **Tests:** 9 schema tests and 14 route tests, including 5 parallel −3 adjustments on 10 packs (exactly 3 saved, 1 left, ledger matches). **Not run** (option 3).
+
 ---
 
 ## Task 6.2 — Day sales summary

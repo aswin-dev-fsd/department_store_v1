@@ -10,6 +10,12 @@ export {
   type ComputedLine,
 } from './billing.js';
 export { businessDate, financialYear } from './dates.js';
+export {
+  createAdjustmentSchema,
+  MAX_ADJUSTMENT_QUANTITY,
+  type CreateAdjustmentInput,
+  type StockAdjustment,
+} from './schemas/adjustments.js';
 export type { ApiErrorBody, ApiFailure, ApiMeta, ApiResponse, ApiSuccess } from './api.js';
 export type { HealthStatus, LivenessStatus } from './health.js';
 export {

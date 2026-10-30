@@ -10,6 +10,7 @@ import { importRoutes } from './modules/import/import.routes.js';
 import { itemsRoutes } from './modules/items/items.routes.js';
 import { purchasesRoutes } from './modules/purchases/purchases.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
+import { adjustmentsRoutes } from './modules/stock/adjustments.routes.js';
 import { stockRoutes } from './modules/stock/stock.routes.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 import { vendorsRoutes } from './modules/vendors/vendors.routes.js';
@@ -28,6 +29,8 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/customers', customersRoutes(deps));
   router.use('/items', itemsRoutes(deps));
   router.use('/purchases', purchasesRoutes(deps));
+  // Before /stock, so an adjustment is handled (and authenticated) once
+  router.use('/stock/adjustments', adjustmentsRoutes(deps));
   router.use('/stock', stockRoutes(deps));
   router.use('/vendors', vendorsRoutes(deps));
   return router;
