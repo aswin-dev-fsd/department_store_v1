@@ -11,9 +11,10 @@ Last updated: 2026-10-10 (Task 1.9)
 | Node.js | **24 LTS** (D-27; also in `.nvmrc`) | `node -v` |
 | npm | 11 or later (comes with Node 24) | `npm -v` |
 | git | any recent version | `git --version` |
-| Neon account | free plan | [console.neon.tech](https://console.neon.tech) |
+| PostgreSQL | **18** with pgAdmin 4 (Windows installer from postgresql.org) | `psql --version` |
+| Neon account | free plan, for staging and online test runs | [console.neon.tech](https://console.neon.tech) |
 
-No local PostgreSQL is needed; development and tests use Neon (D-28).
+Development and tests use a local PostgreSQL (D-33). The Neon projects (D-28) are kept for staging and for running the tests online when asked.
 
 ## 2. Get the code
 
@@ -31,18 +32,22 @@ npm ci
 
 ## 3. Databases
 
-You need **two** Neon projects, so tests can never touch your development data:
+You need **two** databases, so tests can never touch your development data:
 
-| Project | Used by | `.env` variable |
+| Database | Used by | `.env` variable |
 |---|---|---|
-| `dept-store-dev` | the app while you develop | `DATABASE_URL` |
-| `dept-store-test` | the automated tests, which wipe it | `TEST_DATABASE_URL` |
+| `dept_store_dev` (local) | the app while you develop | `DATABASE_URL` |
+| `dept_store_test` (local) | the automated tests, which wipe it | `TEST_DATABASE_URL` |
 
-Create both on **AWS Singapore** with **Postgres 18**. Open **Connect**, turn **Connection pooling off**, and copy each connection string. Step-by-step: [build-plan/phase-0-preflight.md](build-plan/phase-0-preflight.md), Task 0.2.
+**Create them in pgAdmin 4** (connected to *PostgreSQL 18* as `postgres`):
+1. **Login/Group Roles → Create → Login/Group Role…**: Name `dept_store`; Definition → a password of letters and digits only (it goes into a URL); Privileges → **Can login?** on. Save.
+2. **Databases → Create → Database…**: `dept_store_dev`, owner `dept_store`. Save. Repeat for `dept_store_test`.
+
+**Online alternative (Neon):** the projects `dept-store-dev` and `dept-store-test` on AWS Singapore, Postgres 18, connection pooling off. Step-by-step: [build-plan/phase-0-preflight.md](build-plan/phase-0-preflight.md), Task 0.2. Keep their URLs in `.env` as commented lines; switching is swapping two lines.
 
 ## 4. The `.env` file
 
-Copy `.env.example` to `.env` at the repo root and paste in the two connection strings. Every other variable has a working default for development. `backend/src/config/env.schema.ts` is the source of truth for names, defaults and production rules.
+Copy `.env.example` to `.env` at the repo root and set the two connection strings, e.g. `postgresql://dept_store:PASSWORD@localhost:5432/dept_store_dev` and `…/dept_store_test` (no `sslmode` locally). Every other variable has a working default for development. `backend/src/config/env.schema.ts` is the source of truth for names, defaults and production rules.
 
 `.env` is git-ignored. Never commit it, and never paste its contents into a chat or an issue.
 
@@ -56,7 +61,7 @@ npm run db:check
 npm run db:check -- TEST_DATABASE_URL
 ```
 
-Each should print `✓`, the PostgreSQL version, and `Encryption: TLSv1.3 · certificate verified: yes`. Then run every check at once:
+Each should print `✓` and the PostgreSQL version (18.6). Against Neon it also prints `Encryption: TLSv1.3 · certificate verified: yes`; locally there is no encryption, which is fine on your own PC. Then run every check at once:
 
 ```bash
 npm run verify
@@ -189,7 +194,7 @@ All run from the repo root.
 ## 8. Tests
 
 - `npm test` runs everything. Backend tests run against `TEST_DATABASE_URL` only. A guard stops the run before connecting if that variable is missing or names your dev database.
-- Backend test files run **one at a time** (they share one database), and every query crosses to Singapore, so the backend suite (565 tests at Checkpoint 3) takes about 10 minutes and grows with the project; a full `npm run verify` is about 12 minutes. That is why nothing is run per task.
+- Backend test files run **one at a time** (they share one database). On local PostgreSQL the backend suite (807 tests at Checkpoint 5A) takes about **3 minutes**; against Neon, where every query crosses to Singapore, it took **31 minutes**. Ask for a Neon run when you want to check the online setup: swap the two URLs in `.env`, run `npm test`, swap back.
 - One package: `npm test -w @ds/backend`. One file: `npx vitest run --root backend src/modules/health/health.test.ts`.
 - Database tests use `createTestDb()` and `resetDb()` from `backend/test/helpers/db.ts` (see `AGENTS.md`).
 
@@ -203,7 +208,7 @@ All run from the repo root.
 | Short restore window | A broken dev database can't be rolled back far | Rebuild it (below) |
 
 **Rebuilding a broken *dev* database** (never production):
-1. In the Neon console, open **`dept-store-dev`** → SQL Editor, and run: `drop schema public cascade; create schema public; drop schema if exists drizzle cascade;`
+1. In pgAdmin, open **`dept_store_dev`** → Query Tool (or, for Neon, **`dept-store-dev`** → SQL Editor), and run: `drop schema public cascade; create schema public; drop schema if exists drizzle cascade;`
 2. Run `npm run db:migrate`.
 3. Load demo data with `npm run db:seed` (section 6).
 

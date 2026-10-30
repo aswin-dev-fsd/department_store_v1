@@ -663,9 +663,10 @@ Full wording and dates: [pending-decisions.md](pending-decisions.md).
 | D-25 | Language | English now, Tamil-ready |
 | D-26 | Vendor dues | Not in v1 (FP-06) |
 | D-27 | Node.js | Node 24 LTS |
-| D-28 | Dev and test databases | Neon, two free projects in Singapore |
+| D-28 | Dev and test databases | Neon, two free projects in Singapore (kept for online test runs; daily work moved to D-33) |
 | D-29 | Extra packages | Tailwind Vite plugin, ESLint + Prettier; `@types/*` auto-approved |
 | D-30 | Audit log | Every change plus logins, before/after, same transaction |
+| D-33 | Local dev and test databases | Local PostgreSQL 18 for development and tests; Neon for staging and online test runs |
 
 ### Pending
 

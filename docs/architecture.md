@@ -44,7 +44,7 @@ Browser ──►│ Vercel edge ── /api/* ────►│ Render, Singap
 
 - **One TypeScript codebase**, four packages, one lockfile.
 - **One origin for the browser:** the web app and `/api` share an address, so session cookies are first-party everywhere — locally through Vite's proxy, on staging through Vercel's rewrite.
-- **Three PostgreSQL databases** — dev, test, staging — each a separate Neon project, so none can damage another.
+- **Separate PostgreSQL databases** for dev, test and staging, so none can damage another: dev and test on a local PostgreSQL 18 (D-33), staging on Neon. The Neon dev and test projects are kept for online test runs.
 
 ---
 
@@ -52,12 +52,12 @@ Browser ──►│ Vercel edge ── /api/* ────►│ Render, Singap
 
 | Environment | Runs where | Web app | API | Database (Neon project) | Purpose |
 |---|---|---|---|---|---|
-| **Development** | Your PC | http://localhost:5173 (Vite) | http://localhost:4000 (tsx watch) | `dept-store-dev` | Writing code |
-| **Tests** | Your PC | — | in-process (Supertest) | `dept-store-test` — wiped by tests | Automated checks (`npm run verify`) |
+| **Development** | Your PC | http://localhost:5173 (Vite) | http://localhost:4000 (tsx watch) | local `dept_store_dev` (D-33); Neon `dept-store-dev` kept | Writing code |
+| **Tests** | Your PC | — | in-process (Supertest) | local `dept_store_test` — wiped by tests; Neon `dept-store-test` for online runs on request | Automated checks (`npm run verify`) |
 | **Staging** | Vercel + Render | https://dept-store-staging.vercel.app | https://dept-store-api-staging.onrender.com | `dept-store-staging` | Dev-only online copy: catch hosting problems early, demo, rehearse releases (D-31) |
 | **Production** | *Planned — AWS leaning (PD-03)* | — | — | its own | The client's live store |
 
-All three Neon projects: AWS **Singapore** (`aws-ap-southeast-1`), **PostgreSQL 18.6**, direct (non-pooled) connections.
+All three Neon projects: AWS **Singapore** (`aws-ap-southeast-1`), **PostgreSQL 18.6**, direct (non-pooled) connections. The local server is **PostgreSQL 18.6** too (Windows service `postgresql-x64-18`, port 5432), so the versions match.
 
 ---
 
@@ -465,23 +465,23 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 
 | Package | Runner | What | Count |
 |---|---|---|---|
-| shared | Vitest | money helpers, permission map, zod schemas (access, catalog, stock, import, purchases) | 322 |
+| shared | Vitest | money helpers, permission map, bill math, dates and financial years, zod schemas (access, catalog, stock, import, purchases, customers, bills) | 424 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
-| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock, import and purchase APIs (drafts, posting with its concurrency test, cancelling), the stock ledger service with its concurrency tests, operator scripts and the dev seed, schema constraints of the access, catalog, ledger and purchase tables (against the Neon test database, about 10 min) | 670 |
+| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock, import and purchase APIs (drafts, posting with its concurrency test, cancelling), the stock ledger service with its concurrency tests, operator scripts and the dev seed, the customer and bill APIs (bill numbers, creation and its concurrency tests, cancel, list, view, receipt), schema constraints of the access, catalog, ledger, purchase and billing tables (about 3 min on local PostgreSQL; 31 min against Neon) | 807 |
 | frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin and catalog data hooks, paging, branch checklist, admin and catalog sections, stock display rules, the import call, clipboard, the purchase editor's conversions and data hooks | 242 |
-| **Total** | | | **1,246** |
+| **Total** | | | **1,485** |
 
 **Backend test harness** (`backend/test/`):
 
 ```
 globalSetup (once)   → guard: TEST_DATABASE_URL must exist and differ from the dev DB (host+port+name)
-                     → wake Neon (3 tries × 5 s) → apply migrations to the test DB
+                     → wake the database (3 tries × 5 s, for Neon) → apply migrations to the test DB
 setupFiles (each)    → point DATABASE_URL at TEST_DATABASE_URL before the app loads
-tests                → createTestDb() (pool 20) / resetDb() (truncate public tables)
+tests                → createTestDb() (pool 20; { max } for bigger concurrency tests) / resetDb()
                        both refuse to run outside the harness
 ```
 
-Backend test files run one at a time (they share one database), with 30 s timeouts for Singapore round trips. A full `npm run verify` takes about 12 minutes, almost all of it the backend suite; that is why nothing is run per task and the gate runs at each checkpoint (`build-plan/README.md`, step 6).
+Backend test files run one at a time (they share one database), with 30 s timeouts sized for Singapore round trips. On local PostgreSQL a full `npm run verify` takes about 4 minutes (the backend suite ~3); against Neon the backend suite took 31 minutes at Checkpoint 5A. Nothing is run per task, and the gate runs at each checkpoint (`build-plan/README.md`, step 6).
 
 ---
 
@@ -521,7 +521,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 |---|---|
 | Node.js | 24 LTS (local 24.19.0; Render `NODE_VERSION=24`; Vercel 24.x) |
 | npm | 11 |
-| PostgreSQL | 18.6 (Neon) |
+| PostgreSQL | 18.6 (Neon, and local for dev and tests) |
 | TypeScript | **6.0.3** — pinned; 7.x breaks `typescript-eslint` |
 | Express / helmet / cors | 5.3.0 / 8.3.0 / 2.8.6 |
 | zod | 4.6.5 |

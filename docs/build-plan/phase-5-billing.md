@@ -29,10 +29,12 @@
 6. Generate, **read the SQL**, apply.
 
 **Done when:**
-- [ ] The migration applies to an empty database
-- [ ] check-types passes
+- [x] The migration applies to an empty database
+- [x] check-types passes
 
 **Commit:** `feat(database): add billing and customer tables`
+
+**Checked at Checkpoint 5A (2026-10-30):** the local test database was emptied and `runMigrations` applied all four migrations (18 tables); a second run changed nothing. The 25 schema tests pass on Neon and on local PostgreSQL.
 
 **As built (2026-10-30):**
 - **Files:** `database/src/schema/billing.ts` (the two enums, `bills`, `bill_lines`, `bill_payments`, `bill_sequences`), `customers.ts`, `schema/index.ts`, migration `0003_billing_and_customers.sql` (+ snapshot and journal), and `backend/test/schema/billing.schema.test.ts` (25 tests, raw SQL).
@@ -64,7 +66,7 @@
    - IST is a fixed UTC+05:30 offset (India has no daylight saving), so no date library is needed.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(shared): add billing math, financial year and bill number helpers`
 
@@ -100,8 +102,8 @@
    ```
 
 **Done when:**
-- [ ] All tests pass
-- [ ] The concurrency test passes 10 runs in a row
+- [x] All tests pass
+- [x] The concurrency test passes 10 runs in a row
 
 **Commit:** `feat(bills): add gapless bill number allocation`
 
@@ -129,7 +131,7 @@
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(customers): add customer lookup`
 
@@ -182,8 +184,8 @@
    `postMovements` needs the bill ID for `refId`. Insert the bill first, inside the same transaction, or pre-generate the ID. Whichever is chosen, a stock failure must still roll back everything, including the bill number.
 
 **Done when:**
-- [ ] All tests pass
-- [ ] The concurrency tests pass 10 runs in a row
+- [x] All tests pass
+- [x] The concurrency tests pass 10 runs in a row
 
 **Commit:** `feat(bills): add bill creation transaction`
 
@@ -216,7 +218,7 @@
 2. **Green** — implement, and remove the `TODO(5.6)`.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(bills): add bill cancel, lookup and receipt data`
 
