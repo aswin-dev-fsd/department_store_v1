@@ -21,7 +21,9 @@ import { createApp } from '../../app.js';
 import type { RequestContext } from '../../middleware/auth.js';
 import { createBill } from './bills.service.js';
 
-const { db, pool } = createTestDb();
+// 50 parallel bills queue on their branch's bill-number lock for about a second each; with a
+// connection each they wait inside PostgreSQL, instead of timing out waiting for a pool slot
+const { db, pool } = createTestDb({ max: 60 });
 const app = createApp({ db });
 const URL = '/api/v1/bills';
 
@@ -86,7 +88,10 @@ function workedExample(c: Counter) {
 }
 
 function bill(c: Counter, body: unknown) {
-  return request(app).post(URL).set('Cookie', c.cookie).send(body as object);
+  return request(app)
+    .post(URL)
+    .set('Cookie', c.cookie)
+    .send(body as object);
 }
 
 /** One line of `quantity` packs of an item, paid exactly in cash (₹38.25 soap: rounding applies). */
@@ -189,8 +194,11 @@ describe('POST /bills: the happy path', () => {
       [c.soap, 'sale', -3, 'bill'],
     ]);
     expect(moves.every((m) => Number(m.ref_id) === saved.id)).toBe(true);
-    expect([await stockOf(pool, c.rice), await stockOf(pool, c.oil), await stockOf(pool, c.soap)])
-      .toEqual([99, 98, 97]);
+    expect([
+      await stockOf(pool, c.rice),
+      await stockOf(pool, c.oil),
+      await stockOf(pool, c.soap),
+    ]).toEqual([99, 98, 97]);
     await ledgerOk(c);
 
     const audit = await expectAudit(db, {
@@ -234,16 +242,43 @@ describe('the financial year', () => {
   it('starts a new sequence at 1 April IST: 23:59 on 31 March and 00:01 on 1 April differ', async () => {
     const c = await counter();
     const ctx = {
-      user: { id: c.userId, username: 'u', fullName: 'Ravi Kumar', role: 'cashier', mustChangePassword: false },
+      user: {
+        id: c.userId,
+        username: 'u',
+        fullName: 'Ravi Kumar',
+        role: 'cashier',
+        mustChangePassword: false,
+      },
       activeBranchId: c.branchId,
       sessionId: 0,
       sessionToken: '',
     } as unknown as RequestContext;
     const body = { ...simpleBill(c.rice, 1, 65000) } as never;
 
-    const march = await createBill(db, ctx, c.branchId, body, new Date('2027-03-31T18:29:00Z'), null);
-    const april = await createBill(db, ctx, c.branchId, body, new Date('2027-03-31T18:31:00Z'), null);
-    const april2 = await createBill(db, ctx, c.branchId, body, new Date('2027-04-01T06:00:00Z'), null);
+    const march = await createBill(
+      db,
+      ctx,
+      c.branchId,
+      body,
+      new Date('2027-03-31T18:29:00Z'),
+      null,
+    );
+    const april = await createBill(
+      db,
+      ctx,
+      c.branchId,
+      body,
+      new Date('2027-03-31T18:31:00Z'),
+      null,
+    );
+    const april2 = await createBill(
+      db,
+      ctx,
+      c.branchId,
+      body,
+      new Date('2027-04-01T06:00:00Z'),
+      null,
+    );
 
     expect([march.billNo, march.billDate]).toEqual(['TPR/26-27/000001', '2027-03-31']);
     expect([april.billNo, april.billDate]).toEqual(['TPR/27-28/000001', '2027-04-01']);
@@ -314,18 +349,21 @@ describe('payments', () => {
   it.each([
     ['short', 103500],
     ['over (the change is not recorded)', 103700],
-  ])('refuses payments that are %s with 400 PAYMENT_MISMATCH, saving nothing', async (_label, paid) => {
-    const c = await counter();
-    const res = await bill(c, {
-      ...workedExample(c),
-      payments: [{ mode: 'cash', amountPaise: paid }],
-    });
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('PAYMENT_MISMATCH');
-    expect(res.body.error.details).toEqual({ totalPaise: 103600, paidPaise: paid });
-    await nothingSaved();
-    expect(await stockOf(pool, c.rice)).toBe(100);
-  });
+  ])(
+    'refuses payments that are %s with 400 PAYMENT_MISMATCH, saving nothing',
+    async (_label, paid) => {
+      const c = await counter();
+      const res = await bill(c, {
+        ...workedExample(c),
+        payments: [{ mode: 'cash', amountPaise: paid }],
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('PAYMENT_MISMATCH');
+      expect(res.body.error.details).toEqual({ totalPaise: 103600, paidPaise: paid });
+      await nothingSaved();
+      expect(await stockOf(pool, c.rice)).toBe(100);
+    },
+  );
 
   it('accepts a split across all three modes that adds up exactly', async () => {
     const c = await counter();
@@ -374,9 +412,7 @@ describe('no price tampering', () => {
       ...base,
       ...extra,
       lines:
-        'lines' in extra
-          ? extra.lines.map((line) => ({ ...line, itemId: c.rice }))
-          : base.lines,
+        'lines' in extra ? extra.lines.map((line) => ({ ...line, itemId: c.rice })) : base.lines,
     };
     const res = await bill(c, body);
     expect(res.status).toBe(422);
@@ -482,6 +518,47 @@ describe('customer', () => {
   });
 });
 
+describe('rounding down', () => {
+  it('stores a negative round-off as a negative amount: ₹38.25 is paid as ₹38', async () => {
+    const c = await counter();
+    const res = await bill(c, simpleBill(c.soap, 1, 3825));
+
+    expect(res.body.data).toMatchObject({
+      subtotalPaise: 3825,
+      roundOffPaise: -25,
+      totalPaise: 3800,
+    });
+    const { rows } = await pool.query(
+      'select round_off_paise::int as round_off, total_paise::int as total from bills',
+    );
+    expect(rows).toEqual([{ round_off: -25, total: 3800 }]);
+  });
+});
+
+describe('a saved bill is locked (D-14)', () => {
+  it('has no way to edit or delete it: PUT, PATCH and DELETE answer 404 and change nothing', async () => {
+    const c = await counter();
+    const saved = (await bill(c, workedExample(c))).body.data;
+    const path = `${URL}/${saved.id}`;
+    const change = { lines: [{ itemId: c.rice, quantity: 9 }], totalPaise: 1 };
+
+    const responses = [
+      await request(app).put(path).set('Cookie', c.cookie).send(change),
+      await request(app).patch(path).set('Cookie', c.cookie).send(change),
+      await request(app).delete(path).set('Cookie', c.cookie),
+    ];
+
+    expect(responses.map((r) => r.status)).toEqual([404, 404, 404]);
+    const { rows } = await pool.query(
+      `select status, total_paise::int as total,
+              (select count(*)::int from bill_lines where bill_id = $1) as lines
+         from bills where id = $1`,
+      [saved.id],
+    );
+    expect(rows).toEqual([{ status: 'completed', total: 103600, lines: 3 }]);
+  });
+});
+
 describe('permissions', () => {
   it('answers 401 without a session', async () => {
     expect((await request(app).post(URL).send({})).status).toBe(401);
@@ -519,18 +596,24 @@ describe('concurrency', () => {
     await ledgerOk(c);
   });
 
-  it.each(runs)('numbers 50 parallel bills 000001–000050 with no gaps (run %i)', async () => {
-    const c = await counter('TPR', 50);
-    const body = simpleBill(c.soap, 1, 3825);
+  it.each(runs)(
+    'numbers 50 parallel bills 000001–000050 with no gaps (run %i)',
+    async () => {
+      const c = await counter('TPR', 50);
+      const body = simpleBill(c.soap, 1, 3825);
 
-    const responses = await Promise.all(Array.from({ length: 50 }, () => bill(c, body)));
+      const responses = await Promise.all(Array.from({ length: 50 }, () => bill(c, body)));
 
-    expect(responses.map((r) => r.status)).toEqual(Array(50).fill(201));
-    const numbers = responses.map((r) => r.body.data.billNo as string).sort();
-    expect(numbers).toEqual(
-      Array.from({ length: 50 }, (_, i) => `TPR/${fy()}/${String(i + 1).padStart(6, '0')}`),
-    );
-    expect(await stockOf(pool, c.soap)).toBe(0);
-    await ledgerOk(c);
-  });
+      expect(responses.map((r) => r.status)).toEqual(Array(50).fill(201));
+      const numbers = responses.map((r) => r.body.data.billNo as string).sort();
+      expect(numbers).toEqual(
+        Array.from({ length: 50 }, (_, i) => `TPR/${fy()}/${String(i + 1).padStart(6, '0')}`),
+      );
+      expect(await stockOf(pool, c.soap)).toBe(0);
+      await ledgerOk(c);
+      // Bills of one branch queue on the number's row lock, about a second each across the
+      // internet to Neon, so 50 in a row need longer than the usual 30 s
+    },
+    120_000,
+  );
 });

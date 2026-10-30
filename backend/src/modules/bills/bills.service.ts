@@ -139,6 +139,9 @@ function priceBill(input: CreateBillInput, items: Map<number, SellableItem>): Co
  * ledger), rolls all of it back, the bill number too, so the numbers stay gapless.
  *
  * `at` is the moment of the sale; it decides the financial year and the IST business date.
+ *
+ * The bill number's row stays locked from its allocation until the commit, so bills of one branch
+ * queue there; the saved bill is read back after the commit, to keep that wait short.
  */
 export async function createBill(
   db: Db,
@@ -148,17 +151,16 @@ export async function createBill(
   at: Date,
   ip: string | null,
 ): Promise<Bill> {
-  return db.transaction(async (tx) => {
+  const billId = await db.transaction(async (tx) => {
     const items = await requireItems(tx, branchId, input);
     const amounts = priceBill(input, items);
 
     const paidPaise = input.payments.reduce((sum, payment) => sum + payment.amountPaise, 0);
     if (paidPaise !== amounts.totalPaise) {
-      throw new AppError(
-        'PAYMENT_MISMATCH',
-        'The payments do not add up to the bill total',
-        { totalPaise: amounts.totalPaise, paidPaise },
-      );
+      throw new AppError('PAYMENT_MISMATCH', 'The payments do not add up to the bill total', {
+        totalPaise: amounts.totalPaise,
+        paidPaise,
+      });
     }
 
     const customer = input.customer
@@ -242,8 +244,9 @@ export async function createBill(
       },
       ip,
     });
-    return loadBill(tx, branchId, bill.id);
+    return bill.id;
   });
+  return loadBill(db, branchId, billId);
 }
 
 function toSummary(row: BillSummaryRow): BillSummary {

@@ -16,10 +16,13 @@ function assertTestDatabase(): void {
   }
 }
 
-/** A connection pool to the test database. Call `pool.end()` in afterAll. */
-export function createTestDb(): DbHandle {
+/**
+ * A connection pool to the test database. Call `pool.end()` in afterAll. A test that runs more
+ * parallel transactions than the default pool holds can ask for a larger one with `max`.
+ */
+export function createTestDb({ max = TEST_POOL_SIZE }: { max?: number } = {}): DbHandle {
   assertTestDatabase();
-  return createDb(env.DATABASE_URL, { max: TEST_POOL_SIZE });
+  return createDb(env.DATABASE_URL, { max });
 }
 
 /**

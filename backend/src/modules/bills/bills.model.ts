@@ -143,7 +143,12 @@ export async function markCancelled(
 ): Promise<void> {
   await db
     .update(bills)
-    .set({ status: 'cancelled', cancelledBy: userId, cancelledAt: new Date(), cancelReason: reason })
+    .set({
+      status: 'cancelled',
+      cancelledBy: userId,
+      cancelledAt: new Date(),
+      cancelReason: reason,
+    })
     .where(eq(bills.id, id));
 }
 

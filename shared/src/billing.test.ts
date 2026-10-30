@@ -34,7 +34,13 @@ describe('computeBill', () => {
       { unitPricePaise: 300, quantity: 1, discountPaise: 0 },
     ]);
     expect(bill.lines).toEqual([
-      { unitPricePaise: 100, quantity: 2, discountPaise: 50, amountPaise: 200, lineTotalPaise: 150 },
+      {
+        unitPricePaise: 100,
+        quantity: 2,
+        discountPaise: 50,
+        amountPaise: 200,
+        lineTotalPaise: 150,
+      },
       { unitPricePaise: 300, quantity: 1, discountPaise: 0, amountPaise: 300, lineTotalPaise: 300 },
     ]);
   });

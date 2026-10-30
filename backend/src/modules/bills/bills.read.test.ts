@@ -241,7 +241,12 @@ describe('GET /bills/:id/receipt', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      business: { name: 'Demo Stores', address: 'Avinashi Road', phone: '0421 222222', gstin: null },
+      business: {
+        name: 'Demo Stores',
+        address: 'Avinashi Road',
+        phone: '0421 222222',
+        gstin: null,
+      },
       branch: {
         code: 'TPR',
         name: 'Tiruppur',
@@ -254,7 +259,9 @@ describe('GET /bills/:id/receipt', () => {
       issuedAtIst: istDateTime(new Date(sold.createdAt)),
       cashierName: 'Ravi Kumar',
       customer: { phone: '9876543210', name: 'Kumar' },
-      lines: [expect.objectContaining({ itemName: 'Rice 10 kg', quantity: 2, lineTotalPaise: 20000 })],
+      lines: [
+        expect.objectContaining({ itemName: 'Rice 10 kg', quantity: 2, lineTotalPaise: 20000 }),
+      ],
       subtotalPaise: 20000,
       discountPaise: 0,
       roundOffPaise: 0,

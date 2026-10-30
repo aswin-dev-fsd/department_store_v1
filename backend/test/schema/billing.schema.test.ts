@@ -27,9 +27,10 @@ async function one(sql: string, params: unknown[]): Promise<number> {
 }
 
 async function insertBranch(code: string): Promise<number> {
-  return one(`insert into branches (code, name, address) values ($1, 'Branch', 'Address') returning id`, [
-    code,
-  ]);
+  return one(
+    `insert into branches (code, name, address) values ($1, 'Branch', 'Address') returning id`,
+    [code],
+  );
 }
 
 async function insertUser(username = 'ravi'): Promise<number> {
@@ -238,9 +239,9 @@ describe('bills', () => {
     const { branch, cashier } = await setup();
     const customer = await insertCustomer();
     await insertBill(branch, cashier, { customerId: customer });
-    await expect(pool.query(`delete from customers where id = $1`, [customer])).rejects.toMatchObject(
-      { code: RESTRICT_VIOLATION },
-    );
+    await expect(
+      pool.query(`delete from customers where id = $1`, [customer]),
+    ).rejects.toMatchObject({ code: RESTRICT_VIOLATION });
   });
 });
 
@@ -331,12 +332,14 @@ describe('bill_payments', () => {
 describe('bill_sequences', () => {
   it('holds one row per branch and year', async () => {
     const branch = await insertBranch('TPR');
-    await pool.query(`insert into bill_sequences (branch_id, fy, last_seq) values ($1, '26-27', 0)`, [
-      branch,
-    ]);
-    await pool.query(`insert into bill_sequences (branch_id, fy, last_seq) values ($1, '27-28', 0)`, [
-      branch,
-    ]);
+    await pool.query(
+      `insert into bill_sequences (branch_id, fy, last_seq) values ($1, '26-27', 0)`,
+      [branch],
+    );
+    await pool.query(
+      `insert into bill_sequences (branch_id, fy, last_seq) values ($1, '27-28', 0)`,
+      [branch],
+    );
     await expect(
       pool.query(`insert into bill_sequences (branch_id, fy, last_seq) values ($1, '26-27', 5)`, [
         branch,
@@ -360,7 +363,9 @@ describe('bill_sequences', () => {
 
   it('needs a real branch', async () => {
     await expect(
-      pool.query(`insert into bill_sequences (branch_id, fy, last_seq) values (999999, '26-27', 0)`),
+      pool.query(
+        `insert into bill_sequences (branch_id, fy, last_seq) values (999999, '26-27', 0)`,
+      ),
     ).rejects.toMatchObject({ code: FOREIGN_KEY_VIOLATION });
   });
 });

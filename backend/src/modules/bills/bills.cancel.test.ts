@@ -43,7 +43,11 @@ async function counter(): Promise<Counter> {
   const userId = await createUser(pool, { role: 'cashier', fullName: 'Ravi Kumar' });
   await mapUser(pool, userId, branchId);
   const item = async (code: string) => {
-    const id = await createItem(pool, branchId, { code, mrpPaise: 10000, sellingPricePaise: 10000 });
+    const id = await createItem(pool, branchId, {
+      code,
+      mrpPaise: 10000,
+      sellingPricePaise: 10000,
+    });
     await seedOpeningStock(pool, { branchId, itemId: id, userId, quantity: 10 });
     return id;
   };

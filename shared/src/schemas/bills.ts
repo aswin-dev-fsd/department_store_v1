@@ -58,9 +58,7 @@ export const createBillSchema = z.strictObject({
       message: 'Record each payment mode once',
     }),
   /** Optional (D-18): a phone finds or creates the customer, client-wide. */
-  customer: z
-    .strictObject({ phone: phoneSchema, name: customerNameSchema })
-    .optional(),
+  customer: z.strictObject({ phone: phoneSchema, name: customerNameSchema }).optional(),
 });
 export type CreateBillInput = z.infer<typeof createBillSchema>;
 
@@ -162,7 +160,13 @@ export interface Bill {
 /** Everything an 80mm receipt prints (Task 5.9); the screen formats it, the server decides it. */
 export interface Receipt {
   business: { name: string; address: string | null; phone: string | null; gstin: string | null };
-  branch: { code: string; name: string; address: string; phone: string | null; footer: string | null };
+  branch: {
+    code: string;
+    name: string;
+    address: string;
+    phone: string | null;
+    footer: string | null;
+  };
   billNo: string;
   billDate: string;
   /** When the bill was saved, in IST, like '30-10-2026 14:05'. */

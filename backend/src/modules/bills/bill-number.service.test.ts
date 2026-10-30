@@ -123,7 +123,9 @@ describe('allocateBillSeq under concurrency', () => {
     );
 
     const saved = outcomes
-      .filter((outcome): outcome is PromiseFulfilledResult<number> => outcome.status === 'fulfilled')
+      .filter(
+        (outcome): outcome is PromiseFulfilledResult<number> => outcome.status === 'fulfilled',
+      )
       .map((outcome) => outcome.value)
       .sort((a, b) => a - b);
     expect(saved).toEqual(Array.from({ length: 15 }, (_, index) => index + 1));

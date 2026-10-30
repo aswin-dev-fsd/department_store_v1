@@ -38,10 +38,19 @@ describe('createBillSchema', () => {
   });
 
   it.each([
-    ['a unit price on a line', { lines: [{ itemId: 7, quantity: 1, unitPricePaise: 1 }] }, 'lines.0'],
+    [
+      'a unit price on a line',
+      { lines: [{ itemId: 7, quantity: 1, unitPricePaise: 1 }] },
+      'lines.0',
+    ],
     ['a line total', { lines: [{ itemId: 7, quantity: 1, lineTotalPaise: 1 }] }, 'lines.0'],
     ['a bill total', { totalPaise: 1 }, ''],
-    ['a field on a payment', { payments: [{ mode: 'cash', amountPaise: 1, change: 5 }] }, 'payments.0'],
+    ['a whole-bill discount (none in v1, D-17)', { discountPaise: 100 }, ''],
+    [
+      'a field on a payment',
+      { payments: [{ mode: 'cash', amountPaise: 1, change: 5 }] },
+      'payments.0',
+    ],
     ['a field on the customer', { customer: { phone: '9876543210', id: 3 } }, 'customer'],
   ])('refuses %s: prices and totals are the server’s', (_label, overrides, path) => {
     expect(firstIssuePath(createBillSchema.safeParse({ ...valid(), ...overrides }))).toBe(path);
@@ -49,7 +58,11 @@ describe('createBillSchema', () => {
 
   it.each([
     ['no lines', { lines: [] }, 'lines'],
-    ['too many lines', { lines: Array(MAX_BILL_LINES + 1).fill({ itemId: 7, quantity: 1 }) }, 'lines'],
+    [
+      'too many lines',
+      { lines: Array(MAX_BILL_LINES + 1).fill({ itemId: 7, quantity: 1 }) },
+      'lines',
+    ],
     ['a quantity of 0', { lines: [{ itemId: 7, quantity: 0 }] }, 'lines.0.quantity'],
     ['a part pack', { lines: [{ itemId: 7, quantity: 1.5 }] }, 'lines.0.quantity'],
     [
@@ -57,7 +70,11 @@ describe('createBillSchema', () => {
       { lines: [{ itemId: 7, quantity: MAX_BILL_LINE_QUANTITY + 1 }] },
       'lines.0.quantity',
     ],
-    ['a negative discount', { lines: [{ itemId: 7, quantity: 1, discountPaise: -1 }] }, 'lines.0.discountPaise'],
+    [
+      'a negative discount',
+      { lines: [{ itemId: 7, quantity: 1, discountPaise: -1 }] },
+      'lines.0.discountPaise',
+    ],
     ['a missing item', { lines: [{ quantity: 1 }] }, 'lines.0.itemId'],
     ['no payments', { payments: [] }, 'payments'],
     ['a payment of 0', { payments: [{ mode: 'cash', amountPaise: 0 }] }, 'payments.0.amountPaise'],
