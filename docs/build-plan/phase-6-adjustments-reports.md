@@ -64,6 +64,14 @@
 
 **Commit:** `feat(reports): add day sales summary`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `day-summary.model.ts`, which holds the two SQL aggregates, per the AGENTS rule that queries live in a model.
+- **`daySummary(db, { date, branchId?, cashierId? })`** returns `{ date, totals, branches: [{ branch, totals, cashiers: [{ cashier, totals }] }] }`. Branches are sorted by code and cashiers by name. Only branches and cashiers with bills that day appear.
+- **Each `totals`:** completed bill count, subtotal, discount, signed round-off, net total, and payments by mode (cash / UPI / card, always all three). Cancelled bills are counted separately (count and value) and left out of everything else.
+- **How it works:** bills count on their stored IST `bill_date`. A bill cancelled later still belongs to the day it was made. Two `GROUP BY` queries (bills by branch and cashier with `FILTER` on status; completed bills' payments by mode) are combined in the service.
+- **Types** stay in the service until Task 6.6 adds the route and moves them into `shared`.
+- **Tests:** 10, on a fixture of 5 bills across 2 branches and 2 cashiers. It includes a 3-mode bill, a cancelled one, 23:30 IST and 00:10 IST the next day, and round-offs of +0.25 and −0.25, all worked out by hand. **Not run** (option 3).
+
 ---
 
 ## Task 6.3 — Item-wise sales
