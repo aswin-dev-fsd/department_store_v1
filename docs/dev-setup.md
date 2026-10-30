@@ -188,7 +188,8 @@ All run from the repo root.
 | `npm run setup:client -- --business-name … --admin-username … --admin-name …` | Create the client settings and the first Admin on a new database (see section 6) |
 | `npm run reset-password -- --username …` | Give a user a new temporary password from the command line: recovery when nobody can use the Admin screens (see section 6) |
 | `npm run db:seed` | Fill an empty dev database with demo data (two branches, an Admin, two cashiers, 50 items per branch) with fixed dev logins (see section 6) |
-| `npm run verify` | **The gate:** lint, format check, type check, all tests. Runs at each checkpoint; nothing is run per task (see `docs/build-plan/README.md` step 6) |
+| `npm run verify` | **The gate:** lint, format check, type check, the i18n check, all tests. Runs at each checkpoint; nothing is run per task (see `docs/build-plan/README.md` step 6) |
+| `npm run check:i18n` | Fail on UI text written into a screen instead of the dictionary (`frontend/src/i18n/en.ts`): literal text between JSX tags, or a literal placeholder, title, alt or aria-label. Lists file:line for each (D-25) |
 | `npm test` | All tests in every package |
 | `npm run check-types` | TypeScript check of every package |
 | `npm run lint` | ESLint. Any warning fails it |

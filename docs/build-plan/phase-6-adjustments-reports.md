@@ -284,6 +284,15 @@
 
 **Commit:** `refactor(frontend): move all ui text to the i18n dictionary`
 
+**As built (2026-10-30):**
+- **`scripts/check-i18n.mjs`** parses every `frontend/src/**/*.tsx` file (tests left out) with the TypeScript compiler, which is already a dependency, so there is no new package and no regex guessing. It fails, listing file:line, on:
+  - literal text between JSX tags, or a string literal as a JSX child (`{'Save'}`);
+  - a literal `placeholder`, `title`, `alt`, `aria-label` or `aria-description` value.
+  - Text with no letter passes (₹, /, ×, —, ·, numbers). An `ALLOWED` set exists for any word that is never UI text, and it is empty.
+- **Gate:** the root script `check:i18n` runs it, and `npm run verify` now runs it after the type check. `README.md` step 6 and the `dev-setup.md` command table say so.
+- **The sweep found nothing:** every screen already used `t()`, so no `.tsx` or `en.ts` change was needed and the commit only adds the check. The checker was proven once on a throwaway file holding each kind of hit: a title, an aria-label in braces, plain text, `{'Cancel'}`, a placeholder and an alt. All 6 were reported, while symbols, numbers, `t()` calls and variables passed. The file was then deleted.
+- **Run for this task**, because it is the task's own tool: `npm run check:i18n` (passes), plus Prettier and ESLint on the new script. The rest of the gate waits for Checkpoint 6.
+
 ---
 
 ## 🛑 Checkpoint 6

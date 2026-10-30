@@ -41,7 +41,7 @@ Follow these steps for every task, in order.
 3. **State the plan.** Before editing, write in chat: the task ID, the files you will create or change, and how you will verify. A few lines.
 4. **Red.** Where the task lists tests, write them first. They are not run per task (step 6).
 5. **Green.** Implement what those tests describe, reading the code against them. Change only the files the task names, plus their tests. If a change elsewhere is needed, report it rather than making it.
-6. **Run nothing.** No lint, type check or tests per task. The full `npm run verify` (every check, every test, every workspace) runs at each 🛑 CHECKPOINT, and whatever fails then is fixed then. Check each "Done when" item by reading the code against it; the "tests pass" box is ticked at the checkpoint.
+6. **Run nothing.** No lint, type check or tests per task. The full `npm run verify` (lint, format, types, the i18n check `check:i18n`, every test, every workspace) runs at each 🛑 CHECKPOINT, and whatever fails then is fixed then. Check each "Done when" item by reading the code against it; the "tests pass" box is ticked at the checkpoint.
 7. **Record.** In `progress.md`, set the task to DONE with today's date and a one-line note (anything surprising, any follow-up). If a doc is now out of date, update it in the same change.
 8. **Commit.** One commit per task, using the message in the task (DreamLand §10 format).
 9. **Report and stop.** In chat: what was done, test results, and anything the user should know.
