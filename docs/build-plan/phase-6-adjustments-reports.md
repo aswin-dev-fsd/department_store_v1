@@ -146,6 +146,14 @@
 
 **Commit:** `feat(reports): add purchase register`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `purchase-register.model.ts` for the SQL.
+- **`purchaseRegister(db, { from, to, branchId? })`** returns `{ from, to, vendors, totalPaise, cancelled }`.
+  - **`vendors`:** one group per vendor, sorted by vendor name then branch code. Two branches' vendors with the same name stay separate. Each group has `{ vendor, branch, purchases, subtotalPaise }`, and each purchase has `{ id, vendorInvoiceNo, invoiceDate, totalPaise }`, by invoice date.
+  - **`cancelled`:** cancelled purchases in the range, with vendor, branch and reason, kept out of every total.
+- **Range:** by `invoice_date`, both ends included. Drafts never appear. The result is not paged, since a date range of purchases is small (proposed).
+- **Tests:** 6 on a hand-worked fixture: 8 purchases with 3 vendors across 2 branches, a cancelled purchase, a draft, and dates on and outside both ends. **Not run** (option 3).
+
 ---
 
 ## Task 6.6 — Report routes and visibility
