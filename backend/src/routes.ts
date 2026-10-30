@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { AppDeps } from './deps.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { billsRoutes } from './modules/bills/bills.routes.js';
 import { branchesRoutes } from './modules/branches/branches.routes.js';
 import { categoriesRoutes } from './modules/categories/categories.routes.js';
 import { customersRoutes } from './modules/customers/customers.routes.js';
@@ -22,6 +23,7 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/admin/branches', branchesRoutes(deps));
   router.use('/admin/settings', settingsRoutes(deps));
   router.use('/admin/users', usersRoutes(deps));
+  router.use('/bills', billsRoutes(deps));
   router.use('/categories', categoriesRoutes(deps));
   router.use('/customers', customersRoutes(deps));
   router.use('/items', itemsRoutes(deps));

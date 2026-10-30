@@ -187,6 +187,14 @@
 
 **Commit:** `feat(bills): add bill creation transaction`
 
+**As built (2026-10-30):**
+- **Files:** the named shared schema, routes, controller, service and test, plus `bills.model.ts` (the queries, including the bill view that Task 5.6 will reuse), a shared schema test, the export in `shared/src/index.ts` and the `/bills` registration.
+- **The order in the transaction:** load the branch's active items with their prices (inactive, other-branch or unknown → 404); check each discount against its line (422 on `body.lines.N.discountPaise`); `computeBill`; payments must add up to the total exactly (400 `PAYMENT_MISMATCH`, `details: { totalPaise, paidPaise }`); find or create the customer; `allocateBillSeq`; insert the bill, its lines (name, code, MRP and unit price as snapshots) and payments; then `postMovements` with one `sale` per line and the bill's id as `refId`. The bill is inserted first so the movements can name it; a short item (`INSUFFICIENT_STOCK`, with the ledger's details) rolls back all of it, including the bill number and a new customer.
+- **Locks:** a bill takes its branch's sequence row before the stock rows, so bills of one branch queue on the number; no other code path takes them in the other order, so they cannot deadlock.
+- **Time:** the service takes the moment of the sale (`at`); the controller passes the server clock. That decides the FY and the IST `bill_date`, and lets the 31 March / 1 April test call the service with fixed times.
+- **Choices the task left open:** a left-out discount is 0; one payment row per mode (the same mode twice is a 422); a payment of 0 is refused (the database CHECK too); caps of 10,000 packs a line and 200 lines.
+- **Not run:** under option 3 the 47 route tests (the two concurrency tests as 10 runs each) and 20 schema tests are written but not run; both boxes are ticked at Checkpoint 5A.
+
 ---
 
 ## Task 5.6 — Cancel, list, view and receipt data
