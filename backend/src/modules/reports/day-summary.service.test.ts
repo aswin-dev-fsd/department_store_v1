@@ -133,7 +133,7 @@ async function fixture() {
 }
 
 function totals(
-  values: Partial<DayTotals> & { payments?: Partial<DayTotals['payments']> },
+  values: Partial<Omit<DayTotals, 'payments'>> & { payments?: Partial<DayTotals['payments']> },
 ): DayTotals {
   return {
     billCount: 0,

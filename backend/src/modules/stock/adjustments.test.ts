@@ -55,7 +55,9 @@ function adjust(cookie: string, body: object) {
 /** The item's ledger rows, oldest first. */
 async function movements(itemId: number) {
   const { rows } = await pool.query(
-    `select type, quantity, balance_after, ref_type, ref_id, reason, note, created_by
+    // created_by is a bigint, which pg returns as text: cast it to compare with the user's id
+    `select type, quantity, balance_after, ref_type, ref_id, reason, note,
+            created_by::int as created_by
        from stock_movements where item_id = $1 order by id`,
     [itemId],
   );
