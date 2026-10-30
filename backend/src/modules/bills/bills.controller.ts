@@ -1,4 +1,4 @@
-import type { CreateBillInput } from '@ds/shared';
+import type { CancelBillInput, CreateBillInput, IdParams, ListBillsQuery } from '@ds/shared';
 import type { RequestHandler } from 'express';
 import type { AppDeps } from '../../deps.js';
 import { activeBranchId } from '../../lib/branch-scope.js';
@@ -20,5 +20,36 @@ export function billsController({ db }: AppDeps) {
     res.status(201).json(success(bill));
   };
 
-  return { create };
+  const list: RequestHandler = async (req, res) => {
+    res.json(
+      success(
+        await service.listBills(db, activeBranchId(req), req.query as unknown as ListBillsQuery),
+      ),
+    );
+  };
+
+  const get: RequestHandler = async (req, res) => {
+    const { id } = req.params as unknown as IdParams;
+    res.json(success(await service.getBill(db, activeBranchId(req), id)));
+  };
+
+  const receipt: RequestHandler = async (req, res) => {
+    const { id } = req.params as unknown as IdParams;
+    res.json(success(await service.getReceipt(db, activeBranchId(req), id)));
+  };
+
+  const cancel: RequestHandler = async (req, res) => {
+    const { id } = req.params as unknown as IdParams;
+    const bill = await service.cancelBill(
+      db,
+      requestContext(req),
+      activeBranchId(req),
+      id,
+      req.body as CancelBillInput,
+      req.ip ?? null,
+    );
+    res.json(success(bill));
+  };
+
+  return { create, list, get, receipt, cancel };
 }

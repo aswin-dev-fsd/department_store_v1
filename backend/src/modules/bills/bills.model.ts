@@ -1,10 +1,12 @@
 // Database queries for bills — no business rules here (DreamLand §4). Every function that reads a
 // bill takes the branch: bills are branch-owned, so another branch's is simply not found.
 import { schema, type DbOrTx } from '@ds/database';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, inArray, lte, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
+import { likePattern } from '../../lib/like.js';
 
-const { billLines, billPayments, bills, branches, customers, items, users } = schema;
+const { billLines, billPayments, bills, branches, clientSettings, customers, items, users } =
+  schema;
 
 export type BillRow = typeof bills.$inferSelect;
 export type NewBillRow = typeof bills.$inferInsert;
@@ -115,4 +117,109 @@ export async function findPayments(db: DbOrTx, billId: number): Promise<BillPaym
     .from(billPayments)
     .where(eq(billPayments.billId, billId))
     .orderBy(asc(billPayments.id));
+}
+
+/** Load a bill of this branch and lock its row until the transaction ends. */
+export async function findBillForUpdate(
+  db: DbOrTx,
+  branchId: number,
+  id: number,
+): Promise<BillRow | undefined> {
+  const [row] = await db
+    .select()
+    .from(bills)
+    .where(and(eq(bills.id, id), eq(bills.branchId, branchId)))
+    .limit(1)
+    .for('update');
+  return row;
+}
+
+/** Mark a bill cancelled by this user, now, with the reason. */
+export async function markCancelled(
+  db: DbOrTx,
+  id: number,
+  userId: number,
+  reason: string,
+): Promise<void> {
+  await db
+    .update(bills)
+    .set({ status: 'cancelled', cancelledBy: userId, cancelledAt: new Date(), cancelReason: reason })
+    .where(eq(bills.id, id));
+}
+
+/** A bill in a list, with its cashier's name and its customer. */
+export interface BillSummaryRow {
+  id: number;
+  billNo: string;
+  billDate: string;
+  status: BillRow['status'];
+  cashierId: number;
+  cashierName: string;
+  customerPhone: string | null;
+  customerName: string | null;
+  totalPaise: number;
+  createdAt: Date;
+}
+
+/**
+ * One page of the branch's bills, newest first, with the total. Every filter is optional; the
+ * date range compares the business date, both ends included; `billNo` matches any part of it,
+ * ignoring case; `phone` is the customer's normalised phone.
+ */
+export async function listBills(
+  db: DbOrTx,
+  branchId: number,
+  query: {
+    from?: string;
+    to?: string;
+    billNo?: string;
+    phone?: string;
+    cashierId?: number;
+    status?: BillRow['status'];
+    limit: number;
+    offset: number;
+  },
+): Promise<{ rows: BillSummaryRow[]; total: number }> {
+  const conditions: SQL[] = [eq(bills.branchId, branchId)];
+  if (query.from !== undefined) conditions.push(gte(bills.billDate, query.from));
+  if (query.to !== undefined) conditions.push(lte(bills.billDate, query.to));
+  if (query.billNo !== undefined) conditions.push(ilike(bills.billNo, likePattern(query.billNo)));
+  if (query.phone !== undefined) conditions.push(eq(customers.phone, query.phone));
+  if (query.cashierId !== undefined) conditions.push(eq(bills.cashierId, query.cashierId));
+  if (query.status !== undefined) conditions.push(eq(bills.status, query.status));
+  const where = and(...conditions);
+
+  const rows = await db
+    .select({
+      id: bills.id,
+      billNo: bills.billNo,
+      billDate: bills.billDate,
+      status: bills.status,
+      cashierId: bills.cashierId,
+      cashierName: users.fullName,
+      customerPhone: customers.phone,
+      customerName: customers.name,
+      totalPaise: bills.totalPaise,
+      createdAt: bills.createdAt,
+    })
+    .from(bills)
+    .innerJoin(users, eq(users.id, bills.cashierId))
+    .leftJoin(customers, eq(customers.id, bills.customerId))
+    .where(where)
+    .orderBy(desc(bills.createdAt), desc(bills.id))
+    .limit(query.limit)
+    .offset(query.offset);
+  const [count] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(bills)
+    .leftJoin(customers, eq(customers.id, bills.customerId))
+    .where(where);
+  return { rows, total: count?.n ?? 0 };
+}
+
+/** The business details and the branch details a receipt prints. */
+export async function findReceiptHeader(db: DbOrTx, branchId: number) {
+  const [settings] = await db.select().from(clientSettings).limit(1);
+  const [branch] = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
+  return { settings, branch };
 }

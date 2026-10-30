@@ -617,6 +617,7 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `EMPTY_PURCHASE` | 400 | Posting a draft purchase that has no lines |
 | `DUPLICATE_INVOICE` | 400 | The vendor invoice was already entered |
 | `DUPLICATE_CODE` | 400 | A branch code that another branch already uses, or an item code the branch already uses |
+| `CODE_LOCKED` | 400 | Changing the code of a branch that already has bills (the code is in their numbers) |
 | `DUPLICATE_BARCODE` | 400 | A barcode another item of the branch already has |
 | `DUPLICATE_NAME` | 400 | A category name the branch already uses (ignoring case) |
 | `IMPORT_INVALID` | 422 | The CSV file has problems; `details` lists every `{ row, column, message }` and nothing was saved |

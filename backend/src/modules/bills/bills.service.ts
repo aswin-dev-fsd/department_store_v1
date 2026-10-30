@@ -9,8 +9,13 @@ import {
   financialYear,
   formatBillNo,
   type Bill,
+  type BillSummary,
+  type CancelBillInput,
   type ComputedBill,
   type CreateBillInput,
+  type ListBillsQuery,
+  type Page,
+  type Receipt,
 } from '@ds/shared';
 import { logAudit } from '../../lib/audit.js';
 import { AppError, NotFoundError, ValidationError } from '../../lib/errors.js';
@@ -19,7 +24,13 @@ import { findOrCreateByPhone } from '../customers/customers.service.js';
 import { postMovements } from '../stock/stock.service.js';
 import { allocateBillSeq } from './bill-number.service.js';
 import * as model from './bills.model.js';
-import type { BillDetailRow, BillLineRow, BillPaymentRow, SellableItem } from './bills.model.js';
+import type {
+  BillDetailRow,
+  BillLineRow,
+  BillPaymentRow,
+  BillSummaryRow,
+  SellableItem,
+} from './bills.model.js';
 
 function toBill(row: BillDetailRow, lines: BillLineRow[], payments: BillPaymentRow[]): Bill {
   return {
@@ -232,5 +243,130 @@ export async function createBill(
       ip,
     });
     return loadBill(tx, branchId, bill.id);
+  });
+}
+
+function toSummary(row: BillSummaryRow): BillSummary {
+  return {
+    id: row.id,
+    billNo: row.billNo,
+    billDate: row.billDate,
+    status: row.status,
+    cashier: { id: row.cashierId, fullName: row.cashierName },
+    customer:
+      row.customerPhone === null ? null : { phone: row.customerPhone, name: row.customerName },
+    totalPaise: row.totalPaise,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/** A moment as IST wall-clock text for the receipt, like '30-10-2026 14:05' (fixed UTC+05:30). */
+export function istDateTime(at: Date): string {
+  const ist = new Date(at.getTime() + (5 * 60 + 30) * 60 * 1000).toISOString();
+  return `${ist.slice(8, 10)}-${ist.slice(5, 7)}-${ist.slice(0, 4)} ${ist.slice(11, 16)}`;
+}
+
+/** One page of the branch's bills, newest first, filtered as asked. */
+export async function listBills(
+  db: Db,
+  branchId: number,
+  query: ListBillsQuery,
+): Promise<Page<BillSummary>> {
+  const { rows, total } = await model.listBills(db, branchId, query);
+  return { items: rows.map(toSummary), total, limit: query.limit, offset: query.offset };
+}
+
+/** A bill of the branch with its lines and payments; another branch's is not found. */
+export async function getBill(db: Db, branchId: number, id: number): Promise<Bill> {
+  return loadBill(db, branchId, id);
+}
+
+/**
+ * Everything the 80mm receipt prints (Task 5.9): the business and branch details, the bill with
+ * its lines, totals and payments, the cashier, and the time in IST. A cancelled bill's receipt
+ * says so. Another branch's bill is not found.
+ */
+export async function getReceipt(db: Db, branchId: number, id: number): Promise<Receipt> {
+  const bill = await loadBill(db, branchId, id);
+  const { settings, branch } = await model.findReceiptHeader(db, branchId);
+  if (!settings || !branch) {
+    throw new NotFoundError('The business has not been set up yet', 'NOT_SET_UP');
+  }
+  return {
+    business: {
+      name: settings.businessName,
+      address: settings.address,
+      phone: settings.phone,
+      gstin: settings.gstin,
+    },
+    branch: {
+      code: branch.code,
+      name: branch.name,
+      address: branch.address,
+      phone: branch.phone,
+      footer: branch.billFooter,
+    },
+    billNo: bill.billNo,
+    billDate: bill.billDate,
+    issuedAtIst: istDateTime(new Date(bill.createdAt)),
+    cashierName: bill.cashier.fullName,
+    customer: bill.customer && { phone: bill.customer.phone, name: bill.customer.name },
+    lines: bill.lines,
+    subtotalPaise: bill.subtotalPaise,
+    discountPaise: bill.discountPaise,
+    roundOffPaise: bill.roundOffPaise,
+    totalPaise: bill.totalPaise,
+    payments: bill.payments,
+    status: bill.status,
+    cancelReason: bill.cancelReason,
+  };
+}
+
+/**
+ * Cancel a bill with a reason, in one transaction (D-14; overview §7.4): lock it and check it is
+ * still completed (a cancelled bill answers DOCUMENT_LOCKED), put every line's quantity back
+ * through the ledger (`sale_cancel`), mark it cancelled and audit it. The bill keeps its number;
+ * the money is refunded outside the system. Another branch's bill is not found.
+ */
+export async function cancelBill(
+  db: Db,
+  ctx: RequestContext,
+  branchId: number,
+  id: number,
+  input: CancelBillInput,
+  ip: string | null,
+): Promise<Bill> {
+  return db.transaction(async (tx) => {
+    const current = await model.findBillForUpdate(tx, branchId, id);
+    if (!current) {
+      throw new NotFoundError('Bill not found');
+    }
+    if (current.status !== 'completed') {
+      throw new AppError('DOCUMENT_LOCKED', 'This bill is already cancelled');
+    }
+    const lines = await model.findLines(tx, id);
+    await postMovements(tx, {
+      branchId,
+      userId: ctx.user.id,
+      movements: lines.map((line) => ({
+        itemId: line.itemId,
+        quantity: line.quantity,
+        type: 'sale_cancel',
+        refType: 'bill',
+        refId: id,
+      })),
+    });
+    await model.markCancelled(tx, id, ctx.user.id, input.reason);
+    await logAudit(tx, {
+      actorId: ctx.user.id,
+      branchId,
+      action: 'bill.cancel',
+      entity: 'bill',
+      entityId: id,
+      before: { status: 'completed' },
+      after: { status: 'cancelled', reason: input.reason, billNo: current.billNo },
+      ip,
+    });
+    return loadBill(tx, branchId, id);
   });
 }

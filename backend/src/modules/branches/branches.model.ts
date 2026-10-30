@@ -2,7 +2,7 @@
 import { schema, type DbOrTx } from '@ds/database';
 import { asc, eq, sql } from 'drizzle-orm';
 
-const { branches } = schema;
+const { bills, branches } = schema;
 
 export type BranchRow = typeof branches.$inferSelect;
 
@@ -72,4 +72,14 @@ export async function updateBranch(
     throw new Error(`Branch ${id} disappeared while it was being updated`);
   }
   return row;
+}
+
+/** Whether the branch has any bill, completed or cancelled: its code is then in bill numbers. */
+export async function branchHasBills(db: DbOrTx, branchId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ id: bills.id })
+    .from(bills)
+    .where(eq(bills.branchId, branchId))
+    .limit(1);
+  return row !== undefined;
 }

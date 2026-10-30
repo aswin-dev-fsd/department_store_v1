@@ -104,7 +104,13 @@ export async function updateBranch(
       if (!changes) {
         return toBranch(current);
       }
-      // TODO(5.6): once the branch has bills, its code is fixed (answer CODE_LOCKED here)
+      // Once the branch has bills its code is in their numbers (D-15), so it can no longer change
+      if (changes.after.code !== undefined && (await model.branchHasBills(tx, id))) {
+        throw new AppError(
+          'CODE_LOCKED',
+          'This branch already has bills, so its code can no longer change',
+        );
+      }
       const updated = await model.updateBranch(tx, id, changes.after);
       const statusChange =
         changes.after.isActive === undefined

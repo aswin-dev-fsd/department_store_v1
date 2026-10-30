@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createBillSchema, MAX_BILL_LINE_QUANTITY, MAX_BILL_LINES } from './bills.js';
+import {
+  cancelBillSchema,
+  createBillSchema,
+  listBillsQuerySchema,
+  MAX_BILL_LINE_QUANTITY,
+  MAX_BILL_LINES,
+} from './bills.js';
 
 function firstIssuePath(result: {
   success: boolean;
@@ -69,5 +75,58 @@ describe('createBillSchema', () => {
     ['a bad phone', { customer: { phone: '12345' } }, 'customer.phone'],
   ])('refuses %s', (_label, overrides, path) => {
     expect(firstIssuePath(createBillSchema.safeParse({ ...valid(), ...overrides }))).toBe(path);
+  });
+});
+
+describe('cancelBillSchema', () => {
+  it('trims the reason and allows 3 to 200 characters', () => {
+    expect(cancelBillSchema.parse({ reason: '  Wrong item ' })).toEqual({ reason: 'Wrong item' });
+    expect(cancelBillSchema.safeParse({ reason: 'Dup' }).success).toBe(true);
+    expect(cancelBillSchema.safeParse({ reason: 'x'.repeat(200) }).success).toBe(true);
+  });
+
+  it.each([
+    ['missing', {}],
+    ['2 characters after trimming', { reason: ' ab ' }],
+    ['201 characters', { reason: 'x'.repeat(201) }],
+  ])('refuses a reason that is %s', (_label, input) => {
+    expect(firstIssuePath(cancelBillSchema.safeParse(input))).toBe('reason');
+  });
+});
+
+describe('listBillsQuerySchema', () => {
+  it('defaults the page and leaves every filter out', () => {
+    expect(listBillsQuerySchema.parse({})).toEqual({ limit: 20, offset: 0 });
+  });
+
+  it('reads every filter, normalising the phone and dropping a blank bill number', () => {
+    expect(
+      listBillsQuerySchema.parse({
+        from: '2026-10-01',
+        to: '2026-10-31',
+        billNo: '  ',
+        phone: '+91 98765 43210',
+        cashierId: '4',
+        status: 'cancelled',
+      }),
+    ).toEqual({
+      from: '2026-10-01',
+      to: '2026-10-31',
+      phone: '9876543210',
+      cashierId: 4,
+      status: 'cancelled',
+      limit: 20,
+      offset: 0,
+    });
+  });
+
+  it.each([
+    ['a day that does not exist', { from: '2026-02-30' }, 'from'],
+    ['an end date before the start', { from: '2026-10-31', to: '2026-10-01' }, 'to'],
+    ['a bad phone', { phone: '12345' }, 'phone'],
+    ['a cashier id of 0', { cashierId: '0' }, 'cashierId'],
+    ['an unknown status', { status: 'void' }, 'status'],
+  ])('refuses %s', (_label, query, path) => {
+    expect(firstIssuePath(listBillsQuerySchema.safeParse(query))).toBe(path);
   });
 });

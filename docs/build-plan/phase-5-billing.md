@@ -220,6 +220,14 @@
 
 **Commit:** `feat(bills): add bill cancel, lookup and receipt data`
 
+**As built (2026-10-30):**
+- **Files:** the named service, routes and two tests, and `branches.service.ts` (the `TODO(5.6)` replaced); plus `cancelBillSchema`, `listBillsQuerySchema`, `BillSummary` and `Receipt` in `shared/src/schemas/bills.ts` (with schema tests and exports), the queries in `bills.model.ts`, `branchHasBills` in `branches.model.ts`, the controller handlers, and a `CODE_LOCKED` row in the overview's error codes.
+- **Cancel:** one transaction: lock the bill (branch-scoped), check it is completed (`DOCUMENT_LOCKED` otherwise, so two parallel cancels put the stock back once), `postMovements` with one `sale_cancel` per line, mark cancelled, audit `bill.cancel` with the bill number. Reason 3–200 characters, as for purchases.
+- **List:** newest first by save time; `from`/`to` compare the business date (both ends included); `billNo` matches any part, ignoring case (wildcards escaped); `phone` is normalised like at the counter; `cashierId` and `status` filters.
+- **Receipt:** the data only; the screen prints it (Task 5.9). `issuedAtIst` is the save time as `DD-MM-YYYY HH:MM` in IST, worked out with the fixed offset like the business date.
+- **Branch code:** locked once the branch has any bill, cancelled ones included, because their numbers carry the code. Other edits, and sending the same code, still work.
+- **Not run:** under option 3 the 30 route tests and 11 schema tests are written but not run; the box is ticked at Checkpoint 5A.
+
 ---
 
 ## 🛑 Checkpoint 5A — money core review

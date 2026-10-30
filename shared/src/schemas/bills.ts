@@ -2,8 +2,10 @@
 // quantities, line discounts, payments and an optional customer: every price and total is the
 // server's. The schemas are strict, so a price field sent by the client is refused, not ignored.
 import { z } from 'zod';
+import { searchTextSchema, wholeNumberText } from './common.js';
 import { customerNameSchema, phoneSchema, type Customer } from './customers.js';
 import { MAX_PRICE_PAISE } from './items.js';
+import { paginationSchema } from './pagination.js';
 
 /** How a bill can be paid (D-16). Must match the database `payment_mode` enum (tested). */
 export const PAYMENT_MODES = ['cash', 'upi', 'card'] as const;
@@ -62,6 +64,58 @@ export const createBillSchema = z.strictObject({
 });
 export type CreateBillInput = z.infer<typeof createBillSchema>;
 
+/** Why a bill is cancelled (D-14): trimmed, 3–200 characters, required. */
+export const cancelBillSchema = z.strictObject({
+  reason: z
+    .string({ error: 'Enter the reason for cancelling' })
+    .trim()
+    .min(3, 'Enter the reason for cancelling (at least 3 characters)')
+    .max(200, 'Use at most 200 characters'),
+});
+export type CancelBillInput = z.infer<typeof cancelBillSchema>;
+
+/** A YYYY-MM-DD date in a query string; a day that does not exist is refused. */
+const queryDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter the date as YYYY-MM-DD')
+  .refine((value) => {
+    const date = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+  }, 'Enter a real date');
+
+/**
+ * Find bills (overview §7.4): by business date range (both ends included), any part of the bill
+ * number, the customer's phone (any common format), the cashier and the status. Newest first.
+ */
+export const listBillsQuerySchema = paginationSchema
+  .extend({
+    from: queryDateSchema.optional(),
+    to: queryDateSchema.optional(),
+    billNo: searchTextSchema,
+    phone: phoneSchema.optional(),
+    cashierId: wholeNumberText('Must be a positive whole number')
+      .pipe(z.number().int().min(1, 'Must be a positive whole number'))
+      .optional(),
+    status: z.enum(BILL_STATUSES).optional(),
+  })
+  .refine((query) => query.from === undefined || query.to === undefined || query.from <= query.to, {
+    path: ['to'],
+    message: 'The end date cannot be before the start date',
+  });
+export type ListBillsQuery = z.infer<typeof listBillsQuerySchema>;
+
+/** A bill in a list. */
+export interface BillSummary {
+  id: number;
+  billNo: string;
+  billDate: string;
+  status: BillStatus;
+  cashier: { id: number; fullName: string };
+  customer: { phone: string; name: string | null } | null;
+  totalPaise: number;
+  createdAt: string;
+}
+
 /** One line of a saved bill: the item's name, code and prices as they were at the sale. */
 export interface BillLine {
   lineNo: number;
@@ -103,4 +157,24 @@ export interface Bill {
   cancelledAt: string | null;
   cancelReason: string | null;
   createdAt: string;
+}
+
+/** Everything an 80mm receipt prints (Task 5.9); the screen formats it, the server decides it. */
+export interface Receipt {
+  business: { name: string; address: string | null; phone: string | null; gstin: string | null };
+  branch: { code: string; name: string; address: string; phone: string | null; footer: string | null };
+  billNo: string;
+  billDate: string;
+  /** When the bill was saved, in IST, like '30-10-2026 14:05'. */
+  issuedAtIst: string;
+  cashierName: string;
+  customer: { phone: string; name: string | null } | null;
+  lines: BillLine[];
+  subtotalPaise: number;
+  discountPaise: number;
+  roundOffPaise: number;
+  totalPaise: number;
+  payments: BillPayment[];
+  status: BillStatus;
+  cancelReason: string | null;
 }
