@@ -397,3 +397,5 @@ After the fix (`f23d857`) the whole gate passed: lint, format, types, `check:i18
 - Make a few bills (one split, one cancelled), then open **Reports → My day-end** as each cashier and the Admin's **Reports**, and check the numbers by hand.
 - Make an adjustment and see it in the item's history.
 - Confirm or change the proposed items above.
+
+**User's answers on the Checkpoint 5 proposed items (2026-10-30):** F2 / F8 / F9 kept, but shown on the screen better without getting in the way (to build). Cancel reason of 3–200 characters confirmed. Rounding wanted as an option (PD-07). Receipt layout (PD-05), phone numbers (PD-06) and the printer (PD-04) marked pending. Asked what the % discount, the "₹0" default, the payment rule and the line and bill caps mean; answered in chat. The counter checklist run starts now.

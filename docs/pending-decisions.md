@@ -66,6 +66,24 @@ To settle:
 - Silent printing (Chrome kiosk-printing mode) or the normal print dialog
 - Whether a cash drawer needs to open on print
 
+### PD-05 — Receipt layout
+Status: Pending (user, 2026-10-30). Built as Task 5.9: 80mm, the business and branch header, bill number, IST date and time, cashier, customer, lines, totals, payments and the branch footer. The GSTIN is left off while GST (PD-01) is pending.
+
+To settle:
+- What the receipt must show, and whether the GSTIN prints once GST is decided
+
+### PD-06 — Customer phone numbers
+Status: Pending (user, 2026-10-30). Built as Task 5.4: Indian mobile numbers only (10 digits starting 6–9; +91, 91 or a leading 0 are dropped), so landlines are refused.
+
+To settle:
+- Whether landlines or other formats must be accepted
+
+### PD-07 — Rounding the bill total
+Status: Pending (user, 2026-10-30). Built as Task 5.2: every bill total is rounded to the nearest rupee, and exactly 50 paise rounds up. The user wants it as an option: rounding only when it is wanted.
+
+To settle:
+- Where the option lives (a store setting, or a choice at the counter per bill) and what the default is
+
 ## Decided
 
 | ID | Topic | Decision | Date |
