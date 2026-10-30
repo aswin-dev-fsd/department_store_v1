@@ -254,10 +254,7 @@ describe('new prices', () => {
   it.each([
     ['a new selling price above the current MRP', { newSellingPricePaise: 10001 }],
     ['a new MRP below the current selling price', { newMrpPaise: 8999 }],
-    [
-      'a new selling price above the new MRP',
-      { newMrpPaise: 12000, newSellingPricePaise: 12001 },
-    ],
+    ['a new selling price above the new MRP', { newMrpPaise: 12000, newSellingPricePaise: 12001 }],
   ])('refuses %s with 422, and saves nothing', async (_label, prices) => {
     const c = await counter();
     const id = await draft(c, [line(c.dal, 3, 100), line(c.rice, 4, 100, prices)]);

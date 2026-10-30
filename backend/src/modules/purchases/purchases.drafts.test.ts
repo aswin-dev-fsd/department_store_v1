@@ -822,9 +822,9 @@ describe('GET /purchases', () => {
     const { early, middle, late } = await threePurchases(c);
     expect((await list(c, '?from=2026-10-15')).items.map((p) => p.id)).toEqual([late, middle]);
     expect((await list(c, '?to=2026-10-15')).items.map((p) => p.id)).toEqual([middle, early]);
-    expect(
-      (await list(c, '?from=2026-10-15&to=2026-10-15')).items.map((p) => p.id),
-    ).toEqual([middle]);
+    expect((await list(c, '?from=2026-10-15&to=2026-10-15')).items.map((p) => p.id)).toEqual([
+      middle,
+    ]);
   });
 
   it('combines the filters', async () => {

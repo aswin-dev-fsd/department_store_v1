@@ -215,9 +215,7 @@ export async function activeItemIdsInBranch(
   const rows = await db
     .select({ id: items.id })
     .from(items)
-    .where(
-      and(inArray(items.id, itemIds), eq(items.branchId, branchId), eq(items.isActive, true)),
-    );
+    .where(and(inArray(items.id, itemIds), eq(items.branchId, branchId), eq(items.isActive, true)));
   return new Set(rows.map((row) => row.id));
 }
 

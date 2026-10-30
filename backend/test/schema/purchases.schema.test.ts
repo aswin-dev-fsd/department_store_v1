@@ -9,6 +9,7 @@ const { db, pool } = createTestDb();
 const UNIQUE_VIOLATION = '23505';
 const CHECK_VIOLATION = '23514';
 const FOREIGN_KEY_VIOLATION = '23503';
+const RESTRICT_VIOLATION = '23001';
 const NOT_NULL_VIOLATION = '23502';
 const INVALID_ENUM_VALUE = '22P02';
 
@@ -147,17 +148,17 @@ describe('purchases', () => {
 
   it('refuses an unknown status', async () => {
     const { branch, user, vendor } = await setup();
-    await expect(
-      insertPurchase(branch, vendor, user, { status: 'deleted' }),
-    ).rejects.toMatchObject({ code: INVALID_ENUM_VALUE });
+    await expect(insertPurchase(branch, vendor, user, { status: 'deleted' })).rejects.toMatchObject(
+      { code: INVALID_ENUM_VALUE },
+    );
   });
 
   it('refuses the same vendor invoice twice in a branch, in any letter case, drafts included', async () => {
     const { branch, user, vendor } = await setup();
     await insertPurchase(branch, vendor, user, { invoice: 'INV-1' });
-    await expect(
-      insertPurchase(branch, vendor, user, { invoice: 'inv-1' }),
-    ).rejects.toMatchObject({ code: UNIQUE_VIOLATION });
+    await expect(insertPurchase(branch, vendor, user, { invoice: 'inv-1' })).rejects.toMatchObject({
+      code: UNIQUE_VIOLATION,
+    });
   });
 
   it('refuses it while the earlier one is posted, too', async () => {
@@ -288,6 +289,6 @@ describe('purchase_lines', () => {
     const purchase = await insertPurchase(branch, vendor, user);
     await insertLine(purchase, item);
     const deletion = pool.query(`delete from purchases where id = $1`, [purchase]);
-    await expect(deletion).rejects.toMatchObject({ code: FOREIGN_KEY_VIOLATION });
+    await expect(deletion).rejects.toMatchObject({ code: RESTRICT_VIOLATION });
   });
 });

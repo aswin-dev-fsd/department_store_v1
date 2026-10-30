@@ -24,12 +24,7 @@ import {
   postPurchaseOptions,
   updatePurchaseOptions,
 } from './mutations';
-import {
-  DEFAULT_PURCHASE_FILTERS,
-  itemLookupPaths,
-  itemSearchPath,
-  purchasesPath,
-} from './paths';
+import { DEFAULT_PURCHASE_FILTERS, itemLookupPaths, itemSearchPath, purchasesPath } from './paths';
 
 const rice = { id: 7, code: 'R10', name: 'Rice 10 kg' };
 

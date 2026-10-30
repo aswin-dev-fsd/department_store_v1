@@ -54,8 +54,7 @@ function toPurchase(row: PurchaseDetailRow, lines: PurchaseLineRow[]): Purchase 
     ...toSummary(row),
     notes: row.notes,
     createdBy: { id: row.createdBy, fullName: row.createdByName },
-    postedBy:
-      row.postedBy === null ? null : { id: row.postedBy, fullName: row.postedByName ?? '' },
+    postedBy: row.postedBy === null ? null : { id: row.postedBy, fullName: row.postedByName ?? '' },
     postedAt: row.postedAt?.toISOString() ?? null,
     cancelledBy:
       row.cancelledBy === null

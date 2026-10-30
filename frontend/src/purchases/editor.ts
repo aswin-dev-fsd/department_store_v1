@@ -1,9 +1,4 @@
-import {
-  purchaseDraftSchema,
-  type Item,
-  type Purchase,
-  type PurchaseDraftInput,
-} from '@ds/shared';
+import { purchaseDraftSchema, type Item, type Purchase, type PurchaseDraftInput } from '@ds/shared';
 import { ApiError } from '../api/client';
 import { paiseToInput, parseRupees } from '../catalog/forms';
 import type { FieldErrors } from '../forms/fieldErrors';
@@ -147,8 +142,7 @@ function addError(errors: FieldErrors, field: string, message: string): void {
 }
 
 export type DraftResult =
-  | { ok: true; draft: PurchaseDraftInput }
-  | { ok: false; errors: FieldErrors };
+  { ok: true; draft: PurchaseDraftInput } | { ok: false; errors: FieldErrors };
 
 /**
  * Turn the editor's text into the API's draft, checked with the server's own schema. A price that
