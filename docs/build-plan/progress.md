@@ -399,3 +399,5 @@ After the fix (`f23d857`) the whole gate passed: lint, format, types, `check:i18
 - Confirm or change the proposed items above.
 
 **User's answers on the Checkpoint 5 proposed items (2026-10-30):** F2 / F8 / F9 kept, but shown on the screen better without getting in the way (to build). Cancel reason of 3–200 characters confirmed. Rounding wanted as an option (PD-07). Receipt layout (PD-05), phone numbers (PD-06) and the printer (PD-04) marked pending. Asked what the % discount, the "₹0" default, the payment rule and the line and bill caps mean; answered in chat. The counter checklist run starts now.
+
+**Counter checklist fix 1 (2026-10-30):** typing a name showed the match list, but Enter first tried an exact barcode/code and then searched again, so a second Enter was needed. `ItemPicker` now picks the highlighted item on the first Enter when nothing matches exactly (the exact barcode/code still wins, so scans are unchanged). Shared with the purchase editor.

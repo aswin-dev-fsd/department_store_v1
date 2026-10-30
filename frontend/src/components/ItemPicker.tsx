@@ -37,8 +37,9 @@ function looksLikeName(text: string): boolean {
  * Pick an active item of the branch, the fast way first: scan a barcode or type a code and press
  * Enter. Typing letters lists the names that match as you type; arrow keys move, Enter picks the
  * one moved to, Escape closes. Enter without moving always tries the exact barcode or code first,
- * so a scanned or typed code is never mistaken for a name match; if nothing matches exactly, the
- * text is searched and listed, and a second Enter picks the first. Used by purchases and billing.
+ * so a scanned or typed code is never mistaken for a name match; if nothing matches exactly, it
+ * picks the highlighted item of the list on screen, or, with no list yet, searches and lists the
+ * text, and a second Enter picks the first. Used by purchases and billing.
  */
 export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: ItemPickerProps) {
   const id = useId();
@@ -81,7 +82,8 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
     setListChosen(false);
   }
 
-  async function find() {
+  /** Enter: the exact barcode or code first; otherwise the highlighted item of a list on screen. */
+  async function find(shown: Item | undefined) {
     const query = text.trim();
     if (query === '' || busy) return;
     setBusy(true);
@@ -91,6 +93,10 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
       const exact = await findExact(query);
       if (exact) {
         pick(exact);
+        return;
+      }
+      if (shown) {
+        pick(shown);
         return;
       }
       const page = await api.get<Page<Item>>(itemSearchPath(query));
@@ -123,7 +129,7 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
     } else if (event.key === 'Enter') {
       event.preventDefault();
       if (matches && listChosen && matches[active]) pick(matches[active]);
-      else void find();
+      else void find(matches?.[active]);
     }
   }
 
