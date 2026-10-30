@@ -133,6 +133,14 @@
 
 **Commit:** `feat(customers): add customer lookup`
 
+**As built (2026-10-30):**
+- **Files:** the named shared schema, routes, controller, service and test (`customers.test.ts`: the route and the service against the test database), plus `customers.model.ts`, a shared schema test, the export in `shared/src/index.ts` and the `/customers` registration.
+- **`normalisePhone`:** spaces, dashes, dots and brackets are dropped and a leading `+91`, `91` (12 digits) or `0` (11 digits) removed; the result must be 10 digits starting 6–9, or it is refused (null, and 422 through `phoneSchema`). Landlines are refused, as the task says.
+- **`GET /customers/lookup?phone=`:** `bill:create`; no active branch needed, because customers are client-wide. It finds, or answers 404; it never creates.
+- **`findOrCreateByPhone(tx, phone, name, by)`:** runs in the bill's transaction (Task 5.5). `INSERT … ON CONFLICT (phone) DO NOTHING`, then reads the row, so two counters creating one phone get the same customer. A name fills in a missing one, never replaces a known one. **Deviation:** a 4th argument `by` (`actorId`, `branchId`, `ip`) the task's signature lacks, because creating or naming a customer is a write and D-30 audits it (`customer.create`, `customer.update`).
+- **Not run:** under option 3 the 17 route and service tests and 25 schema tests are written but not run.
+- **Not in the task, so not built (proposed for you):** editing a customer's name or phone later (a known name is never changed at the counter).
+
 ---
 
 ## Task 5.5 — Create a bill

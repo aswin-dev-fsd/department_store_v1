@@ -3,6 +3,7 @@ import type { AppDeps } from './deps.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { branchesRoutes } from './modules/branches/branches.routes.js';
 import { categoriesRoutes } from './modules/categories/categories.routes.js';
+import { customersRoutes } from './modules/customers/customers.routes.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { importRoutes } from './modules/import/import.routes.js';
 import { itemsRoutes } from './modules/items/items.routes.js';
@@ -22,6 +23,7 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/admin/settings', settingsRoutes(deps));
   router.use('/admin/users', usersRoutes(deps));
   router.use('/categories', categoriesRoutes(deps));
+  router.use('/customers', customersRoutes(deps));
   router.use('/items', itemsRoutes(deps));
   router.use('/purchases', purchasesRoutes(deps));
   router.use('/stock', stockRoutes(deps));

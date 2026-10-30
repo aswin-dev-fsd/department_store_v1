@@ -45,6 +45,15 @@ export {
   type ListCategoriesQuery,
   type UpdateCategoryInput,
 } from './schemas/categories.js';
+export {
+  customerNameSchema,
+  lookupCustomerQuerySchema,
+  normalisePhone,
+  PHONE_MESSAGE,
+  phoneSchema,
+  type Customer,
+  type LookupCustomerQuery,
+} from './schemas/customers.js';
 export { idParamSchema, optionalText, wholeNumberText, type IdParams } from './schemas/common.js';
 export {
   IMPORT_COLUMNS,
