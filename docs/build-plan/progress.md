@@ -2,7 +2,7 @@
 
 The agent updates this file after every task (protocol step 7). Status values: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED`.
 
-**Current phase:** 2 — Access (Phase 0 and Phase 1 done 2026-10-10)
+**Current phase:** 5 — Billing (Phases 0–4 done; Checkpoint 4 closed 2026-10-30). One agent session works on `main`; the two-session rules added on 2026-10-30 (`e3f5007`) were withdrawn the same day.
 
 ## Phase 0 — Pre-flight
 

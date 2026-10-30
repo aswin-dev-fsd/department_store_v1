@@ -15,39 +15,6 @@ Project rules for this repo. They sit on top of `D:\DreamLand\AGENTS.md`; where 
 | §8 `shared/utils/errors.js` | `backend/src/lib/errors.ts` — same classes and status codes, plus `ForbiddenError` (403) for permission checks; a zod failure becomes `ValidationError` (422). |
 | §11 `src/config/env.js` | `backend/src/config/env.ts`, validated with zod at startup. |
 
-## Parallel sessions (from 2026-10-30)
-
-Two agent sessions work on this repo at the same time. Each must know which one it is, and stay in its own lane.
-
-| Session | Works on | Folder | Branch |
-|---|---|---|---|
-| **A** (the first chat) | Checkpoint 4, then Phase 5 (billing) | `D:\DreamLand\Projects\Department_Store\department_store_v1` | `main` |
-| **B** (the second chat) | Phase 6 (adjustments and reports) | `D:\DreamLand\Projects\Department_Store\department_store_v1-phase6` (a git worktree) | `phase-6` |
-
-If you don't know which session you are, ask the user before editing anything.
-
-**Session B starts by making its own worktree**, never by working in session A's folder:
-`git -C D:\DreamLand\Projects\Department_Store\department_store_v1 worktree add ..\department_store_v1-phase6 -b phase-6`. Then it runs `npm ci` there and copies the root `.env` into it. It never prints that file.
-
-**Rules for both sessions:**
-- **Your own folder only.** Never edit, stage or commit files in the other session's folder. Never run `git add -A` outside your own folder. Never `git stash`, reset, rebase or check out in the other folder.
-- **Your own phase only.** Edit only the files your phase's tasks name, plus their tests and the usual registration files.
-- **Shared files** (`docs/build-plan/progress.md`, `frontend/src/i18n/en.ts`, `shared/src/index.ts`, `backend/src/routes.ts`, `frontend/src/App.tsx`, `frontend/src/components/AppShell.tsx`, `shared/src/permissions.ts`, `docs/project-overview.md`, `docs/architecture.md`): add your own lines and change nothing else. In `progress.md`, touch only your own phase's rows and your own checkpoint summary.
-- **Pushes:**
-  - Session A pushes to `main` as before, and every push deploys staging.
-  - Session B pushes only to `origin/phase-6`. It never pushes to `main` and never merges `phase-6` into `main`. That merge happens only when the user says so, after rebasing `phase-6` on `main` and running the full gate.
-  - Session B rebases `phase-6` on `origin/main` whenever it needs Phase 5's work, and before every merge request.
-- **Migrations:** only session A creates migrations while both run (Phase 5 adds the billing tables). Phase 6 is planned without one. If session B finds it needs a migration, it stops and asks the user, so two migrations never take the same number.
-- **Dependencies on Phase 5:**
-  - Tasks 6.2, 6.3, 6.6 (the parts that read bills) and 6.8 need Phase 5's bill tables and Task 5.2's `businessDate`.
-  - Session B marks them BLOCKED (protocol step 2) until those tasks are DONE on `origin/main` and `phase-6` has been rebased onto it.
-  - Session B can do 6.1, 6.4, 6.5 and 6.7 now.
-- **One database user at a time.**
-  - The backend tests empty every table of the shared TEST database (`resetDb`), so two test runs at once break each other.
-  - Before running backend tests, sabotage proofs, a migration or `db:seed` against any shared database (test, dev or staging), ask the user whether the other session is doing the same. Run only after a yes.
-- **Dev servers:** session A uses the ports in `.claude/launch.json` (4000, 5173). Session B asks the user before starting a server, so the two don't fight over the ports.
-- **Packages:** ask the user before `npm install` of anything new. Both sessions share one `package-lock.json` through the merge, so a package added on one branch must be merged with care.
-
 ## Read before you work
 
 - **`docs/build-plan/README.md`** — before any build task: the agent protocol. `docs/build-plan/progress.md` names the next task.
