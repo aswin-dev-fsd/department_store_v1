@@ -1,4 +1,9 @@
-import type { IdParams, ListPurchasesQuery, PurchaseDraftInput } from '@ds/shared';
+import type {
+  CancelPurchaseInput,
+  IdParams,
+  ListPurchasesQuery,
+  PurchaseDraftInput,
+} from '@ds/shared';
 import type { RequestHandler } from 'express';
 import type { AppDeps } from '../../deps.js';
 import { activeBranchId } from '../../lib/branch-scope.js';
@@ -61,5 +66,18 @@ export function purchasesController({ db }: AppDeps) {
     res.json(success(purchase));
   };
 
-  return { list, get, create, update, post };
+  const cancel: RequestHandler = async (req, res) => {
+    const { id } = req.params as unknown as IdParams;
+    const purchase = await service.cancelPurchase(
+      db,
+      requestContext(req),
+      activeBranchId(req),
+      id,
+      req.body as CancelPurchaseInput,
+      req.ip ?? null,
+    );
+    res.json(success(purchase));
+  };
+
+  return { list, get, create, update, post, cancel };
 }

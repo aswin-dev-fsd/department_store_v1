@@ -1,4 +1,9 @@
-import { idParamSchema, listPurchasesQuerySchema, purchaseDraftSchema } from '@ds/shared';
+import {
+  cancelPurchaseSchema,
+  idParamSchema,
+  listPurchasesQuerySchema,
+  purchaseDraftSchema,
+} from '@ds/shared';
 import { Router } from 'express';
 import type { AppDeps } from '../../deps.js';
 import { requireAuth } from '../../middleware/auth.js';
@@ -8,12 +13,13 @@ import { purchasesController } from './purchases.controller.js';
 
 /**
  * /api/v1/purchases — the active branch's purchases (cashiers; not the Admin). Reading and drafts
- * need permission purchase:write; posting needs purchase:post.
+ * need permission purchase:write; posting needs purchase:post, cancelling purchase:cancel.
  * - GET  /      list (?status=&vendorId=&from=&to=&limit=20&offset=0), newest invoice date first
  * - GET  /:id   one purchase with its lines
  * - POST /      create a draft
  * - PUT  /:id   replace a draft's header and all its lines (400 DOCUMENT_LOCKED once posted)
  * - POST /:id/post  post a draft: stock in, new prices applied, locked
+ * - POST /:id/cancel  cancel a posted purchase with { reason }: stock out (unless already sold)
  * Every route needs a chosen branch (403 NO_ACTIVE_BRANCH), after the permission check.
  */
 export function purchasesRoutes(deps: AppDeps): Router {
@@ -54,6 +60,13 @@ export function purchasesRoutes(deps: AppDeps): Router {
     requireBranch,
     validate({ params: idParamSchema }),
     controller.post,
+  );
+  router.post(
+    '/:id/cancel',
+    requirePermission('purchase:cancel'),
+    requireBranch,
+    validate({ params: idParamSchema, body: cancelPurchaseSchema }),
+    controller.cancel,
   );
   return router;
 }

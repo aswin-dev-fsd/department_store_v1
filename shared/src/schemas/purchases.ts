@@ -111,6 +111,16 @@ export const listPurchasesQuerySchema = paginationSchema
   });
 export type ListPurchasesQuery = z.infer<typeof listPurchasesQuerySchema>;
 
+/** Why a posted purchase is cancelled: trimmed, 3–200 characters, required. */
+export const cancelPurchaseSchema = z.object({
+  reason: z
+    .string({ error: 'Enter the reason for cancelling' })
+    .trim()
+    .min(3, 'Enter the reason for cancelling (at least 3 characters)')
+    .max(200, 'Use at most 200 characters'),
+});
+export type CancelPurchaseInput = z.infer<typeof cancelPurchaseSchema>;
+
 /** Someone who created, posted or cancelled a purchase. */
 export interface PurchaseUser {
   id: number;

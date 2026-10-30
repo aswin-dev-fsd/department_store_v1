@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_PRICE_PAISE } from './items.js';
 import {
+  cancelPurchaseSchema,
   listPurchasesQuerySchema,
   MAX_LINE_QUANTITY,
   MAX_PURCHASE_LINES,
@@ -190,5 +191,27 @@ describe('listPurchasesQuerySchema', () => {
     ['an end date before the start', { from: '2026-10-31', to: '2026-10-01' }, 'to'],
   ])('refuses %s', (_label, query, path) => {
     expect(firstIssuePath(listPurchasesQuerySchema.safeParse(query))).toBe(path);
+  });
+});
+
+describe('cancelPurchaseSchema', () => {
+  it('trims the reason', () => {
+    expect(cancelPurchaseSchema.parse({ reason: '  Wrong invoice ' })).toEqual({
+      reason: 'Wrong invoice',
+    });
+  });
+
+  it('allows 3 to 200 characters', () => {
+    expect(cancelPurchaseSchema.safeParse({ reason: 'Dup' }).success).toBe(true);
+    expect(cancelPurchaseSchema.safeParse({ reason: 'x'.repeat(200) }).success).toBe(true);
+  });
+
+  it.each([
+    ['missing', {}],
+    ['blank', { reason: '   ' }],
+    ['2 characters after trimming', { reason: ' ab ' }],
+    ['201 characters', { reason: 'x'.repeat(201) }],
+  ])('refuses a reason that is %s', (_label, input) => {
+    expect(firstIssuePath(cancelPurchaseSchema.safeParse(input))).toBe('reason');
   });
 });

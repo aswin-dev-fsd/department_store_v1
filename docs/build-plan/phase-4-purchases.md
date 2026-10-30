@@ -127,6 +127,14 @@
 
 **Commit:** `feat(purchases): cancel posted purchases`
 
+**As built (2026-10-30):**
+- **Files:** the named service, routes and test (`purchases.cancel.test.ts`), plus `cancelPurchaseSchema` in `shared/src/schemas/purchases.ts` (with its export and schema tests), `markCancelled` in `purchases.model.ts` and a `cancel` handler in the controller. No migration, no new package.
+- **The transaction**, in the task's order: lock the purchase and check it is `posted`; `postMovements` with one − movement per line (`purchase_cancel`, refType `purchase`), which throws `INSUFFICIENT_STOCK` with the short items before writing anything; mark cancelled (`cancelled_by`, `cancelled_at`, `cancel_reason`); audit `purchase.cancel` (before `{status: posted}`, after the status and reason).
+- **Reason:** trimmed, 3–200 characters (200 is my cap; the task gave only the minimum).
+- **Prices:** not reverted, and the service comment says why (other stock may have sold at them since; the price history is in the audit log; D-12 one current price).
+- **Stock partly sold:** a cancel still works while enough of the purchase's stock is left (another purchase may have refilled it); it is refused only when stock would go below zero, which is the ledger's rule.
+- **Not run:** under option 3 the 16 route tests and 7 schema tests are written but not run; the box is ticked at Checkpoint 4.
+
 ---
 
 ## Task 4.5 — Frontend: purchases

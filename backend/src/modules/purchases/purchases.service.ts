@@ -4,6 +4,7 @@
 import type { Db, DbOrTx } from '@ds/database';
 import {
   SELLING_ABOVE_MRP_MESSAGE,
+  type CancelPurchaseInput,
   type ListPurchasesQuery,
   type Page,
   type Purchase,
@@ -161,7 +162,7 @@ function duplicateInvoice(): AppError {
   );
 }
 
-function documentLocked(status: string, action: 'edited' | 'posted'): AppError {
+function documentLocked(status: string, action: 'edited' | 'posted' | 'cancelled'): AppError {
   return new AppError(
     'DOCUMENT_LOCKED',
     `This purchase is ${status} and can no longer be ${action}`,
@@ -400,6 +401,60 @@ export async function postPurchase(
       entityId: id,
       before: { status: 'draft' },
       after: { status: 'posted', totalPaise: current.totalPaise, lineCount: lines.length },
+      ip,
+    });
+    return loadPurchase(tx, branchId, id);
+  });
+}
+
+/**
+ * Cancel a posted purchase with a reason, all in one transaction: lock it and check it is posted
+ * (a draft is just edited, and a cancelled one stays cancelled: both answer DOCUMENT_LOCKED), take
+ * every line's quantity back out of stock (`purchase_cancel` movements), then mark it cancelled.
+ * If any of that stock has already been sold, `postMovements` throws INSUFFICIENT_STOCK listing
+ * the items, and nothing changes. Item prices set by the purchase are deliberately NOT reverted:
+ * other stock may have been sold at them since, and the item's price history lives in the audit
+ * log (D-12: one current price). The vendor invoice can then be entered again as a new draft.
+ */
+export async function cancelPurchase(
+  db: Db,
+  ctx: RequestContext,
+  branchId: number,
+  id: number,
+  input: CancelPurchaseInput,
+  ip: string | null,
+): Promise<Purchase> {
+  return db.transaction(async (tx) => {
+    const current = await model.findPurchaseForUpdate(tx, branchId, id);
+    if (!current) {
+      throw new NotFoundError('Purchase not found');
+    }
+    if (current.status !== 'posted') {
+      throw current.status === 'draft'
+        ? new AppError('DOCUMENT_LOCKED', 'Only a posted purchase can be cancelled; edit the draft')
+        : documentLocked(current.status, 'cancelled');
+    }
+    const lines = await model.findLines(tx, id);
+    await postMovements(tx, {
+      branchId,
+      userId: ctx.user.id,
+      movements: lines.map((line) => ({
+        itemId: line.itemId,
+        quantity: -line.quantity,
+        type: 'purchase_cancel',
+        refType: 'purchase',
+        refId: id,
+      })),
+    });
+    await model.markCancelled(tx, id, ctx.user.id, input.reason);
+    await logAudit(tx, {
+      actorId: ctx.user.id,
+      branchId,
+      action: 'purchase.cancel',
+      entity: 'purchase',
+      entityId: id,
+      before: { status: 'posted' },
+      after: { status: 'cancelled', reason: input.reason },
       ip,
     });
     return loadPurchase(tx, branchId, id);

@@ -65,6 +65,7 @@ export {
   type PaginationQuery,
 } from './schemas/pagination.js';
 export {
+  cancelPurchaseSchema,
   listPurchasesQuerySchema,
   MAX_LINE_QUANTITY,
   MAX_PURCHASE_LINES,
@@ -74,6 +75,7 @@ export {
   purchaseLineInputSchema,
   purchaseTotalPaise,
   vendorInvoiceNoSchema,
+  type CancelPurchaseInput,
   type ListPurchasesQuery,
   type Purchase,
   type PurchaseDraftInput,

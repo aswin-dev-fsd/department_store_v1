@@ -267,3 +267,23 @@ export async function markPosted(db: DbOrTx, id: number, userId: number): Promis
     .set({ status: 'posted', postedBy: userId, postedAt: now, updatedAt: now })
     .where(eq(purchases.id, id));
 }
+
+/** Mark a purchase cancelled by this user, now, with the reason. */
+export async function markCancelled(
+  db: DbOrTx,
+  id: number,
+  userId: number,
+  reason: string,
+): Promise<void> {
+  const now = new Date();
+  await db
+    .update(purchases)
+    .set({
+      status: 'cancelled',
+      cancelledBy: userId,
+      cancelledAt: now,
+      cancelReason: reason,
+      updatedAt: now,
+    })
+    .where(eq(purchases.id, id));
+}
