@@ -2,6 +2,7 @@ import { formatPaise, type Purchase } from '@ds/shared';
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { errorMessage } from '../../api/errors';
+import { parseRupees } from '../../catalog/forms';
 import { ItemPicker } from '../../components/ItemPicker';
 import { QueryProblem } from '../../components/QueryProblem';
 import { Button, Card, ErrorAlert, Notice, SelectField, TextField } from '../../components/ui';
@@ -251,9 +252,13 @@ function DraftEditor({ purchase }: DraftEditorProps) {
                         </span>
                       </p>
                       <p className="text-sm text-slate-700">
-                        {t('purchases.lineTotal', {
-                          total: lineTotal === null ? '—' : formatPaise(lineTotal),
-                        })}
+                        {lineTotal === null
+                          ? t('purchases.lineTotal', { total: '—' })
+                          : t('purchases.lineTotalWorked', {
+                              quantity: line.quantity.trim(),
+                              cost: formatPaise(parseRupees(line.cost) ?? 0),
+                              total: formatPaise(lineTotal),
+                            })}
                       </p>
                     </div>
                     {shown[`lines.${index}.item`] && (
