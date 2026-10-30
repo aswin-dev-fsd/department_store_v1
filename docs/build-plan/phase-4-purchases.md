@@ -95,6 +95,14 @@
 
 **Commit:** `feat(purchases): post purchases into stock`
 
+**As built (2026-10-30):**
+- **Files:** the named service, routes and test (`purchases.post.test.ts`), plus the posting queries appended to `purchases.model.ts` (lock items' prices, set prices, mark posted) and a `post` handler in `purchases.controller.ts`. The overview's error codes gain `EMPTY_PURCHASE`. No migration, no new package.
+- **The transaction**, in the task's order: lock the purchase (`FOR UPDATE`, branch-scoped) and check it is a draft; `postMovements` with one + movement per line; lock the priced items (ascending id) and apply the prices; mark posted (`posted_by`, `posted_at`); audit `purchase.post` (before `{status: draft}`, after the status, total and line count).
+- **Prices:** each item ends with the prices its lines give, in line order, so when two lines of one item give new prices the later wins. The selling price ≤ MRP rule is checked on the prices the item would have (a new selling price against the current MRP, a new MRP against the current selling price, or both new); a failure is a 422 on `lines.N.newSellingPricePaise` and nothing is saved, stock included. Only prices that really change are written and audited (`item.update`, with the `purchaseId` in `after`).
+- **Concurrency:** the purchase row lock makes the second of two parallel posts wait, then see `posted` and answer `DOCUMENT_LOCKED`; the test runs that 10 times (`it.each` over 10 runs), which is the "10 runs in a row" box.
+- **Not run:** under option 3 the 27 tests are written but not run; both boxes are ticked at Checkpoint 4.
+- **Not in the task, so not built (proposed for you):** re-checking at posting that each line's item is still active (an item deactivated after the draft was saved still receives its stock).
+
 ---
 
 ## Task 4.4 — Cancel a purchase

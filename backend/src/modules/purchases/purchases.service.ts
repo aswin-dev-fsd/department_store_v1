@@ -1,19 +1,21 @@
 // Purchases (cashiers, per branch; D-19): draft purchases are created, edited, listed and viewed
-// here. A draft never touches stock: only posting does (Task 4.3), through the stock ledger. Every
-// change is audited (D-30).
+// here, and posted into stock. A draft never touches stock: only posting does, through the stock
+// ledger. Every change is audited (D-30).
 import type { Db, DbOrTx } from '@ds/database';
-import type {
-  ListPurchasesQuery,
-  Page,
-  Purchase,
-  PurchaseDraftInput,
-  PurchaseSummary,
+import {
+  SELLING_ABOVE_MRP_MESSAGE,
+  type ListPurchasesQuery,
+  type Page,
+  type Purchase,
+  type PurchaseDraftInput,
+  type PurchaseSummary,
 } from '@ds/shared';
 import { logAudit } from '../../lib/audit.js';
 import { changedFields } from '../../lib/changes.js';
 import { isUniqueViolation } from '../../lib/db-errors.js';
 import { AppError, NotFoundError, ValidationError } from '../../lib/errors.js';
 import type { RequestContext } from '../../middleware/auth.js';
+import { postMovements } from '../stock/stock.service.js';
 import * as model from './purchases.model.js';
 import type {
   PurchaseChanges,
@@ -159,6 +161,13 @@ function duplicateInvoice(): AppError {
   );
 }
 
+function documentLocked(status: string, action: 'edited' | 'posted'): AppError {
+  return new AppError(
+    'DOCUMENT_LOCKED',
+    `This purchase is ${status} and can no longer be ${action}`,
+  );
+}
+
 async function loadPurchase(db: DbOrTx, branchId: number, id: number): Promise<Purchase> {
   const row = await model.findPurchase(db, branchId, id);
   if (!row) {
@@ -250,10 +259,7 @@ export async function updatePurchase(
         throw new NotFoundError('Purchase not found');
       }
       if (current.status !== 'draft') {
-        throw new AppError(
-          'DOCUMENT_LOCKED',
-          `This purchase is ${current.status} and can no longer be edited`,
-        );
+        throw documentLocked(current.status, 'edited');
       }
       await requireActiveReferences(tx, branchId, input);
 
@@ -291,4 +297,111 @@ export async function updatePurchase(
     }
     throw error;
   }
+}
+
+/**
+ * Post a draft, all in one transaction: lock the purchase and check it is still a draft (so of two
+ * parallel posts exactly one succeeds, and the other answers DOCUMENT_LOCKED), add every line's
+ * quantity to stock through the ledger (`purchase` movements), apply the lines' new prices to the
+ * items (an audit row per item changed), then mark it posted. A draft with no lines answers
+ * EMPTY_PURCHASE. A new selling price above the MRP the item would then have is a 422, and nothing
+ * is saved. When two lines of one item give new prices, the later line wins.
+ */
+export async function postPurchase(
+  db: Db,
+  ctx: RequestContext,
+  branchId: number,
+  id: number,
+  ip: string | null,
+): Promise<Purchase> {
+  return db.transaction(async (tx) => {
+    const current = await model.findPurchaseForUpdate(tx, branchId, id);
+    if (!current) {
+      throw new NotFoundError('Purchase not found');
+    }
+    if (current.status !== 'draft') {
+      throw documentLocked(current.status, 'posted');
+    }
+    const lines = await model.findLines(tx, id);
+    if (lines.length === 0) {
+      throw new AppError('EMPTY_PURCHASE', 'Add at least one line before posting this purchase');
+    }
+
+    await postMovements(tx, {
+      branchId,
+      userId: ctx.user.id,
+      movements: lines.map((line) => ({
+        itemId: line.itemId,
+        quantity: line.quantity,
+        type: 'purchase',
+        refType: 'purchase',
+        refId: id,
+      })),
+    });
+
+    // The prices each item ends up with, line by line, remembering which line set the selling price
+    const priced = lines
+      .map((line, index) => ({ line, index }))
+      .filter(({ line }) => line.newMrpPaise !== null || line.newSellingPricePaise !== null);
+    const locked = await model.lockItemPrices(tx, branchId, [
+      ...new Set(priced.map(({ line }) => line.itemId)),
+    ]);
+    const next = new Map(
+      locked.map((item) => [
+        item.id,
+        {
+          current: item,
+          mrpPaise: item.mrpPaise,
+          sellingPricePaise: item.sellingPricePaise,
+          index: 0,
+        },
+      ]),
+    );
+    for (const { line, index } of priced) {
+      const target = next.get(line.itemId)!;
+      target.mrpPaise = line.newMrpPaise ?? target.mrpPaise;
+      target.sellingPricePaise = line.newSellingPricePaise ?? target.sellingPricePaise;
+      target.index = index;
+    }
+    const problems = [...next.values()]
+      .filter((target) => target.sellingPricePaise > target.mrpPaise)
+      .map((target) => ({
+        path: `lines.${target.index}.newSellingPricePaise`,
+        message: SELLING_ABOVE_MRP_MESSAGE,
+      }));
+    if (problems.length > 0) {
+      throw new ValidationError('Invalid request data', problems);
+    }
+    for (const target of next.values()) {
+      const changes = changedFields(
+        { mrpPaise: target.current.mrpPaise, sellingPricePaise: target.current.sellingPricePaise },
+        { mrpPaise: target.mrpPaise, sellingPricePaise: target.sellingPricePaise },
+      );
+      if (!changes) continue;
+      await model.updateItemPrices(tx, target.current.id, changes.after);
+      await logAudit(tx, {
+        actorId: ctx.user.id,
+        branchId,
+        action: 'item.update',
+        entity: 'item',
+        entityId: target.current.id,
+        before: changes.before,
+        after: { ...changes.after, purchaseId: id },
+        ip,
+      });
+    }
+
+    await model.markPosted(tx, id, ctx.user.id);
+    await logAudit(tx, {
+      actorId: ctx.user.id,
+      branchId,
+      action: 'purchase.post',
+      entity: 'purchase',
+      entityId: id,
+      before: { status: 'draft' },
+      after: { status: 'posted', totalPaise: current.totalPaise, lineCount: lines.length },
+      ip,
+    });
+    return loadPurchase(tx, branchId, id);
+  });
 }

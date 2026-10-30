@@ -613,7 +613,8 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `NOT_FOUND` | 404 | Record doesn't exist in the active branch |
 | `INSUFFICIENT_STOCK` | 400 | A sale, purchase cancel or adjustment would make stock negative; `details` lists the items |
 | `PAYMENT_MISMATCH` | 400 | Payments don't equal the bill total |
-| `DOCUMENT_LOCKED` | 400 | Editing a posted or cancelled purchase, or cancelling an already-cancelled document |
+| `DOCUMENT_LOCKED` | 400 | Editing or posting a purchase that is no longer a draft, or cancelling an already-cancelled document |
+| `EMPTY_PURCHASE` | 400 | Posting a draft purchase that has no lines |
 | `DUPLICATE_INVOICE` | 400 | The vendor invoice was already entered |
 | `DUPLICATE_CODE` | 400 | A branch code that another branch already uses, or an item code the branch already uses |
 | `DUPLICATE_BARCODE` | 400 | A barcode another item of the branch already has |

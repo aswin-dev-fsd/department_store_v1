@@ -220,3 +220,50 @@ export async function activeItemIdsInBranch(
     );
   return new Set(rows.map((row) => row.id));
 }
+
+/** An item's current prices, as posting compares them with a line's new prices. */
+export type ItemPricesRow = Pick<
+  typeof items.$inferSelect,
+  'id' | 'name' | 'mrpPaise' | 'sellingPricePaise'
+>;
+
+/**
+ * Lock these items of this branch (in ascending id order, the system's lock order) until the
+ * transaction ends, and return their prices.
+ */
+export async function lockItemPrices(
+  db: DbOrTx,
+  branchId: number,
+  itemIds: number[],
+): Promise<ItemPricesRow[]> {
+  if (itemIds.length === 0) return [];
+  return db
+    .select({
+      id: items.id,
+      name: items.name,
+      mrpPaise: items.mrpPaise,
+      sellingPricePaise: items.sellingPricePaise,
+    })
+    .from(items)
+    .where(and(inArray(items.id, itemIds), eq(items.branchId, branchId)))
+    .orderBy(asc(items.id))
+    .for('update');
+}
+
+/** Set an item's prices. */
+export async function updateItemPrices(
+  db: DbOrTx,
+  itemId: number,
+  prices: Partial<Pick<ItemPricesRow, 'mrpPaise' | 'sellingPricePaise'>>,
+): Promise<void> {
+  await db.update(items).set(prices).where(eq(items.id, itemId));
+}
+
+/** Mark a purchase posted by this user, now. */
+export async function markPosted(db: DbOrTx, id: number, userId: number): Promise<void> {
+  const now = new Date();
+  await db
+    .update(purchases)
+    .set({ status: 'posted', postedBy: userId, postedAt: now, updatedAt: now })
+    .where(eq(purchases.id, id));
+}

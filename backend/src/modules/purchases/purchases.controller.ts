@@ -49,5 +49,17 @@ export function purchasesController({ db }: AppDeps) {
     res.json(success(purchase));
   };
 
-  return { list, get, create, update };
+  const post: RequestHandler = async (req, res) => {
+    const { id } = req.params as unknown as IdParams;
+    const purchase = await service.postPurchase(
+      db,
+      requestContext(req),
+      activeBranchId(req),
+      id,
+      req.ip ?? null,
+    );
+    res.json(success(purchase));
+  };
+
+  return { list, get, create, update, post };
 }
