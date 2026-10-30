@@ -68,6 +68,14 @@
 
 **Commit:** `feat(shared): add billing math, financial year and bill number helpers`
 
+**As built (2026-10-30):**
+- **Files:** the four named, plus the exports in `shared/src/index.ts`.
+- **`computeBill(lines)`** takes `{ unitPricePaise, quantity, discountPaise }` per line (the price is the item's, looked up by the server) and returns each line's amount and total, then the subtotal, discount, signed round-off and total. The round-off is applied to subtotal − discount. `computeLine` and `roundToRupee` are exported for the screen's per-line preview.
+- **Rounding:** to the nearest rupee, exactly 50 paise up (overview §6.4, proposed).
+- **Refusals:** bad input throws `RangeError`: a quantity that is not a whole number ≥ 1, a negative or part-paise price or discount, a discount above the line amount, a sum that would no longer be exact, a bill sequence outside 1–999999, or a bill number over 16 characters (a branch code over 3 letters). Task 5.5 turns these into 422s.
+- **Dates:** `businessDate` and `financialYear` shift by the fixed IST offset and read the UTC fields; an invalid date throws `RangeError`.
+- **Not run:** under option 3 the 45 tests are written but not run; the box is ticked at Checkpoint 5A.
+
 ---
 
 ## Task 5.3 — Bill number allocation

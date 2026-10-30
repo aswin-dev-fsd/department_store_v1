@@ -1,3 +1,15 @@
+export {
+  computeBill,
+  computeLine,
+  formatBillNo,
+  MAX_BILL_NO_LENGTH,
+  MAX_BILL_SEQ,
+  roundToRupee,
+  type BillLineAmounts,
+  type ComputedBill,
+  type ComputedLine,
+} from './billing.js';
+export { businessDate, financialYear } from './dates.js';
 export type { ApiErrorBody, ApiFailure, ApiMeta, ApiResponse, ApiSuccess } from './api.js';
 export type { HealthStatus, LivenessStatus } from './health.js';
 export {
