@@ -22,10 +22,12 @@
 5. Generate, **read the SQL**, apply.
 
 **Done when:**
-- [ ] The migration applies to an empty database
-- [ ] A test proves the partial unique index: a duplicate is blocked, but allowed after the first is cancelled
+- [x] The migration applies to an empty database
+- [x] A test proves the partial unique index: a duplicate is blocked, but allowed after the first is cancelled
 
 **Commit:** `feat(database): add purchase tables`
+
+**Checked at Checkpoint 4 (2026-10-30):** the test database was emptied (schema dropped) and `runMigrations` applied all three migrations, giving the 13 tables; a second run changed nothing. The 17 schema tests pass after one fix: deleting a purchase that has lines is refused with `23001` (restrict violation, because the key is `ON DELETE RESTRICT`), not `23503`, so the test now expects `23001`, as the access tables' test already did.
 
 **As built (2026-10-30):**
 - **Files:** `database/src/schema/purchases.ts` (the `purchase_status` enum, `purchases`, `purchase_lines`), `schema/index.ts`, migration `0002_purchases.sql` (+ snapshot and journal), and `backend/test/schema/purchases.schema.test.ts` (17 tests, raw SQL; the file the "Done when" test needs).
@@ -54,7 +56,7 @@
 2. **Green** — implement.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(purchases): add draft purchases api`
 
@@ -90,8 +92,8 @@
    4. Set the status.
 
 **Done when:**
-- [ ] All tests pass
-- [ ] The concurrency test passes 10 runs in a row
+- [x] All tests pass
+- [x] The concurrency test passes 10 runs in a row
 
 **Commit:** `feat(purchases): post purchases into stock`
 
@@ -123,7 +125,7 @@
 2. **Green** — one transaction: lock, check `posted`, `postMovements` with − quantities (this throws when stock is insufficient), set the status.
 
 **Done when:**
-- [ ] All tests pass
+- [x] All tests pass
 
 **Commit:** `feat(purchases): cancel posted purchases`
 
@@ -158,7 +160,7 @@
 5. Show `DUPLICATE_INVOICE`, `INSUFFICIENT_STOCK` and `DOCUMENT_LOCKED` as clear messages.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass
 - [ ] Manual check on seeded data: the Checkpoint 4 review below
 
 **Commit:** `feat(frontend): add purchase entry screens`

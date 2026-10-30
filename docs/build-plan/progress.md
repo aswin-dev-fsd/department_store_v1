@@ -70,7 +70,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | 4.3 | Post a purchase | DONE | 2026-10-30 | `POST /purchases/:id/post` (`purchase:post`). One transaction: lock the purchase, check it is a draft, `postMovements` with + quantities (`purchase` / refType `purchase`), apply new prices (items locked in id order; an `item.update` audit row per item that really changes, with the purchase id), mark posted, audit `purchase.post`. Empty → 400 `EMPTY_PURCHASE` (new code, added to the overview); not a draft → 400 `DOCUMENT_LOCKED`; a selling price above the MRP the item would have → 422 on `lines.N.newSellingPricePaise`, nothing saved. Two lines of one item: both add stock, the later line's price wins. 27 tests written (the concurrency test as 10 runs); **not run** (option 3). **Deviations: none** (extras: posting queries in `purchases.model.ts`, the `post` handler in the controller). Not built: refusing to post when a line's item was deactivated after the draft was saved (posting doesn't re-check active). |
 | 4.4 | Cancel a purchase | DONE | 2026-10-30 | `POST /purchases/:id/cancel { reason }` (`purchase:cancel`; reason trimmed, 3–200 characters, else 422). One transaction: lock, check `posted`, `postMovements` with − quantities (`purchase_cancel`), mark cancelled, audit `purchase.cancel`. Stock already sold → 400 `INSUFFICIENT_STOCK` listing the items (from `postMovements`), nothing changed; a draft or an already-cancelled purchase → 400 `DOCUMENT_LOCKED`. Prices are not reverted (documented in the service). The invoice can then be re-entered (the 4.1 index). 16 route tests and 7 more schema tests written; **not run** (option 3). **Deviations: none** (extras: `cancelPurchaseSchema` in the shared purchases schema and its export, `markCancelled` in the model, the controller handler). |
 | 4.5 | Frontend: purchases | DONE | 2026-10-30 | `/purchases` (list: status, vendor and date filters, badges, Continue for drafts) and `/purchases/new`, `/purchases/:id` (draft editor, or read-only view with Cancel for a posted one), a "Purchases" nav link (`purchase:write`). `components/ItemPicker.tsx`: barcode, then code, on Enter; otherwise a name search list with arrow keys (for billing too). Post asks with the line count and total, saving unsaved changes first; Cancel asks for a reason; `DUPLICATE_INVOICE` shows by the invoice number, `INSUFFICIENT_STOCK` names the sold items, `DOCUMENT_LOCKED`/`EMPTY_PURCHASE` as messages. Keyboard (proposed): Enter moves to the next box; after a line's last box it goes back to the item box. 17 logic tests; **not run** (option 3), check-types/build and the manual review wait for Checkpoint 4. **Deviations: none** (extras like Phase 3: `frontend/src/purchases/` layer, `PurchaseStatusBadge`, the routes in `App.tsx`, the link in `AppShell.tsx`). No warning on leaving with unsaved changes (not in the task). |
-| 🛑 | Checkpoint 4 | TODO | | |
+| 🛑 | Checkpoint 4 | IN PROGRESS | 2026-10-30 | Agent steps done: clean-install gate passed (1,246 tests, one test fixed), sabotage proofs 24 of 25, migrations applied to an empty database, summary below. Waiting for the user's review list and "go" |
 
 ## Phase 5 — Billing
 
@@ -224,3 +224,45 @@ The agent adds one entry per checkpoint: what was built, number of tests, (propo
 - **Dev database: done, 2026-10-17.** It had been seeded on 15 Oct by the old seed (random passwords nobody had seen). At your yes the agent emptied it (the rebuild in `dev-setup.md` §9, after proving it held only the old seed's data), migrated it and seeded it again. Checked without logging in: the three fixed passwords match their hashes and nothing forces a change; a second `npm run db:seed` says "Already seeded". The two seed boxes of Task 3.8 are ticked.
 - Now do the manual checks of Tasks 3.9 and 3.10 and the four review items. To see a price change in the audit log, run this in Neon's SQL editor on the dev project: `select created_at, action, entity_id, before, after from audit_logs where entity = 'item' order by id desc limit 10;`
 - Then say "go" to start Phase 4.
+
+### Checkpoint 4 — Purchases (2026-10-30)
+
+**Gate from a clean install:** every `dist/` deleted → `npm ci` → lint, format, types, every test → `npm run build` (frontend and backend). Lint and types passed first time. Prettier reformatted 7 of the new files (expected: nothing is run per task). One test failed and the test was wrong: deleting a purchase that has lines is refused with `23001` (restrict violation), not `23503`; it now expects `23001` and its file passes. The full suite was not re-run after that one-line test fix. The migrations were applied to an emptied test database: three migrations, 13 tables, and a second run changed nothing.
+
+**Built:**
+- Database: `purchases` and `purchase_lines` (migration 0002): quantity > 0, cost ≥ 0, and the same vendor invoice refused twice in a branch, in any letter case, unless the earlier one was cancelled
+- Draft API: create, edit (the whole draft replaced; only real changes written and audited), list with status, vendor and date filters, view with lines; the server computes every total
+- Posting: stock in through the ledger, new prices applied (selling price ≤ MRP), locked, in one transaction; two parallel posts → exactly one succeeds
+- Cancelling: stock back out, refused with the sold items named when stock has been sold, prices kept; the invoice can be entered again
+- Frontend: Purchases list, draft editor with the shared `ItemPicker` (barcode or code + Enter, or a name search with arrow keys), running total, Save draft, Post and Cancel confirmations
+
+**Tests:** 1,246 (shared 322, database 12, backend 670, frontend 242), up from 1,081.
+
+**Sabotage proofs: 24 of 25 caught**, run on a throwaway copy of the committed code (permissions 6, active vendor and items 2, audits 5, duplicates 2, draft-only edit, no-op edit, draft-only post, the post concurrency test (all 10 runs failed), empty purchase, the price rule at posting, posted-only cancel, branch scope of view and list). The run was interrupted once by the session ending and was done again from a fresh copy. **Not caught: the branch check in `findPurchaseForUpdate`.** With it removed, editing, posting or cancelling another branch's purchase still answers 404 and changes nothing, because the last step (reloading the purchase, or the ledger's own branch check) is branch-scoped too and rolls the transaction back. So nothing leaks, but that one check is not proven on its own.
+
+**(Proposed) items for the user to confirm:**
+
+| Item | Current value |
+|---|---|
+| Keyboard in the purchase editor | Enter moves to the next box; after a line's last box it goes back to the item box |
+| Limits | 1,000,000 packs a line, 500 lines a purchase, a cancel reason 3–200 characters, an invoice number up to 50 characters |
+
+**Decisions made while building (not asked for; veto any):**
+- A second draft of the same vendor invoice is refused too, not only a posted one
+- Editing a draft replaces it whole, so notes left out are cleared; the same item may appear on two lines
+- When two lines of one item give new prices, the later line wins; only prices that really change are audited
+- A cancel works while enough of the purchase's stock is left, even if some was sold and refilled by another purchase
+- Posting saves unsaved changes first; the first save of a new draft gives it its address, so it can be continued later from the list
+
+**Not built, proposed (yes or no for each):**
+- an index on `purchase_lines (purchase_id)`
+- non-negative CHECKs on the totals and the new prices
+- CHECKs tying a status to its fields (posted ⇒ posted by and at; cancelled ⇒ the cancel fields)
+- a database key keeping the vendor in the purchase's branch
+- refusing a draft line whose new selling price is above its new MRP (posting checks it today)
+- re-checking at posting that each item is still active
+- a warning when leaving the editor with unsaved changes
+
+**Known issues:** the purchase screens have never been opened in a browser (only their logic is tested); the frontend bundle is 550 kB, over Vite's 500 kB warning; staging was not checked after the Phase 4 pushes (no polling under option 3); migration 0002 reaches staging at Render's build and the dev database already has it; the Checkpoint 3 review list was never done. Details: `docs/architecture.md` §14.
+
+**Your review (Checkpoint 4 list in `phase-4-purchases.md`):** on the dev database (seeded, with migration 0002), as `cashier1`: the five items there. To simulate stock already sold for the cancel check, sell some of an item through the ledger; until billing exists, the quickest way is a stock adjustment once Phase 6 has it, or ask me to do it on the dev database. Then say "go" to start Phase 5.

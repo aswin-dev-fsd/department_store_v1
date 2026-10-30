@@ -465,11 +465,11 @@ Rules for later phases (stock ledger, row locks, gapless bill numbers, branch sc
 
 | Package | Runner | What | Count |
 |---|---|---|---|
-| shared | Vitest | money helpers, permission map, zod schemas (access, catalog, stock, import) | 279 |
+| shared | Vitest | money helpers, permission map, zod schemas (access, catalog, stock, import, purchases) | 322 |
 | database | Vitest | URL safety, TLS settings, env guard | 12 |
-| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock and import APIs, the stock ledger service with its concurrency tests, operator scripts and the dev seed, schema constraints of the access, catalog and ledger tables (against the Neon test database, about 10 min) | 565 |
-| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin and catalog data hooks, paging, branch checklist, admin and catalog sections, stock display rules, the import call, clipboard | 225 |
-| **Total** | | | **1,081** |
+| backend | Vitest + Supertest | env, errors, envelope, logger redaction, middleware, auth and sessions, audit, admin APIs, the catalog, vendor, stock, import and purchase APIs (drafts, posting with its concurrency test, cancelling), the stock ledger service with its concurrency tests, operator scripts and the dev seed, schema constraints of the access, catalog, ledger and purchase tables (against the Neon test database, about 10 min) | 670 |
+| frontend | Vitest (node) | labels, API client, routing rules, session rules, cache clearing, error text, form checks, Admin and catalog data hooks, paging, branch checklist, admin and catalog sections, stock display rules, the import call, clipboard, the purchase editor's conversions and data hooks | 242 |
+| **Total** | | | **1,246** |
 
 **Backend test harness** (`backend/test/`):
 
@@ -557,7 +557,7 @@ Pinned exactly in `package-lock.json` (`.npmrc` → `save-exact=true`).
 | The import's problem messages are the server's English text, and the catalog and stock screens show other server text only through the dictionary | not translatable once Tamil exists (FP-07) | Return message keys with the problems when FP-07 starts |
 | Since 2026-10-15 nothing is run per task, so tasks pushed between checkpoints deploy to staging unchecked | a broken task can reach staging until the next checkpoint | Accepted for speed; the first gap (a GitHub Actions run of the gate on every push, not waited for) would catch it |
 | npm warns on every install that the install scripts of `bcrypt` and `esbuild` are not on its `allowScripts` list | none today: bcrypt's prebuilt binary loads and esbuild uses its platform package (the auth tests pass from a clean install) | Review with `npm approve-scripts` if npm starts enforcing the list |
-| The frontend bundle is 524 kB (154 kB gzipped), over Vite's 500 kB chunk warning | every `npm run build` prints the warning; nothing breaks, but the first page load grows with each phase | Split by route with `React.lazy` when the size starts to matter (the billing screen is the large one still to come); raise the limit only knowingly |
+| The frontend bundle is 550 kB (161 kB gzipped; 524 kB at Checkpoint 3), over Vite's 500 kB chunk warning | every `npm run build` prints the warning; nothing breaks, but the first page load grows with each phase | Split by route with `React.lazy` when the size starts to matter (the billing screen is the large one still to come); raise the limit only knowingly |
 | Production platform undecided (AWS leaning) | deploy kit and backups (Tasks 7.4–7.5) wait for it | PD-03 |
 
 ---
