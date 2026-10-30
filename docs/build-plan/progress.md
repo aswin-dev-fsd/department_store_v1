@@ -88,7 +88,7 @@ The agent updates this file after every task (protocol step 7). Status values: `
 | 5.9 | Receipt printing | DONE | 2026-10-30 | `pages/billing/Receipt.tsx` (from `GET /bills/:id/receipt`: header, bill no., IST date/time, cashier, customer, lines, totals, payments, footer, CANCELLED banner), `print/printReceipt.ts` (hidden iframe, so the billing screen stays), `print/receipt.css` (80mm page, 72mm content, monospace, wrapping names); printed after every save, and a print failure leaves the bill saved with a message. `dev-setup.md`: printing and `--kiosk-printing`. **Not run** (option 3); no tests (none listed). **Deviations:** GSTIN not printed (GST pending); real-printer check noted for Task 5.11. |
 | 5.10 | Bills screen | DONE | 2026-10-30 | `pages/bills/{BillsPage,BillDetailPage,BillStatusBadge}.tsx`. **List:** search by bill number or customer mobile, filter by dates and status, paged. **Detail:** lines, totals and payments; **Reprint receipt**; **Cancel** (needs `bill:cancel`) with a reason and a confirmation showing the bill number and total, then the bill shows Cancelled and stock and items refresh. 4 tests written (`bills/paths.test.ts`, the cancel mutation); **not run** (option 3). **Deviations:** the `bills/` paths, queries and keys files, the routes in `App.tsx` and a **Bills** menu link (needed to reach the screen). |
 | 5.11 | Counter acceptance test | IN PROGRESS | 2026-10-30 | `acceptance-billing.md` written: 12 sections, 51 numbered checks with expected results, test items with barcodes and seeded stock. The dev database is already seeded (the seed reported "already seeded", nothing changed). Waiting for the user's run; failures get one fix commit each. |
-| 🛑 | Checkpoint 5 | TODO | | |
+| 🛑 | Checkpoint 5 | IN PROGRESS | 2026-10-30 | Agent steps done (summary below): clean-install gate passed after one lint fix (1,522 tests, backend 3 min 18 s on local PostgreSQL), build passed. Waiting for the Task 5.11 counter run and the user's review list |
 
 ## Phase 6 — Adjustments and reports
 
@@ -313,3 +313,38 @@ The agent adds one entry per checkpoint: what was built, number of tests, (propo
 **Known issues:** the cancel lock's branch check is not provable on its own (above); the frontend bundle is 552.5 kB, over Vite's 500 kB warning; staging was not checked after the Phase 5 pushes (migration 0003 reaches it at Render's build); the Checkpoint 3 and 4 review lists were never done.
 
 **Your review (Checkpoint 5A list in `phase-5-billing.md`):** read the traceability table above; optionally create and cancel a bill with a REST client against the local dev server and look at the rows in pgAdmin; then say "go" before the billing screens are built.
+
+### Checkpoint 5 — Billing screens (2026-10-30)
+
+**Gate from a clean install:** every `dist/` deleted, then `npm ci`, then `npm run verify`. The first run stopped at lint with **one error**: `BillLinesTable.tsx` (Task 5.7) compared with `==` (eqeqeq). After the fix the whole gate passed: lint, format, types and **1,522 tests** (shared 424, database 12, backend 807 in 3 min 18 s on local PostgreSQL, frontend 279). `npm run build` passed. The frontend bundle is now 584.8 kB, over Vite's 500 kB warning.
+
+**Built since Checkpoint 5A:**
+- **5.7** the billing screen: scan, code or name search, quantity and discount per line, live totals from the shared bill math, stock warnings.
+- **5.8** the payment panel (cash, UPI, card, rest in cash, change due), the optional customer by phone, and save with the server's refusals shown on the lines or in the panel. Keys F2, F8, F9.
+- **5.9** the 80mm receipt, printed after each save through a hidden frame.
+- **5.10** the Bills screen: find, view, reprint, cancel.
+- **5.11** the counter checklist (`acceptance-billing.md`, 51 checks). **Not yet run.**
+
+**Tests:** 37 new frontend tests since 5A: bill draft 16, payments 16, bill mutations 2, bills list address 3. All pass.
+
+**Sabotage proofs:** none this time. Tasks 5.7–5.10 added no server protection (permission, uniqueness, audit, stock or numbering); every rule the screens rely on is enforced by the server and was proven at Checkpoint 5A.
+
+**(Proposed) items for the user to confirm:**
+- The keyboard shortcuts: F2 search, F8 payment, F9 save.
+- **% discount entry is not built.** The screen takes the discount in rupees only; the overview lists a % option as proposed.
+- Exactly 50 paise rounds up.
+- The receipt layout. The GSTIN is left off while GST is pending.
+- Carried from 5A: a left-out discount is 0; one payment row per mode; caps of 10,000 packs a line and 200 lines a bill; a cancel reason of 3–200 characters; Indian mobile numbers only.
+
+**Open decision:** PD-04, the receipt printer (width per branch, silent printing, cash drawer).
+
+**Known issues:**
+- The frontend bundle is 584.8 kB.
+- The Task 5.11 counter run and a real thermal printer are still to come.
+- Staging was not checked after the Phase 5 pushes.
+- The review lists of Checkpoints 3, 4 and 5A were never done.
+
+**Your review (Checkpoint 5 list in `phase-5-billing.md`):**
+- Run `acceptance-billing.md` at the counter and send the results.
+- Confirm or change the proposed items above.
+- Decide PD-04 if you can.

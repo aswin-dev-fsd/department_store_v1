@@ -118,7 +118,9 @@ export function BillLinesTable({
                   />
                 </td>
                 <td className={`${cell} text-right font-medium whitespace-nowrap`}>
-                  {summary?.lineTotalPaise == null ? '—' : formatPaise(summary.lineTotalPaise)}
+                  {summary === undefined || summary.lineTotalPaise === null
+                    ? '—'
+                    : formatPaise(summary.lineTotalPaise)}
                 </td>
                 <td className={cell}>
                   <Button

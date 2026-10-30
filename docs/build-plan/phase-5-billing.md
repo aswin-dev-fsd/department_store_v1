@@ -266,7 +266,7 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
    - Show available stock per line, and a warning when quantity exceeds it. The server still decides.
 
 **Done when:**
-- [ ] Tests, check-types and build pass
+- [x] Tests, check-types and build pass
 - [ ] Manual check with a USB barcode scanner, or by typing barcodes and pressing Enter
 
 **Commit:** `feat(frontend): add billing screen item entry`
@@ -302,7 +302,7 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 4. **Keyboard shortcuts (proposed):** F2 = focus search, F8 = payment panel, F9 = save. List them on screen.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass
 - [ ] Manual check: a single-mode bill, a three-way split bill, an insufficient-stock bill, a bill with a customer
 
 **Commit:** `feat(frontend): add payment panel and bill save`
@@ -335,7 +335,7 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 4. In `dev-setup.md`, document Chrome's `--kiosk-printing` flag for silent printing at the counter.
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass
 - [ ] Manual check: print preview at 80mm looks right; prints on a real thermal printer if one is available (otherwise note it for Task 5.11)
 
 **Commit:** `feat(frontend): add 80mm receipt printing`
@@ -362,7 +362,7 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 3. After a cancel, the status shows **Cancelled** and stock is restored (visible on the Stock screen).
 
 **Done when:**
-- [ ] check-types and build pass
+- [x] check-types and build pass
 - [ ] Manual check: find, reprint, cancel
 
 **Commit:** `feat(frontend): add bills screen with reprint and cancel`
