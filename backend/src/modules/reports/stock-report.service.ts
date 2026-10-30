@@ -3,21 +3,12 @@
 // has a reorder level and its stock is at or below it; an item without a reorder level never is.
 // The movement history per item is the stock screen's (GET /stock/:itemId/movements).
 import type { Db } from '@ds/database';
-import type { Page } from '@ds/shared';
+import type { Page, StockReportRow } from '@ds/shared';
 import * as model from './stock-report.model.js';
 
-export interface StockReportRow {
-  item: { id: number; code: string; name: string };
-  category: { id: number; name: string } | null;
-  /** Packs on hand. */
-  quantity: number;
-  sellingPricePaise: number;
-  /** In packs; null when no warning is wanted. */
-  reorderLevel: number | null;
-}
-
 export interface StockReportQuery {
-  branchId: number;
+  /** Leaving it out covers every branch (the Admin). */
+  branchId?: number | undefined;
   categoryId?: number | undefined;
   limit: number;
   offset: number;
@@ -37,6 +28,7 @@ async function report(
   return {
     items: rows.map((row) => ({
       item: { id: row.itemId, code: row.code, name: row.name },
+      branch: { id: row.branchId, code: row.branchCode },
       category:
         row.categoryId === null || row.categoryName === null
           ? null
@@ -51,12 +43,12 @@ async function report(
   };
 }
 
-/** One page of the branch's active items with stock, category and price, by name. */
+/** One page of the active items with stock, category and price, by name (then branch). */
 export function stockReport(db: Db, query: StockReportQuery): Promise<Page<StockReportRow>> {
   return report(db, query, false);
 }
 
-/** One page of the branch's active items at or below their reorder level, the emptiest first. */
+/** One page of the active items at or below their reorder level, the emptiest first. */
 export function lowStockReport(db: Db, query: StockReportQuery): Promise<Page<StockReportRow>> {
   return report(db, query, true);
 }

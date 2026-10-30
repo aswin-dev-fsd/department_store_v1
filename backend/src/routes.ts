@@ -9,6 +9,7 @@ import { healthRoutes } from './modules/health/health.routes.js';
 import { importRoutes } from './modules/import/import.routes.js';
 import { itemsRoutes } from './modules/items/items.routes.js';
 import { purchasesRoutes } from './modules/purchases/purchases.routes.js';
+import { adminReportsRoutes, reportsRoutes } from './modules/reports/reports.routes.js';
 import { settingsRoutes } from './modules/settings/settings.routes.js';
 import { adjustmentsRoutes } from './modules/stock/adjustments.routes.js';
 import { stockRoutes } from './modules/stock/stock.routes.js';
@@ -23,12 +24,14 @@ export function apiRoutes(deps: AppDeps): Router {
   router.use('/admin/branches', importRoutes(deps));
   router.use('/admin/branches', branchesRoutes(deps));
   router.use('/admin/settings', settingsRoutes(deps));
+  router.use('/admin/reports', adminReportsRoutes(deps));
   router.use('/admin/users', usersRoutes(deps));
   router.use('/bills', billsRoutes(deps));
   router.use('/categories', categoriesRoutes(deps));
   router.use('/customers', customersRoutes(deps));
   router.use('/items', itemsRoutes(deps));
   router.use('/purchases', purchasesRoutes(deps));
+  router.use('/reports', reportsRoutes(deps));
   // Before /stock, so an adjustment is handled (and authenticated) once
   router.use('/stock/adjustments', adjustmentsRoutes(deps));
   router.use('/stock', stockRoutes(deps));

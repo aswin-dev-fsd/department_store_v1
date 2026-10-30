@@ -3,30 +3,8 @@
 // (after its discount); the bill-level round-off belongs to no item, so the items' grand total
 // differs from the bills' total (the day summary) by exactly the summed round-off.
 import type { Db } from '@ds/database';
-import type { Page } from '@ds/shared';
+import type { ItemSalesReport } from '@ds/shared';
 import * as model from './item-sales.model.js';
-
-export interface ItemSalesRow {
-  item: { id: number; code: string; name: string };
-  branch: { id: number; code: string };
-  /** Packs sold. */
-  quantity: number;
-  /** The sum of the line totals, after line discounts. */
-  valuePaise: number;
-}
-
-export interface ItemSalesReport extends Page<ItemSalesRow> {
-  from: string;
-  to: string;
-  /** Every item's value in the range, all pages. */
-  itemsValuePaise: number;
-  /** The completed bills' round-off in the range: in no item. */
-  roundOffPaise: number;
-  /** The completed bills' total: itemsValuePaise + roundOffPaise. */
-  billsTotalPaise: number;
-  /** Why the two totals differ. */
-  note: string;
-}
 
 export interface ItemSalesQuery {
   from: string;

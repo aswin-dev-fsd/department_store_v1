@@ -2,44 +2,14 @@
 // reconciles the cash drawer against. Bills count on their IST business date (`bill_date`, Task
 // 5.2). Cancelled bills never count in the totals; their count and value are shown apart.
 import type { Db } from '@ds/database';
-import { PAYMENT_MODES, type PaymentMode } from '@ds/shared';
+import {
+  PAYMENT_MODES,
+  type BranchDay,
+  type DaySummary,
+  type DayTotals,
+  type PaymentMode,
+} from '@ds/shared';
 import * as model from './day-summary.model.js';
-
-export interface DayTotals {
-  /** Completed bills only. */
-  billCount: number;
-  subtotalPaise: number;
-  discountPaise: number;
-  /** Signed. */
-  roundOffPaise: number;
-  /** The net total: subtotal − discount + round-off. */
-  totalPaise: number;
-  /** What the completed bills were paid by. */
-  payments: Record<PaymentMode, number>;
-  /** Cancelled bills of the day, kept out of every figure above. */
-  cancelledCount: number;
-  cancelledPaise: number;
-}
-
-export interface CashierDay {
-  cashier: { id: number; fullName: string };
-  totals: DayTotals;
-}
-
-export interface BranchDay {
-  branch: { id: number; code: string; name: string };
-  totals: DayTotals;
-  /** By name. */
-  cashiers: CashierDay[];
-}
-
-export interface DaySummary {
-  date: string;
-  /** Every branch and cashier below, added up. */
-  totals: DayTotals;
-  /** By branch code; only branches with bills that day. */
-  branches: BranchDay[];
-}
 
 export interface DaySummaryQuery {
   /** The IST business date, YYYY-MM-DD. */

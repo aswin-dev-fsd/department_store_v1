@@ -178,6 +178,21 @@
 
 **Commit:** `feat(reports): add report routes with role visibility`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `shared/src/schemas/reports.test.ts`, the exports in `shared/src/index.ts`, and the mounts in `backend/src/routes.ts`. The result types of Tasks 6.2–6.5 moved from the services into `shared/src/schemas/reports.ts`.
+- **Cashier routes** (`/reports`; each needs a chosen branch):
+  - `GET /day-summary?date=` needs `report:own-day-summary`. It always uses the session's branch and the cashier's own id.
+  - `GET /stock` and `GET /low-stock` (`?categoryId=&limit=&offset=`) need `stock:read` and cover the session's branch.
+  - These queries are **strict**: a `cashierId` or `branchId` is rejected with 422, not ignored.
+  - There is no cashier route for item-wise sales or the purchase register: under `/admin/reports` they answer 403.
+- **Admin route:** `GET /admin/reports/:report` needs `report:all`. `:report` is `day-summary`, `item-sales`, `stock`, `low-stock` or `purchase-register`.
+  - Each report has its own strict query.
+  - Leaving out `branchId` covers every branch. A branch that does not exist is 404.
+  - `day-summary` also takes `cashierId`.
+- **Changed for this task:** `stockReport` and `lowStockReport` now take an optional `branchId` (every branch when left out) and give each row its `branch`. This was needed for the Admin's all-branches stock.
+- **Dates:** a malformed or impossible date is 422. A range must not end before it starts and covers at most 366 days, both ends counted (422 on `query.to`).
+- **Tests:** 10 schema tests and 25 route tests. **Not run** (option 3).
+
 ---
 
 ## Task 6.7 — Frontend: stock adjustment

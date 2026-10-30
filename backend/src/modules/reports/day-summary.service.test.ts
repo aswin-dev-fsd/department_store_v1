@@ -5,7 +5,8 @@ import { createBranch, createItem, createUser, mapUser } from '../../../test/hel
 import { seedOpeningStock } from '../../../test/helpers/ledger.js';
 import type { RequestContext } from '../../middleware/auth.js';
 import { cancelBill, createBill } from '../bills/bills.service.js';
-import { daySummary, type DayTotals } from './day-summary.service.js';
+import type { DayTotals } from '@ds/shared';
+import { daySummary } from './day-summary.service.js';
 
 const { db, pool } = createTestDb();
 

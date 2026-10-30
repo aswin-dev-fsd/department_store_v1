@@ -2,40 +2,13 @@
 // a range, grouped by vendor with a subtotal each. Cancelled purchases are listed apart and kept
 // out of every total; drafts never appear.
 import type { Db } from '@ds/database';
+import type {
+  CancelledPurchase,
+  PurchaseRegister,
+  RegisterPurchase,
+  RegisterVendor,
+} from '@ds/shared';
 import * as model from './purchase-register.model.js';
-
-export interface RegisterPurchase {
-  id: number;
-  vendorInvoiceNo: string;
-  /** YYYY-MM-DD. */
-  invoiceDate: string;
-  totalPaise: number;
-}
-
-export interface RegisterVendor {
-  vendor: { id: number; name: string };
-  branch: { id: number; code: string };
-  /** By invoice date, then invoice number. */
-  purchases: RegisterPurchase[];
-  subtotalPaise: number;
-}
-
-export interface CancelledPurchase extends RegisterPurchase {
-  vendor: { id: number; name: string };
-  branch: { id: number; code: string };
-  cancelReason: string | null;
-}
-
-export interface PurchaseRegister {
-  from: string;
-  to: string;
-  /** By vendor name; posted purchases only. */
-  vendors: RegisterVendor[];
-  /** All posted purchases in the range. */
-  totalPaise: number;
-  /** Cancelled purchases in the range, in no total. */
-  cancelled: CancelledPurchase[];
-}
 
 export interface PurchaseRegisterQuery {
   from: string;

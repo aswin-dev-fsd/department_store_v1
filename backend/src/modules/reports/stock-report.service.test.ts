@@ -85,6 +85,7 @@ describe('stockReport', () => {
     ]);
     expect(page.items[0]).toEqual({
       item: { id: f.ids.atta, code: 'ATTA', name: 'Atta' },
+      branch: { id: f.branchId, code: expect.any(String) },
       category: { id: f.grocery, name: 'Grocery' },
       quantity: 4,
       sellingPricePaise: 4000,
