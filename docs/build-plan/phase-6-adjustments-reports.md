@@ -212,6 +212,19 @@
 
 **Commit:** `feat(frontend): add stock adjustment screen`
 
+**As built (2026-10-30):**
+- **Files:** `frontend/src/pages/stock/AdjustmentPage.tsx` and `en.ts` as listed. Also:
+  - `stock/adjustment.ts` and its test: the form checks, pure.
+  - `stock/mutations.ts` and its test: the `POST /stock/adjustments` call. It refreshes stock and items.
+  - The `/stock/adjust` route in `App.tsx` (`stock:adjust`), and an **Adjust stock** button on the Stock page for those allowed. The Admin sees neither.
+- **Screen:**
+  - The cursor starts in the `ItemPicker`. The item's name, code and stock are shown, with "Choose another item".
+  - **− Take away / + Add** buttons (`aria-pressed`), packs, and a reason select. The note field appears for "Other" and is required there.
+  - **Review** shows the problems, or a confirmation "Name: stock X → Y" with **Yes, save it** / **Change it**.
+  - Going below zero is caught on the screen ("Only N in stock…"). If the server still refuses, its available count is shown.
+  - After saving: "Name: −2 saved. Stock 10 → 8", **Show movement history** (the item's ledger, inline), and **Adjust another item**.
+- **Not run** under option 3: the 12 tests (11 form checks, 1 mutation), check-types, the build and the manual check. ESLint on the two new folders was run once by mistake and passed.
+
 ---
 
 ## Task 6.8 — Frontend: reports

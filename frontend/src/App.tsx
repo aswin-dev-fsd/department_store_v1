@@ -27,6 +27,7 @@ import { NoAccessPage } from './pages/NoAccessPage';
 import { PurchaseEditorPage } from './pages/purchases/PurchaseEditorPage';
 import { PurchasesPage } from './pages/purchases/PurchasesPage';
 import { StatusPage } from './pages/StatusPage';
+import { AdjustmentPage } from './pages/stock/AdjustmentPage';
 import { StockPage } from './pages/stock/StockPage';
 import { VendorsPage } from './pages/vendors/VendorsPage';
 
@@ -97,6 +98,14 @@ const router = createBrowserRouter([
             element: (
               <RequirePermission permission="stock:read">
                 <StockPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/stock/adjust',
+            element: (
+              <RequirePermission permission="stock:adjust">
+                <AdjustmentPage />
               </RequirePermission>
             ),
           },

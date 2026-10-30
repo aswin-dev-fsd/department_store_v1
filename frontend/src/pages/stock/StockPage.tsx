@@ -1,5 +1,6 @@
 import type { StockLine } from '@ds/shared';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useBranchOptions } from '../../admin/queries';
 import { useMe } from '../../auth/queries';
 import { useCategoryOptions } from '../../catalog/queries';
@@ -188,9 +189,19 @@ export function StockPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="max-w-2xl">
-        <h1 className="text-xl font-semibold">{t('stock.title')}</h1>
-        <p className="text-slate-700">{t('stock.intro')}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-2xl">
+          <h1 className="text-xl font-semibold">{t('stock.title')}</h1>
+          <p className="text-slate-700">{t('stock.intro')}</p>
+        </div>
+        {me.permissions.includes('stock:adjust') && (
+          <Link
+            to="/stock/adjust"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-blue-700 px-4 text-base font-medium text-white hover:bg-blue-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+          >
+            {t('adjust.title')}
+          </Link>
+        )}
       </header>
       {readsAnyBranch ? <AdminStock /> : <StockView branchId={null} />}
     </div>
