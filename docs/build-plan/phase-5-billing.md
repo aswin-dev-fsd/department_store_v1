@@ -340,6 +340,14 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 
 **Commit:** `feat(frontend): add 80mm receipt printing`
 
+**As built (2026-10-30):**
+- **Files:** as listed, plus `BillingPage.tsx` (prints after each save, replacing the `TODO(5.9)`) and the `receipt.*` labels in `en.ts`.
+- **`Receipt`:** lays out the server's receipt data only. It shows the business name, branch name, address and phone; the bill number, the IST date and time, the cashier, and the customer if any. Each line has its name (wrapped), quantity × price and amount, with the discount and line total when there is a discount. Then the subtotal, discount and round-off (each only when not zero), the total, the payments by mode, and the branch footer. A boxed **CANCELLED** banner with the reason sits on top for a cancelled bill. The GSTIN is not printed: GST is pending.
+- **`printReceipt(billId)`:** fetches `GET /bills/:id/receipt`, renders `Receipt` into a hidden iframe styled only by `receipt.css` (loaded as text with `?raw`), prints it, and removes the frame after printing (or after 60 s). If it fails, the bill stays saved and the screen says "saved, but the receipt did not print… reprint it from the Bills screen" (Task 5.10). The cursor returns to the scan box after printing.
+- **`receipt.css`:** `@page { size: 80mm auto; margin: 0 }`, 72mm content, Courier New 12px, long names wrap.
+- **`dev-setup.md`:** a new "Print receipts at the counter" section: dialog settings, `--kiosk-printing` with the thermal printer as the default printer, Save as PDF to check the layout.
+- **Not run:** under option 3, check-types, the build and the print preview wait for Checkpoint 5. No tests were added: the task lists none. There is no real thermal printer yet, so that check is noted for Task 5.11.
+
 ---
 
 ## Task 5.10 — Bills screen

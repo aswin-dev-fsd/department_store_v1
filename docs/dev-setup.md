@@ -168,6 +168,15 @@ npm run reset-password -- --username admin
 - Like `setup:client`, it writes to `DATABASE_URL`, and prints the database it used first. For staging, set `$env:DATABASE_URL` for that one command in PowerShell, as above.
 - `npm run reset-password -- --help` shows the usage.
 
+### Print receipts at the counter (80mm)
+
+Saving a bill prints its receipt at once, laid out for 80mm thermal paper (72mm printed width). Printing is PD-04, still pending: the width per branch, silent printing and a cash drawer are not settled yet.
+
+- **Normal mode:** Chrome opens its print dialog after each save. Choose the thermal printer, set **Margins: None**, and leave **Headers and footers** off.
+- **Silent printing (kiosk printing):** set the thermal printer as the Windows **default printer**, then start Chrome with the `--kiosk-printing` flag. Every receipt then goes straight to that printer, with no dialog. On Windows: right-click the Chrome shortcut on the counter PC → **Properties** → at the end of **Target**, after the closing quote, add a space and `--kiosk-printing` → OK. Close every Chrome window (and Chrome in the system tray) before opening it from that shortcut, or the flag is ignored.
+- **Without a printer:** use **Save as PDF** or the print preview to check the layout.
+- If a receipt cannot be printed, the bill is still saved; the screen says so. Reprinting is on the Bills screen (Task 5.10).
+
 ## 7. Commands
 
 All run from the repo root.

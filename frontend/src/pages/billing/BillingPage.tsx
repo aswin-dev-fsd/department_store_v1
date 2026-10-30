@@ -7,6 +7,7 @@ import { useCreateBill } from '../../bills/mutations';
 import { ItemPicker } from '../../components/ItemPicker';
 import { Button, Card, ErrorAlert, Notice } from '../../components/ui';
 import { t } from '../../i18n/t';
+import { printReceipt } from '../../print/printReceipt';
 import { BillLinesTable } from './BillLinesTable';
 import { CustomerField } from './CustomerField';
 import { PaymentPanel } from './PaymentPanel';
@@ -29,7 +30,8 @@ function shortagesOf(details: unknown): Map<number, number> {
  * The billing counter (overview §4.6, §6.5, §7.3): the cursor starts in the scan/search box and
  * goes back there after every item; the lines and the running total are always on screen. The
  * payment panel takes the money, split as the customer likes; Save is enabled only when the
- * payments equal the total, and after a save the screen is empty, ready for the next customer.
+ * payments equal the total; after a save the receipt prints (Task 5.9) and the screen is empty,
+ * ready for the next customer.
  * F2 = search, F8 = payment, F9 = save.
  */
 export function BillingPage() {
@@ -44,6 +46,7 @@ export function BillingPage() {
   const [name, setName] = useState('');
   const [saved, setSaved] = useState<{ billNo: string; changePaise: number | null } | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [printError, setPrintError] = useState<string | null>(null);
   const [paymentProblem, setPaymentProblem] = useState<string | null>(null);
   // The short lines of the last refused save; shown only until the lines change
   const [shortage, setShortage] = useState<{
@@ -70,6 +73,7 @@ export function BillingPage() {
     if (!canSave) return;
     setSaved(null);
     setSaveError(null);
+    setPrintError(null);
     setPaymentProblem(null);
     setShortage(null);
     const lines = bill.draft.lines;
@@ -84,12 +88,17 @@ export function BillingPage() {
     createBill.mutate(input, {
       onSuccess: (created) => {
         setSaved({ billNo: created.billNo, changePaise: changePaise || null });
-        // TODO(5.9): print the receipt for created.id
         bill.reset();
         setPayments(EMPTY_PAYMENTS);
         setPhone('');
         setName('');
         pickerRef.current?.focus();
+        // The bill is saved whatever happens to the print; the cursor comes back after it
+        printReceipt(created.id)
+          .catch((error: unknown) =>
+            setPrintError(t('billing.printFailed', { reason: errorMessage(error) })),
+          )
+          .finally(() => pickerRef.current?.focus());
       },
       onError: (error) => {
         if (error instanceof ApiError && error.code === 'INSUFFICIENT_STOCK') {
@@ -151,6 +160,7 @@ export function BillingPage() {
                 })}
           </Notice>
         )}
+        {printError && <ErrorAlert>{printError}</ErrorAlert>}
         <Card>
           <ItemPicker
             inputRef={pickerRef}

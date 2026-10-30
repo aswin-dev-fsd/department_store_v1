@@ -1,0 +1,84 @@
+/* The 80mm thermal receipt (PD-04). Loaded only into the print frame, never into the app. The
+   paper is 80mm wide; most 80mm printers print about 72mm of it, so the content is 72mm. */
+@page {
+  size: 80mm auto;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: #fff;
+  color: #000;
+}
+
+.receipt {
+  width: 72mm;
+  margin: 0 auto;
+  padding: 2mm 0 6mm;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.receipt p {
+  white-space: pre-line;
+}
+
+.receipt hr {
+  border: 0;
+  border-top: 1px dashed #000;
+  margin: 2mm 0;
+}
+
+.receipt-center {
+  text-align: center;
+}
+
+.receipt-business {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 2mm;
+}
+
+.receipt-row span:last-child {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.receipt-line {
+  margin-bottom: 1mm;
+}
+
+.receipt-strong {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.receipt-cancelled {
+  border: 2px solid #000;
+  margin-bottom: 2mm;
+  padding: 1mm;
+  text-align: center;
+  font-weight: bold;
+}
+
+.receipt-cancelled p:first-child {
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.receipt-footer {
+  margin-top: 1mm;
+}
