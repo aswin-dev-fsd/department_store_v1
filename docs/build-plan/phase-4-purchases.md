@@ -163,6 +163,17 @@
 
 **Commit:** `feat(frontend): add purchase entry screens`
 
+**As built (2026-10-30):**
+- **Files:** `pages/purchases/{PurchasesPage,PurchaseEditorPage,PurchaseStatusBadge}.tsx`, `components/ItemPicker.tsx` and the labels in `en.ts`, plus, like Phase 3, the layer behind them in `frontend/src/purchases/` (API paths, query keys, queries, mutations, and `editor.ts`: the editor's text ↔ the API draft, totals, server problems) with 18 logic tests in `purchases.test.ts`, the three routes in `App.tsx` and a "Purchases" link in `AppShell.tsx` (`purchase:write`). No new package.
+- **List:** status, vendor and invoice-date filters; a badge per status; **Continue** opens a draft, **Open** a posted or cancelled purchase.
+- **Editor:** a vendor drop-down of the branch's active vendors with a "Find a vendor" box that narrows it; invoice number, date (today in India by default) and notes; lines added with the `ItemPicker`, each with quantity, cost, and optional new MRP and selling price in rupees, its line total, and Remove; the running total counts complete lines and says how many are not complete yet. **Save draft** works at any time; the first save of a new draft moves to its address, so leaving and coming back finds it in the list.
+- **ItemPicker:** Enter looks up the barcode, then the code (`/items/lookup`); with no exact match it searches names, codes and barcodes of active items and lists up to 8: arrow keys move, Enter picks, Escape closes, the mouse works too. After a pick the cursor goes to the new line's quantity.
+- **Post:** a confirmation with the line count and total; unsaved changes are saved first, then the purchase is posted, and the page shows it read-only. **Cancel** (posted only): a reason box (at least 3 characters) and a confirmation.
+- **Messages:** `DUPLICATE_INVOICE` by the invoice number; `INSUFFICIENT_STOCK` names the items already sold and suggests an adjustment; `DOCUMENT_LOCKED` and `EMPTY_PURCHASE` as messages; 422s by their boxes (line boxes by line).
+- **Keyboard (proposed):** Enter moves to the next box (vendor, invoice number, date, then each line's four boxes); after the last box of the last line it goes back to the item box for the next item.
+- **Not run:** under option 3, check-types, the build and the 18 tests run at Checkpoint 4, and the manual check is the Checkpoint 4 review below.
+- **Not in the task, so not built (proposed for you):** a warning when leaving the editor with unsaved changes.
+
 ---
 
 ## 🛑 Checkpoint 4

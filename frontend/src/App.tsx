@@ -22,6 +22,8 @@ import { UsersPage } from './pages/admin/UsersPage';
 import { CategoriesPage } from './pages/categories/CategoriesPage';
 import { ItemsPage } from './pages/items/ItemsPage';
 import { NoAccessPage } from './pages/NoAccessPage';
+import { PurchaseEditorPage } from './pages/purchases/PurchaseEditorPage';
+import { PurchasesPage } from './pages/purchases/PurchasesPage';
 import { StatusPage } from './pages/StatusPage';
 import { StockPage } from './pages/stock/StockPage';
 import { VendorsPage } from './pages/vendors/VendorsPage';
@@ -93,6 +95,22 @@ const router = createBrowserRouter([
             element: (
               <RequirePermission permission="stock:read">
                 <StockPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/purchases',
+            element: (
+              <RequirePermission permission="purchase:write">
+                <PurchasesPage />
+              </RequirePermission>
+            ),
+          },
+          {
+            path: '/purchases/:id',
+            element: (
+              <RequirePermission permission="purchase:write">
+                <PurchaseEditorPage />
               </RequirePermission>
             ),
           },
