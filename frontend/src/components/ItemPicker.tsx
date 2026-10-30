@@ -1,5 +1,5 @@
 import type { Item, Page } from '@ds/shared';
-import { useId, useState, type KeyboardEvent, type Ref } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 import { api, ApiError } from '../api/client';
 import { errorMessage } from '../api/errors';
 import { t } from '../i18n/t';
@@ -25,10 +25,20 @@ async function findExact(text: string): Promise<Item | null> {
   return null;
 }
 
+/** How long typing must pause before a name search is sent. */
+const SEARCH_DELAY_MS = 250;
+
+/** Text with a letter in it, at least 2 characters: worth searching names as it is typed. */
+function looksLikeName(text: string): boolean {
+  return text.trim().length >= 2 && /\p{L}/u.test(text);
+}
+
 /**
  * Pick an active item of the branch, the fast way first: scan a barcode or type a code and press
- * Enter. If nothing matches exactly, the text is searched in names, codes and barcodes and the
- * matches are listed: arrow keys move, Enter picks, Escape closes. Used by purchases and billing.
+ * Enter. Typing letters lists the names that match as you type; arrow keys move, Enter picks the
+ * one moved to, Escape closes. Enter without moving always tries the exact barcode or code first,
+ * so a scanned or typed code is never mistaken for a name match; if nothing matches exactly, the
+ * text is searched and listed, and a second Enter picks the first. Used by purchases and billing.
  */
 export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: ItemPickerProps) {
   const id = useId();
@@ -38,12 +48,37 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
   const [active, setActive] = useState(0);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // Whether Enter should pick from the list: after an arrow key, or after Enter itself listed it
+  const [listChosen, setListChosen] = useState(false);
+  const searchId = useRef(0);
+
+  // Typing letters: search names after a short pause; a newer search replaces an older one
+  useEffect(() => {
+    if (!looksLikeName(text)) return;
+    const id = ++searchId.current;
+    const timer = setTimeout(() => {
+      api
+        .get<Page<Item>>(itemSearchPath(text))
+        .then((page) => {
+          if (id !== searchId.current) return;
+          setMatches(page.items.length > 0 ? page.items : null);
+          setActive(0);
+          setListChosen(false);
+        })
+        .catch(() => {
+          // A failed search while typing shows nothing; Enter reports the problem
+        });
+    }, SEARCH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [text]);
 
   function pick(item: Item) {
+    searchId.current++;
     onPick(item);
     setText('');
     setMatches(null);
     setProblem(null);
+    setListChosen(false);
   }
 
   async function find() {
@@ -51,6 +86,7 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
     if (query === '' || busy) return;
     setBusy(true);
     setProblem(null);
+    searchId.current++;
     try {
       const exact = await findExact(query);
       if (exact) {
@@ -63,6 +99,7 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
       } else {
         setMatches(page.items);
         setActive(0);
+        setListChosen(true);
       }
     } catch (error) {
       setProblem(errorMessage(error));
@@ -75,15 +112,17 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
     if (matches && event.key === 'ArrowDown') {
       event.preventDefault();
       setActive((index) => Math.min(index + 1, matches.length - 1));
+      setListChosen(true);
     } else if (matches && event.key === 'ArrowUp') {
       event.preventDefault();
       setActive((index) => Math.max(index - 1, 0));
+      setListChosen(true);
     } else if (matches && event.key === 'Escape') {
       event.preventDefault();
       setMatches(null);
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      if (matches && matches[active]) pick(matches[active]);
+      if (matches && listChosen && matches[active]) pick(matches[active]);
       else void find();
     }
   }

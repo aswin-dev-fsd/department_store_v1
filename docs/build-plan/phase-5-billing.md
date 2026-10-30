@@ -271,6 +271,13 @@ Agent: run the checkpoint steps in `README.md`, and also write a **traceability 
 
 **Commit:** `feat(frontend): add billing screen item entry`
 
+**As built (2026-10-30):**
+- **Files:** `frontend/src/pages/billing/BillingPage.tsx`, `BillLinesTable.tsx`, `useBillDraft.ts` and `useBillDraft.test.ts`, the labels in `en.ts`; `App.tsx` now imports the page from `pages/billing/`, and the Phase 2 placeholder `pages/BillingPage.tsx` (and its label) is gone.
+- **`useBillDraft`:** a reducer (`add`, `setQuantity`, `setDiscount`, `remove`, `reset`) and `summarizeDraft`, both pure, wrapped by a small hook. Quantity and discount stay text; a line whose quantity is not a whole number ≥ 1, whose discount is not an amount, or whose discount is above the line amount gets a plain message and is left out of the totals, and the bill is not `ready`. The totals are the shared `computeBill`, so the preview equals what the server will save. `input` is what Task 5.8 sends.
+- **Screen:** the scan/search box has the cursor on arrival and gets it back after every add or remove; the lines table has the item (name, code, stock when added), price, editable quantity and discount in rupees, the line total and Remove; a stock warning shows when the quantity is above the stock shown, and the server still decides. The totals panel (subtotal, discount, round-off, total, line count) stays visible beside the lines on wide screens and below them on narrow ones.
+- **`ItemPicker` (shared with purchases), changed:** the task asks that typing letters shows name results. Text with a letter, 2+ characters, is searched after a 250 ms pause and listed; arrow keys choose, Enter picks the chosen one. Enter without arrow keys still tries the exact barcode, then code, first, so a scan or a typed code like `R10` is never mistaken for a name match; a second Enter after an Enter-search picks the first match, as before.
+- **Not run:** under option 3 the 13 tests, check-types, the build and the manual scanner check wait for Checkpoint 5.
+
 ---
 
 ## Task 5.8 — Billing screen II: payment and save

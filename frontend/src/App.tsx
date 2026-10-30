@@ -10,7 +10,7 @@ import { AuthGate } from './components/AuthGate';
 import { CatalogLayout } from './components/CatalogLayout';
 import { RequirePermission } from './components/RequirePermission';
 import { AdminHomePage } from './pages/AdminHomePage';
-import { BillingPage } from './pages/BillingPage';
+import { BillingPage } from './pages/billing/BillingPage';
 import { BranchPickerPage } from './pages/BranchPickerPage';
 import { CatalogHomePage } from './pages/CatalogHomePage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
