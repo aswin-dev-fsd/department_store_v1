@@ -2,7 +2,7 @@
 // Every function takes DbOrTx so the service can run several of them in one transaction.
 import { schema, type DbOrTx } from '@ds/database';
 import type { BranchSummary, Role } from '@ds/shared';
-import { and, asc, eq, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, lt, lte, ne, sql } from 'drizzle-orm';
 
 const { branches, sessions, userBranches, users } = schema;
 
@@ -178,6 +178,15 @@ export async function deleteSessionById(db: DbOrTx, sessionId: number): Promise<
 /** Delete one session by the token's hash. */
 export async function deleteSessionByTokenHash(db: DbOrTx, tokenHash: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.tokenHash, tokenHash));
+}
+
+/** Delete every session (any user's) that expired at or before `now`; returns how many. */
+export async function deleteExpiredSessions(db: DbOrTx, now: Date): Promise<number> {
+  const deleted = await db
+    .delete(sessions)
+    .where(lte(sessions.expiresAt, now))
+    .returning({ id: sessions.id });
+  return deleted.length;
 }
 
 /** Delete all of a user's sessions, optionally keeping one; returns how many were deleted. */

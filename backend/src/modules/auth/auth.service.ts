@@ -195,6 +195,8 @@ export async function login(
     mustChangePassword: user.mustChangePassword,
   };
   return db.transaction(async (tx) => {
+    // Housekeeping: expired sessions are refused when used, but would otherwise stay forever
+    await model.deleteExpiredSessions(tx, new Date());
     const branches = await branchesFor(tx, sessionUser);
     const activeBranchId = branches.length === 1 ? branches[0]!.id : null;
     const session = await createSession(tx, { userId: user.id, activeBranchId });

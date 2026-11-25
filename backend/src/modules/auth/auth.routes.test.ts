@@ -161,6 +161,43 @@ describe('POST /auth/login', () => {
     },
   );
 
+  it("deletes every expired session (anyone's) on a login, and keeps the live ones", async () => {
+    await insertUser('ravi');
+    const otherId = await insertUser('meena');
+    const insertSession = (hash: string, expires: string) =>
+      pool.query(
+        `insert into sessions (token_hash, user_id, expires_at) values ($1, $2, now() + $3::interval)`,
+        [hash, otherId, expires],
+      );
+    await insertSession('expired-hash', '-1 minute');
+    await insertSession('live-hash', '1 hour');
+
+    await loggedIn('ravi');
+
+    const { rows } = await pool.query<{ token_hash: string }>(
+      'select token_hash from sessions where user_id = $1 order by token_hash',
+      [otherId],
+    );
+    expect(rows.map((r) => r.token_hash)).toEqual(['live-hash']);
+  });
+
+  it('keeps expired sessions when the login fails (nothing is written but the audit row)', async () => {
+    await insertUser('ravi');
+    const otherId = await insertUser('meena');
+    await pool.query(
+      `insert into sessions (token_hash, user_id, expires_at) values ('expired-hash', $1, now() - interval '1 minute')`,
+      [otherId],
+    );
+
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ username: 'ravi', password: 'not-the-password' });
+    expect(res.status).toBe(401);
+
+    const { rows } = await pool.query('select 1 from sessions where user_id = $1', [otherId]);
+    expect(rows).toHaveLength(1);
+  });
+
   it('rejects missing fields and over-long passwords with 422', async () => {
     const missing = await request(app).post('/api/v1/auth/login').send({ username: 'ravi' });
     expect(missing.status).toBe(422);
