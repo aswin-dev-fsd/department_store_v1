@@ -504,6 +504,7 @@ export const en = {
   'billing.subtotal': 'Subtotal',
   'billing.discount': 'Discount',
   'billing.roundOff': 'Round-off',
+  'billing.roundOffToggle': 'Round the total to the nearest rupee',
   'billing.total': 'Total',
   'billing.lineCount': 'Lines: {count}',
   'billing.keySearch': 'F2',

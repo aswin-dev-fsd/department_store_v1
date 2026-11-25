@@ -6,6 +6,7 @@ export {
   MAX_BILL_SEQ,
   roundToRupee,
   type BillLineAmounts,
+  type BillOptions,
   type ComputedBill,
   type ComputedLine,
 } from './billing.js';

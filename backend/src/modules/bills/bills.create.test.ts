@@ -535,6 +535,39 @@ describe('rounding down', () => {
   });
 });
 
+describe('rounding chosen per bill (D-34)', () => {
+  it('saves the exact total with a round-off of 0 when the bill is not rounded', async () => {
+    const c = await counter();
+    const res = await bill(c, {
+      lines: [{ itemId: c.soap, quantity: 1 }],
+      payments: [{ mode: 'cash', amountPaise: 3825 }],
+      roundOff: false,
+    });
+
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
+    expect(res.body.data).toMatchObject({
+      subtotalPaise: 3825,
+      roundOffPaise: 0,
+      totalPaise: 3825,
+    });
+    const { rows } = await pool.query(
+      'select round_off_paise::int as round_off, total_paise::int as total from bills',
+    );
+    expect(rows).toEqual([{ round_off: 0, total: 3825 }]);
+  });
+
+  it('checks the payments against the total as chosen: the rounded ₹38 does not pay an exact bill', async () => {
+    const c = await counter();
+    const res = await bill(c, {
+      lines: [{ itemId: c.soap, quantity: 1 }],
+      payments: [{ mode: 'cash', amountPaise: 3800 }],
+      roundOff: false,
+    });
+    expect([res.status, res.body.error.code]).toEqual([400, 'PAYMENT_MISMATCH']);
+    expect(await billCount()).toBe(0);
+  });
+});
+
 describe('a saved bill is locked (D-14)', () => {
   it('has no way to edit or delete it: PUT, PATCH and DELETE answer 404 and change nothing', async () => {
     const c = await counter();

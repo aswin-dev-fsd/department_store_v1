@@ -73,7 +73,7 @@ async function fixture() {
       db,
       ctx,
       branchId,
-      { lines: [{ itemId, quantity, discountPaise }], payments },
+      { lines: [{ itemId, quantity, discountPaise }], payments, roundOff: true },
       new Date(at),
       null,
     );

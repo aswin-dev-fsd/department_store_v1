@@ -77,6 +77,7 @@ async function fixture() {
       {
         lines: lines.map((line) => ({ discountPaise: 0, ...line })),
         payments: [{ mode: 'cash', amountPaise: totalPaise }],
+        roundOff: true,
       },
       new Date(at),
       null,

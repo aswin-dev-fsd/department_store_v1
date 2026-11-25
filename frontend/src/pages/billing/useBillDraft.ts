@@ -131,8 +131,11 @@ export interface DraftSummary {
   input: BillLineInput[];
 }
 
-/** The preview of a draft: each line's total or problem, the bill totals, and the stock warnings. */
-export function summarizeDraft(draft: BillDraft): DraftSummary {
+/**
+ * The preview of a draft: each line's total or problem, the bill totals, and the stock warnings.
+ * The total is rounded only when `roundOff` is true (D-34: the cashier chooses per bill).
+ */
+export function summarizeDraft(draft: BillDraft, roundOff = true): DraftSummary {
   const valid: { unitPricePaise: number; quantity: number; discountPaise: number }[] = [];
   const input: BillLineInput[] = [];
   const lines = draft.lines.map((line): LineSummary => {
@@ -177,7 +180,7 @@ export function summarizeDraft(draft: BillDraft): DraftSummary {
   let totals: ComputedBill | null = null;
   if (valid.length > 0) {
     try {
-      totals = computeBill(valid);
+      totals = computeBill(valid, { roundOff });
     } catch {
       totals = null;
     }
@@ -192,9 +195,9 @@ export function summarizeDraft(draft: BillDraft): DraftSummary {
 }
 
 /** The counter's bill draft: state, its preview, and the actions the screen uses. */
-export function useBillDraft() {
+export function useBillDraft(roundOff: boolean) {
   const [draft, dispatch] = useReducer(billDraftReducer, EMPTY_DRAFT);
-  const summary = useMemo(() => summarizeDraft(draft), [draft]);
+  const summary = useMemo(() => summarizeDraft(draft, roundOff), [draft, roundOff]);
   return {
     draft,
     summary,

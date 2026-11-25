@@ -85,6 +85,7 @@ async function fixture() {
       {
         lines: [{ itemId, quantity, discountPaise: 0 }],
         payments: [{ mode: 'cash', amountPaise: paise }],
+        roundOff: true,
       },
       at,
       null,

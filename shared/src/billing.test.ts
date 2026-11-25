@@ -9,6 +9,23 @@ import {
 } from './billing.js';
 
 describe('computeBill', () => {
+  it('leaves the total exact when the bill is not rounded (D-34): round-off 0', () => {
+    const lines = [
+      { unitPricePaise: 65000, quantity: 1, discountPaise: 2000 },
+      { unitPricePaise: 14550, quantity: 2, discountPaise: 0 },
+      { unitPricePaise: 3825, quantity: 3, discountPaise: 0 },
+    ];
+    expect(computeBill(lines, { roundOff: false })).toMatchObject({
+      subtotalPaise: 105575,
+      discountPaise: 2000,
+      roundOffPaise: 0,
+      totalPaise: 103575,
+    });
+    // Left out, it rounds, as every bill did before D-34
+    expect(computeBill(lines)).toMatchObject({ roundOffPaise: 25, totalPaise: 103600 });
+    expect(computeBill(lines, { roundOff: true })).toMatchObject({ totalPaise: 103600 });
+  });
+
   it('reproduces the overview §6.4 worked example exactly', () => {
     const bill = computeBill([
       { unitPricePaise: 65000, quantity: 1, discountPaise: 2000 }, // Rice 10 kg

@@ -59,6 +59,11 @@ export const createBillSchema = z.strictObject({
     }),
   /** Optional (D-18): a phone finds or creates the customer, client-wide. */
   customer: z.strictObject({ phone: phoneSchema, name: customerNameSchema }).optional(),
+  /**
+   * Round the total to the nearest rupee (D-34: the cashier chooses per bill). The counter screen
+   * always sends it, unticked by default; left out, the bill is rounded, as before D-34.
+   */
+  roundOff: z.boolean({ error: 'Choose whether to round the total' }).default(true),
 });
 export type CreateBillInput = z.infer<typeof createBillSchema>;
 

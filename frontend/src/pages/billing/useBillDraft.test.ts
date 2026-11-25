@@ -120,6 +120,15 @@ describe('summarizeDraft', () => {
     ]);
   });
 
+  it('leaves the total exact when the bill is not rounded (D-34)', () => {
+    expect(summarizeDraft(workedExample(), false).totals).toMatchObject({
+      subtotalPaise: 105575,
+      discountPaise: 2000,
+      roundOffPaise: 0,
+      totalPaise: 103575,
+    });
+  });
+
   it('recalculates when a quantity or discount changes', () => {
     let draft = workedExample();
     draft = billDraftReducer(draft, {

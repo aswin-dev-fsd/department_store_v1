@@ -120,7 +120,7 @@ function priceBill(input: CreateBillInput, items: Map<number, SellableItem>): Co
     throw new ValidationError('Invalid request data', problems);
   }
   try {
-    return computeBill(lines);
+    return computeBill(lines, { roundOff: input.roundOff });
   } catch (error) {
     if (error instanceof RangeError) {
       throw new ValidationError('Invalid request data', [

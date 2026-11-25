@@ -24,10 +24,18 @@ export interface ComputedBill {
   subtotalPaise: number;
   /** Σ line discounts. */
   discountPaise: number;
-  /** Signed: what rounding subtotal − discount to the nearest rupee added (+) or took away (−). */
+  /**
+   * Signed: what rounding subtotal − discount to the nearest rupee added (+) or took away (−);
+   * 0 when the bill is not rounded.
+   */
   roundOffPaise: number;
-  /** The amount to pay: a whole number of rupees. */
+  /** The amount to pay: whole rupees when rounded, else exactly subtotal − discount. */
   totalPaise: number;
+}
+
+export interface BillOptions {
+  /** Round the total to the nearest rupee (exactly 50 paise up). Chosen per bill (D-34). */
+  roundOff?: boolean;
 }
 
 /** The largest bill number a 6-digit running number allows. */
@@ -74,9 +82,13 @@ export function roundToRupee(paise: number): number {
 
 /**
  * Every amount of a bill from its lines, in order: subtotal, discount, round-off and total. Throws
- * RangeError for a bad line (see computeLine). No whole-bill discount in v1 (D-17).
+ * RangeError for a bad line (see computeLine). No whole-bill discount in v1 (D-17). The total is
+ * rounded to the nearest rupee unless `roundOff` is false (D-34); then the round-off is 0.
  */
-export function computeBill(lines: readonly BillLineAmounts[]): ComputedBill {
+export function computeBill(
+  lines: readonly BillLineAmounts[],
+  { roundOff = true }: BillOptions = {},
+): ComputedBill {
   const computed = lines.map(computeLine);
   let subtotalPaise = 0;
   let discountPaise = 0;
@@ -85,7 +97,7 @@ export function computeBill(lines: readonly BillLineAmounts[]): ComputedBill {
     discountPaise += line.discountPaise;
   }
   const netPaise = subtotalPaise - discountPaise;
-  const totalPaise = roundToRupee(netPaise);
+  const totalPaise = roundOff ? roundToRupee(netPaise) : netPaise;
   return {
     lines: computed,
     subtotalPaise,

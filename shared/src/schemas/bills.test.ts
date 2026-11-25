@@ -21,7 +21,13 @@ const valid = () => ({
 
 describe('createBillSchema', () => {
   it('accepts a bill of ids, quantities, discounts and payments', () => {
-    expect(createBillSchema.parse(valid())).toEqual(valid());
+    expect(createBillSchema.parse(valid())).toEqual({ ...valid(), roundOff: true });
+  });
+
+  it('takes the per-bill rounding choice (D-34), rounding when it is left out', () => {
+    expect(createBillSchema.parse({ ...valid(), roundOff: false }).roundOff).toBe(false);
+    expect(createBillSchema.parse(valid()).roundOff).toBe(true);
+    expect(createBillSchema.safeParse({ ...valid(), roundOff: 'no' }).success).toBe(false);
   });
 
   it('treats a left-out discount as none', () => {

@@ -37,7 +37,9 @@ function shortagesOf(details: unknown): Map<number, number> {
 export function BillingPage() {
   const me = useMe().data;
   const branch = me?.branches.find((candidate) => candidate.id === me.activeBranchId);
-  const bill = useBillDraft();
+  // Rounding is chosen per bill, unticked at the start of each (D-34)
+  const [roundOff, setRoundOff] = useState(false);
+  const bill = useBillDraft(roundOff);
   const createBill = useCreateBill();
   const pickerRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLFieldSetElement>(null);
@@ -81,6 +83,7 @@ export function BillingPage() {
     const input: CreateBillInput = {
       lines: bill.summary.input,
       payments: paymentSummary.input,
+      roundOff,
       ...(customerPhone !== null && {
         customer: { phone: customerPhone, ...(name.trim() !== '' && { name: name.trim() }) },
       }),
@@ -90,6 +93,7 @@ export function BillingPage() {
         setSaved({ billNo: created.billNo, changePaise: changePaise || null });
         bill.reset();
         setPayments(EMPTY_PAYMENTS);
+        setRoundOff(false);
         setPhone('');
         setName('');
         pickerRef.current?.focus();
@@ -216,6 +220,15 @@ export function BillingPage() {
               <dd aria-live="polite">{formatPaise(totals?.totalPaise ?? 0)}</dd>
             </div>
           </dl>
+          <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={roundOff}
+              onChange={(event) => setRoundOff(event.target.checked)}
+              className="size-5 accent-blue-700"
+            />
+            <span>{t('billing.roundOffToggle')}</span>
+          </label>
           <p className="mt-3 text-sm text-slate-600">
             {t('billing.lineCount', { count: bill.draft.lines.length })}
           </p>
