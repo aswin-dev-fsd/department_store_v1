@@ -599,6 +599,7 @@ v1 doesn't record the opening cash float or shortages. The report is the referen
 | `SESSION_EXPIRED` | 401 | The session's 12 hours are over |
 | `ACCOUNT_DISABLED` | 401 | The user was deactivated (all their sessions end) |
 | `INVALID_CREDENTIALS` | 401 | Login failed — the same answer for a wrong password, an unknown user or a deactivated user |
+| `TOO_MANY_ATTEMPTS` | 429 | Too many failed logins: 10 per IP + username in 15 minutes, or 30 per username in an hour (proposed). `Retry-After` and `details.retryAfterSeconds` say when to try again |
 | `FORBIDDEN` | 403 | Missing permission |
 | `NO_ACTIVE_BRANCH` | 403 | A branch-scoped route without a usable active branch |
 | `BRANCH_NOT_ASSIGNED` | 403 | Selecting a branch the cashier isn't mapped to |

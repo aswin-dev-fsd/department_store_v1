@@ -26,6 +26,12 @@
 
 **Commit:** `feat(auth): add login rate limit`
 
+**As built (2026-11-25):**
+- `express-rate-limit` 8.7.4 (exact). Limiters are made in `authRoutes`, once per app, so each app and each test has its own in-memory counts. One API process per client, so memory is enough; several processes would each count apart.
+- Only a 401 from login counts (`skipSuccessfulRequests` + `requestWasSuccessful: status !== 401`): successes, 422s and server faults use up nothing. A body without a string username is not counted (the schema answers 422).
+- The refusal is an `AppError` passed to the error handler, so it has the standard envelope; `Retry-After` is set on the refusal only, and no `RateLimit-*` headers tell a guesser how many tries are left.
+- Not done: the frontend has no `error.TOO_MANY_ATTEMPTS` text, so the login page shows the server's English message (`errorMessage` falls back to it for a 4xx). A successful login does not clear earlier failures. The per-username cap lets anyone lock an account for up to an hour with 30 wrong passwords: the price of the spoofable IP noted above.
+
 ---
 
 ## Task 7.2 — Security review

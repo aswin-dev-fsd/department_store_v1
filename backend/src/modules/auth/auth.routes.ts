@@ -2,13 +2,14 @@ import { changePasswordSchema, loginSchema, selectBranchSchema } from '@ds/share
 import { Router } from 'express';
 import type { AppDeps } from '../../deps.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { loginRateLimit } from '../../middleware/rateLimit.js';
 import { validate } from '../../middleware/validate.js';
 import { authController } from './auth.controller.js';
 
 /**
  * /api/v1/auth
- * - POST /login            public; sets the ds_session cookie
- * - GET  /me               logged in (allowed while a password change is due)
+ * - POST /login            public, rate limited (429 TOO_MANY_ATTEMPTS); sets the ds_session cookie
+ * - GET  /me              logged in (allowed while a password change is due)
  * - POST /change-password  logged in (allowed while a password change is due)
  * - POST /logout           logged in (allowed while a password change is due)
  * - POST /select-branch    logged in; cashiers only
@@ -19,7 +20,8 @@ export function authRoutes(deps: AppDeps): Router {
   const loggedInPendingChange = requireAuth(deps.db, { allowPendingPasswordChange: true });
 
   const router = Router();
-  router.post('/login', validate({ body: loginSchema }), controller.login);
+  // Limiters are created here, once per app, so each app (and each test) has its own counts
+  router.post('/login', ...loginRateLimit(), validate({ body: loginSchema }), controller.login);
   router.get('/me', loggedInPendingChange, controller.me);
   router.post(
     '/change-password',
