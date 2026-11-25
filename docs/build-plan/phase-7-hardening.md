@@ -61,6 +61,8 @@
 
 **Commit:** `docs(security): add verified security checklist` (plus a `fix(...)` commit per gap)
 
+**As built (2026-11-25):** five gap commits: `fix(deps)` (zod, body-parser, qs), `fix(auth)` (expired sessions deleted on login), `fix(logging)` (compact request lines), `test(security)` (route listing for permissions, audit coverage and helmet headers), `test(bills)` (receipt cross-branch). To make the route listing possible, `routes.ts` exports its mount table (`API_MOUNTS`) and `requirePermission` records each handler it makes (`permissionCheckedBy`); `createApp` takes an optional `logger` so a test can read the request lines. The audit check reads the test files for `expectAudit(… action: '…')`, so an action asserted another way would not count. The request log leaves out the query string (a customer lookup carries a phone number). Rows that need the production server (cookie flags, HTTPS) wait for Tasks 7.5 and 7.6.
+
 ---
 
 ## Task 7.3 — Performance check
