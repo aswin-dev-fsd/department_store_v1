@@ -291,6 +291,15 @@ describe('GET /bills/:id/receipt', () => {
     const res = await request(app).get(`${URL}/${sold.id}/receipt`).set('Cookie', c.cookie);
     expect([res.status, res.body.error.code]).toEqual([404, 'NOT_SET_UP']);
   });
+
+  it("answers 404 for another branch's bill (branch isolation)", async () => {
+    await createClientSettings(pool);
+    const c = await counter();
+    const other = await counter(await createBranch(pool, { code: 'CBE' }));
+    const theirs = await sell(other);
+    const res = await request(app).get(`${URL}/${theirs.id}/receipt`).set('Cookie', c.cookie);
+    expect([res.status, res.body.error.code]).toEqual([404, 'NOT_FOUND']);
+  });
 });
 
 describe('istDateTime', () => {
