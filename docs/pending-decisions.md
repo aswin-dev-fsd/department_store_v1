@@ -78,12 +78,6 @@ Status: Pending (user, 2026-10-30). Built as Task 5.4: Indian mobile numbers onl
 To settle:
 - Whether landlines or other formats must be accepted
 
-### PD-07 — Rounding the bill total
-Status: Pending (user, 2026-10-30). Built as Task 5.2: every bill total is rounded to the nearest rupee, and exactly 50 paise rounds up. The user wants it as an option: rounding only when it is wanted.
-
-To settle:
-- Where the option lives (a store setting, or a choice at the counter per bill) and what the default is
-
 ## Decided
 
 | ID | Topic | Decision | Date |
@@ -119,5 +113,6 @@ To settle:
 | D-30 | Audit log scope | **Every change plus logins.** Every create, edit, delete and status change, plus login success and failure, logout and password changes, writes an `audit_logs` row: who, when, branch, action, entity, before/after (secrets redacted). Written in the same transaction as the change. Viewing data is not logged. | 2026-10-10 |
 | D-31 | Staging platform | **Dev/staging only:** frontend on Vercel, backend on Render (Singapore), database on a separate Neon project `dept-store-staging`, with Vercel rewriting `/api/*` to Render. Production uses a different strategy (AWS leaning; see PD-03). Render's health check and any keep-awake ping use `/api/v1/health/live`, which doesn't touch the database, so Neon can sleep and stays within its free compute hours. | 2026-10-10 |
 | D-29 | Extra packages | Approved: `@tailwindcss/vite`; `eslint`, `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `prettier`. `@types/*` packages for an approved package count as approved. | 2026-10-10 |
-| D-32 | Dev seed logins | `npm run db:seed` makes `admin`, `cashier1` and `cashier2` with fixed, public passwords (in `seed-dev.ts` and `docs/dev-setup.md`) and forces no change at the first login, so a developer can go straight to the screens. Dev and testing only: the seed refuses `NODE_ENV=production` and any database that already has data. Everywhere else (the Users screen, `setup:client`, `reset-password`) a random temporary password still forces a change at the first login. | 2026-10-17 |
+| D-32 | Dev seed logins | `npm run db:seed` makes `admin`, `cashier1` and `cashier2` with fixed, public passwords (in `seed-dev.ts` and `docs/dev-setup.md`) and forces no change at the first login, so a developer can go straight to the screens. Dev and testing only: the seed refuses `NODE_ENV=production` and any database that already has data. Everywhere else (the Users screen, `setup:client`, `reset-password`) a random temporary password still forces a change at the first login. **Amended 2026-11-25 (user):** the demo logins may also be used on **staging**, the dev-only online copy (D-31), so a shared link can be tried straight away; staging then runs on the seeded demo data. Still never on a client or production database. | 2026-10-17 |
 | D-33 | Local dev and test databases | Development and tests use a **local PostgreSQL 18** on the developer PC (role `dept_store`, databases `dept_store_dev` and `dept_store_test`), because every query to Neon Singapore took ~100 ms and the backend suite ~30 minutes (3 minutes locally). The Neon dev and test projects (D-28) are kept: their URLs stay in `.env` as commented lines, and the tests run against them when the user asks (and once before go-live). Staging is unchanged (Neon, D-31), so the shared staging link needs no local setup. No code switch: the app reads whatever `DATABASE_URL` / `TEST_DATABASE_URL` say. | 2026-10-30 |
+| D-34 | Rounding the bill total | **A choice per bill** (user, 2026-11-25; was PD-07): the cashier decides on each bill whether its total is rounded to the nearest rupee (exactly 50 paise up). Not a store setting. The default, and the screen and API change, are to be confirmed before it is built; until then every bill is rounded as built in Task 5.2. | 2026-11-25 |
