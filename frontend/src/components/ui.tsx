@@ -183,6 +183,31 @@ export function Notice({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * A keyboard shortcut shown quietly beside the control it works ("F9" on Save). Hidden from
+ * screen readers: give the control `aria-keyshortcuts` instead. `onPrimary` suits a blue button.
+ */
+export function KeyHint({
+  children,
+  onPrimary = false,
+}: {
+  children: ReactNode;
+  onPrimary?: boolean;
+}) {
+  return (
+    <kbd
+      aria-hidden="true"
+      className={`ml-2 inline-flex items-center rounded border px-1.5 font-mono text-xs leading-5 font-normal ${
+        onPrimary
+          ? 'border-white/40 bg-white/15 text-white'
+          : 'border-slate-300 bg-slate-100 text-slate-600'
+      }`}
+    >
+      {children}
+    </kbd>
+  );
+}
+
 /** A white panel for a screen's main content. */
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (

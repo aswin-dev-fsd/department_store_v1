@@ -1,6 +1,6 @@
 import { formatPaise, PAYMENT_MODES, type PaymentMode } from '@ds/shared';
 import type { Ref } from 'react';
-import { Button, ErrorAlert, TextField } from '../../components/ui';
+import { Button, ErrorAlert, KeyHint, TextField } from '../../components/ui';
 import { t } from '../../i18n/t';
 import { restInCash, type PaymentDraft, type PaymentSummary } from './payments';
 
@@ -38,7 +38,10 @@ export function PaymentPanel({
 
   return (
     <fieldset ref={panelRef} className="flex flex-col gap-3">
-      <legend className="mb-2 font-semibold">{t('billing.pay.title')}</legend>
+      <legend className="mb-2 font-semibold" title={t('billing.keyPaymentTitle')}>
+        {t('billing.pay.title')}
+        <KeyHint>{t('billing.keyPayment')}</KeyHint>
+      </legend>
       {PAYMENT_MODES.map((mode) => (
         <TextField
           key={mode}

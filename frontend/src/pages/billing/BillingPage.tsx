@@ -5,7 +5,7 @@ import { errorMessage } from '../../api/errors';
 import { useMe } from '../../auth/queries';
 import { useCreateBill } from '../../bills/mutations';
 import { ItemPicker } from '../../components/ItemPicker';
-import { Button, Card, ErrorAlert, Notice } from '../../components/ui';
+import { Button, Card, ErrorAlert, KeyHint, Notice } from '../../components/ui';
 import { t } from '../../i18n/t';
 import { printReceipt } from '../../print/printReceipt';
 import { BillLinesTable } from './BillLinesTable';
@@ -148,7 +148,6 @@ export function BillingPage() {
               {t('billing.branchLine', { branch: `${branch.code} — ${branch.name}` })}
             </p>
           )}
-          <p className="text-sm text-slate-600">{t('billing.shortcuts')}</p>
         </header>
         {saved && (
           <Notice>
@@ -163,6 +162,7 @@ export function BillingPage() {
         {printError && <ErrorAlert>{printError}</ErrorAlert>}
         <Card>
           <ItemPicker
+            keyHint={t('billing.keySearch')}
             inputRef={pickerRef}
             label={t('billing.pickerLabel')}
             onPick={(item) => {
@@ -231,8 +231,14 @@ export function BillingPage() {
           />
           <div className="mt-4 flex flex-col gap-2">
             {saveError && <ErrorAlert>{saveError}</ErrorAlert>}
-            <Button disabled={!canSave} onClick={save}>
+            <Button
+              disabled={!canSave}
+              onClick={save}
+              aria-keyshortcuts={t('billing.keySave')}
+              title={t('billing.keySaveTitle')}
+            >
               {createBill.isPending ? t('billing.saving') : t('billing.save')}
+              <KeyHint onPrimary>{t('billing.keySave')}</KeyHint>
             </Button>
             {!canSave && !createBill.isPending && (
               <p className="text-sm text-slate-600">{t('billing.saveHint')}</p>

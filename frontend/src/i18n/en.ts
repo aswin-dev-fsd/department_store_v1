@@ -506,7 +506,11 @@ export const en = {
   'billing.roundOff': 'Round-off',
   'billing.total': 'Total',
   'billing.lineCount': 'Lines: {count}',
-  'billing.shortcuts': 'Keys: F2 search · F8 payment · F9 save',
+  'billing.keySearch': 'F2',
+  'billing.keyPayment': 'F8',
+  'billing.keyPaymentTitle': 'Press F8 to jump to the cash amount',
+  'billing.keySave': 'F9',
+  'billing.keySaveTitle': 'Press F9 to save the bill',
   'billing.available': 'Available: {count}',
   'billing.short':
     'Not enough stock for the lines marked below. Lower the quantity or remove them.',

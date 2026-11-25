@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type Ref } from
 import { api, ApiError } from '../api/client';
 import { errorMessage } from '../api/errors';
 import { t } from '../i18n/t';
+import { KeyHint } from './ui';
 import { itemLookupPaths, itemSearchPath } from '../purchases/paths';
 
 interface ItemPickerProps {
@@ -11,6 +12,8 @@ interface ItemPickerProps {
   label?: string;
   /** Lets the screen put the cursor back here (e.g. after the last field of a line). */
   inputRef?: Ref<HTMLInputElement>;
+  /** A key that brings the cursor here (the billing screen's F2), shown after the label. */
+  keyHint?: string;
 }
 
 /** The exact item for a scanned barcode or typed code, or null when neither matches. */
@@ -41,7 +44,12 @@ function looksLikeName(text: string): boolean {
  * picks the highlighted item of the list on screen, or, with no list yet, searches and lists the
  * text, and a second Enter picks the first. Used by purchases and billing.
  */
-export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: ItemPickerProps) {
+export function ItemPicker({
+  onPick,
+  label = t('picker.label'),
+  inputRef,
+  keyHint,
+}: ItemPickerProps) {
   const id = useId();
   const listId = `${id}-list`;
   const [text, setText] = useState('');
@@ -137,6 +145,7 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
     <div className="relative">
       <label htmlFor={id} className="mb-1 block text-sm font-medium text-slate-800">
         {label}
+        {keyHint && <KeyHint>{keyHint}</KeyHint>}
       </label>
       <input
         id={id}
@@ -148,6 +157,7 @@ export function ItemPicker({ onPick, label = t('picker.label'), inputRef }: Item
         aria-controls={listId}
         aria-activedescendant={matches ? `${listId}-${active}` : undefined}
         aria-describedby={`${id}-hint`}
+        aria-keyshortcuts={keyHint}
         value={text}
         onChange={(event) => {
           setText(event.target.value);
